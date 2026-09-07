@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boss-research-assistant.local/schemas/boss-contract.v0.schema.json",
+  "title": "Boss Contract v0",
+  "description": "Stable MVP contract shared by the Boss Web and AI workflow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "recordKind", "revision", "id", "title", "rawGoal", "objective",
+    "deadline", "deliverables", "acceptanceCriteria", "scopeGuard", "known",
+    "unknowns", "assumptions", "estimatedMinutes", "assistanceMode", "status",
+    "evidenceItems", "blockers", "changeHistory"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "boss-contract.v0" },
+    "recordKind": { "enum": ["LIVE", "DEMO_FIXTURE"] },
+    "revision": { "type": "integer", "minimum": 1 },
+    "id": { "$ref": "#/$defs/nonEmptyString" },
+    "title": { "$ref": "#/$defs/nonEmptyString" },
+    "rawGoal": { "$ref": "#/$defs/nonEmptyString" },
+    "objective": { "$ref": "#/$defs/nonEmptyString" },
+    "deadline": { "type": ["string", "null"], "format": "date-time" },
+    "deliverables": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "#/$defs/deliverable" }
+    },
+    "acceptanceCriteria": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "#/$defs/criterion" }
+    },
+    "scopeGuard": { "$ref": "#/$defs/scopeGuard" },
+    "known": { "$ref": "#/$defs/stringList" },
+    "unknowns": { "$ref": "#/$defs/stringList" },
+    "assumptions": { "$ref": "#/$defs/stringList" },
+    "estimatedMinutes": { "type": "integer", "minimum": 1 },
+    "assistanceMode": { "enum": ["AI_OFF", "COACH", "COLLABORATE", "AGENT"] },
+    "status": { "enum": ["DRAFT", "ACTIVE", "PARTIAL", "CLEAR", "BLOCKED"] },
+    "evidenceItems": {
+      "type": "array", "items": { "$ref": "#/$defs/evidenceItem" }
+    },
+    "blockers": {
+      "type": "array", "items": { "$ref": "#/$defs/blocker" }
+    },
+    "changeHistory": {
+      "type": "array", "items": { "$ref": "#/$defs/changeRecord" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "stringList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "deliverable": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "description", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "status": { "enum": ["NOT_STARTED", "IN_PROGRESS", "DONE"] }
+      }
+    },
+    "criterion": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "description", "required", "status", "evidenceRequirements"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "required": { "type": "boolean" },
+        "status": { "enum": ["UNKNOWN", "PASS", "FAIL"] },
+        "evidenceRequirements": {
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/$defs/evidenceRequirement" }
+        }
+      }
+    },
+    "evidenceRequirement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "description", "acceptedSourceTypes", "minimumCount"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "acceptedSourceTypes": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evidenceSourceType" }
+        },
+        "minimumCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "evidenceSourceType": {
+      "enum": ["USER_REPORTED", "ARTIFACT_INSPECTED", "LOG_INSPECTED", "AUTO_VERIFIED"]
+    },
+    "scopeGuard": {
+      "type": "object", "additionalProperties": false,
+      "required": ["inScope", "outOfScope", "newBossPolicy"],
+      "properties": {
+        "inScope": { "$ref": "#/$defs/stringList" },
+        "outOfScope": { "$ref": "#/$defs/stringList" },
+        "newBossPolicy": { "const": "CREATE_NEW_BOSS" }
+      }
+    },
+    "evidenceItem": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "id", "criterionId", "requirementId", "sourceType", "sourceName",
+        "summary", "finding", "reviewStatus"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "criterionId": { "$ref": "#/$defs/nonEmptyString" },
+        "requirementId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceType": { "$ref": "#/$defs/evidenceSourceType" },
+        "sourceName": { "$ref": "#/$defs/nonEmptyString" },
+        "summary": { "$ref": "#/$defs/nonEmptyString" },
+        "finding": { "enum": ["PASS", "FAIL", "INCONCLUSIVE"] },
+        "reviewStatus": { "enum": ["PENDING", "ACCEPTED", "REJECTED"] }
+      }
+    },
+    "blocker": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "description", "affectedCriteria", "resolution"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "affectedCriteria": { "$ref": "#/$defs/stringList" },
+        "resolution": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "changeRecord": {
+      "type": "object", "additionalProperties": false,
+      "required": ["revision", "changedAt", "changedBy", "reason", "changes"],
+      "properties": {
+        "revision": { "type": "integer", "minimum": 2 },
+        "changedAt": { "type": "string", "format": "date-time" },
+        "changedBy": { "$ref": "#/$defs/nonEmptyString" },
+        "reason": { "$ref": "#/$defs/nonEmptyString" },
+        "changes": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["path", "before", "after"],
+            "properties": {
+              "path": { "$ref": "#/$defs/nonEmptyString" },
+              "before": {},
+              "after": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}

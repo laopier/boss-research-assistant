@@ -1,0 +1,144 @@
+{
+  "schemaVersion": "boss-contract.v0",
+  "recordKind": "DEMO_FIXTURE",
+  "revision": 1,
+  "id": "boss-waca-se-demo",
+  "title": "Implement and verify the two-stage WACA-SE module",
+  "rawGoal": "I want to reproduce WACA, but I do not know where to begin.",
+  "objective": "Implement a bounded WACA-SE module and verify that Stage 2 learns from the weak-feature tensor produced by Stage 1.",
+  "deadline": "2026-09-08T22:00:00+08:00",
+  "deliverables": [
+    { "id": "DEL-1", "description": "WACA-SE module implementation", "status": "DONE" },
+    {
+      "id": "DEL-2",
+      "description": "Shape, gradient, parameter-sharing, and Stage 2 semantic tests",
+      "status": "DONE"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "description": "The module preserves input shape and produces finite outputs and gradients.",
+      "required": true,
+      "status": "PASS",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-1-RUNTIME",
+          "description": "A runtime test checks shape, output finiteness, and gradient finiteness.",
+          "acceptedSourceTypes": ["LOG_INSPECTED", "AUTO_VERIFIED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-2",
+      "description": "Stage 2 receives Xweak rather than the original X or Stage 1 descriptor.",
+      "required": true,
+      "status": "FAIL",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-2-SOURCE",
+          "description": "Source inspection identifies the tensor supplied to the shared MLP in Stage 2.",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        },
+        {
+          "id": "REQ-2-RUNTIME",
+          "description": "A semantic test captures and compares the actual Stage 2 input with Xweak.",
+          "acceptedSourceTypes": ["LOG_INSPECTED", "AUTO_VERIFIED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-3",
+      "description": "Stage 1 and Stage 2 use the same MLP parameters.",
+      "required": true,
+      "status": "PASS",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-3-SOURCE",
+          "description": "Source inspection confirms that both stages call one shared MLP instance.",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-4",
+      "description": "Generate an optional visualization of both attention masks.",
+      "required": false,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-4-ARTIFACT",
+          "description": "An inspected visualization artifact is available.",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        }
+      ]
+    }
+  ],
+  "scopeGuard": {
+    "inScope": ["WACA-SE channel attention only", "Isolated semantic and numerical tests"],
+    "outOfScope": [
+      "Complete WACA-UNet implementation",
+      "Full-dataset training",
+      "500-epoch paper reproduction"
+    ],
+    "newBossPolicy": "CREATE_NEW_BOSS"
+  },
+  "known": [
+    "The input and output shapes are both [B, C, H, W].",
+    "Both attention stages must share one MLP."
+  ],
+  "unknowns": ["Whether the paper specifies a fixed or learnable fusion coefficient."],
+  "assumptions": ["The demonstration uses a fixed fusion coefficient of 0.5."],
+  "estimatedMinutes": 90,
+  "assistanceMode": "COACH",
+  "status": "PARTIAL",
+  "evidenceItems": [
+    {
+      "id": "EV-1",
+      "criterionId": "AC-1",
+      "requirementId": "REQ-1-RUNTIME",
+      "sourceType": "LOG_INSPECTED",
+      "sourceName": "tests/test_waca.py output",
+      "summary": "The submitted log reports that shape, finite-output, and finite-gradient tests passed.",
+      "finding": "PASS",
+      "reviewStatus": "ACCEPTED"
+    },
+    {
+      "id": "EV-2",
+      "criterionId": "AC-2",
+      "requirementId": "REQ-2-SOURCE",
+      "sourceType": "ARTIFACT_INSPECTED",
+      "sourceName": "models/waca.py",
+      "summary": "Static inspection finds Stage 2 reuses Stage 1 information instead of Xweak.",
+      "finding": "FAIL",
+      "reviewStatus": "ACCEPTED"
+    },
+    {
+      "id": "EV-3",
+      "criterionId": "AC-2",
+      "requirementId": "REQ-2-RUNTIME",
+      "sourceType": "AUTO_VERIFIED",
+      "sourceName": "WACA-SE semantic fixture",
+      "summary": "The forward-hook comparison fails because the Stage 2 input does not match Xweak.",
+      "finding": "FAIL",
+      "reviewStatus": "ACCEPTED"
+    },
+    {
+      "id": "EV-4",
+      "criterionId": "AC-3",
+      "requirementId": "REQ-3-SOURCE",
+      "sourceType": "ARTIFACT_INSPECTED",
+      "sourceName": "models/waca.py",
+      "summary": "Both stages call the same shared MLP object.",
+      "finding": "PASS",
+      "reviewStatus": "ACCEPTED"
+    }
+  ],
+  "blockers": [],
+  "changeHistory": []
+}
