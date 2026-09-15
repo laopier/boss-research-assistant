@@ -264,7 +264,7 @@ Requirements:
 ```bash
 corepack enable
 corepack prepare pnpm@11.19.0 --activate
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
