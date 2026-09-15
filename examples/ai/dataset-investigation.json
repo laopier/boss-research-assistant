@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "boss-contract.v0",
+  "recordKind": "DEMO_FIXTURE",
+  "revision": 1,
+  "id": "boss-dataset-investigation-demo",
+  "title": "Audit an IR-drop dataset before training",
+  "rawGoal": "我拿到了一个用于 IR-drop 预测的数据集，但不知道它能不能直接用于训练。",
+  "objective": "在90min内检查指定数据集的文件可读性、张量结构、数值有效性、数据划分和归一化风险，并形成数据审计结论。",
+  "deadline": null,
+  "deliverables": [
+    { "id": "DEL-1", "description": "数据 shape、dtype、min/max、NaN/Inf 等统计报告", "status": "NOT_STARTED" },
+    {
+      "id": "DEL-2",
+      "description": "数据划分和归一化风险清单",
+      "status": "NOT_STARTED"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "description": "所有指定文件均可读取，并记录 shape 和 dtype",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-1-LOAD",
+          "description": "检查统计报告中对于文件可读性，张量结构等信息是否与数据集和论文相统一",
+          "acceptedSourceTypes": ["LOG_INSPECTED",
+  "AUTO_VERIFIED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-2",
+      "description": "检查 NaN、Inf、min/max 和各通道数值范围。",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-2-STATS",
+          "description": "检查各项数据是否符合论文要求以及是否与源数据库对应",
+          "acceptedSourceTypes": ["LOG_INSPECTED",
+  "AUTO_VERIFIED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-3",
+      "description": "明确 train/validation 划分，并确认归一化统计量只使用 train",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-3-SPLIT",
+          "description": "检查数据划分是否与原论文相统一，确认归一化统计量是否只是用了train",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        }
+      ]
+    }
+
+  ],
+  "scopeGuard": {
+    "inScope": [  "检查指定数据文件是否可读取",
+  "记录 shape、dtype、NaN、Inf 和数值范围",
+  "核查数据划分及归一化统计量来源"],
+    "outOfScope": [
+      "训练或修改预测模型",
+      "修改原始数据文件",
+      "评价模型最终泛化性能"
+    ],
+    "newBossPolicy": "CREATE_NEW_BOSS"
+  },
+  "known": [
+    "数据集计划用于 IR-drop 预测",
+    "本轮只进行训练前数据审计."
+  ],
+  "unknowns": ["数据文件格式和实际张量形状",
+              " 各通道是否存在异常值",
+            "数据划分及归一化统计量来源是否正确"],
+  "assumptions": ["用户能够提供可访问的数据路径",
+"本轮检查不会修改原始数据"],
+  "estimatedMinutes": 90,
+  "assistanceMode": "COACH",
+  "status": "ACTIVE",
+  "blockers": [],
+  "changeHistory": [],
+  "evidenceItems": []
+}

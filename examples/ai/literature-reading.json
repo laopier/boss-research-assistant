@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "boss-contract.v0",
+  "recordKind": "DEMO_FIXTURE",
+  "revision": 1,
+  "id": "boss-literature-reading-demo",
+  "title": "Read and understand an IR-drop research paper",
+  "rawGoal": "我想读懂一篇 IR-drop 论文，但不知道应该看到什么程度。",
+  "objective": "在90分钟内阅读指定的 IR-drop 论文，基于 Abstract 和 Introduction 提炼研究问题、已有方法和本文贡献，并绘制三者的关系图",
+  "deadline": "null",
+  "deliverables": [
+    { "id": "DEL-1", "description": "用户自己描述的论文problem和previous method还有contribution", "status": "NOT_STARTED" },
+    {
+      "id": "DEL-2",
+      "description": "提交previous methods → 存在问题 → 本文贡献的关系图",
+      "status": "NOT_STARTED"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "description": "结构化笔记明确说明论文研究问题、已有方法及本文贡献。",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-1-NOTE",
+          "description": "检查用户提交的论文笔记是否包含研究问题、已有方法和本文贡献。",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-2",
+      "description": "笔记中的关键结论能够定位到论文的 Abstract 或 Introduction。",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-2-TRACEABILITY",
+          "description": "检查笔记中的关键结论是否标注其对应的 Abstract 或 Introduction 原文位置。",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-3",
+      "description": "关系图清楚表达已有方法、现存问题与本文贡献之间的关系。",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-3-DIAGRAM",
+          "description": "检查用户提交的关系图中存在的已有方法现存问题与本文贡献之间的关系是否正确",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        }
+      ]
+    }
+  ],
+  "scopeGuard": {
+    "inScope": [  "阅读指定论文的 Abstract 和 Introduction",
+  "用户自主总结研究问题、已有方法和本文贡献",
+  "绘制已有方法、现存问题与本文贡献的关系图"],
+    "outOfScope": [
+      "完整复现论文代码",
+      "检查全部实验数据",
+      "扩展成整个 IR-drop 领域的文献综述"
+    ],
+    "newBossPolicy": "CREATE_NEW_BOSS"
+  },
+  "known": [
+    "阅读对象是一篇指定的 IR-drop 论文",
+    "本轮预计用时为 90 分钟."
+  ],
+  "unknowns": ["用户对论文背景概念的熟悉程度",
+              "论文是否在 Introduction 中充分描述已有方法"],
+  "assumptions": ["用户能够访问论文全文",
+"Abstract 和 Introduction 足以支持本轮初步阅读"],
+  "estimatedMinutes": 90,
+  "assistanceMode": "COACH",
+  "status": "ACTIVE",
+  "blockers": [],
+  "changeHistory": [],
+  "evidenceItems": []
+}
