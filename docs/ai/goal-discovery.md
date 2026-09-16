@@ -47,7 +47,7 @@ The submitted goal is preserved in `contract.rawGoal`. Repository examples use
 - Every required acceptance criterion has at least one evidence requirement.
 - A newly generated deliverable starts as `NOT_STARTED`.
 - A newly generated criterion starts as `UNKNOWN`.
-- A newly generated Boss starts as `ACTIVE` after the contract is accepted.
+- A newly generated Boss starts as DRAFT; it becomes ACTIVE only after the user accepts the contract (lead decision, 2026-09-16).
 - Goal Discovery does not fabricate evidence. `evidenceItems` and
   `changeHistory` start empty.
 - Put confirmed facts in `known`, unresolved facts in `unknowns`, and temporary
