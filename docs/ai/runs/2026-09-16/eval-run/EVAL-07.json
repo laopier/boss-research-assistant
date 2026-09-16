@@ -1,0 +1,151 @@
+{
+  "id": "EVAL-07",
+  "goal": "我要在周五之前读完 WACA-SE 论文并整理出方法流程图。",
+  "expected": "CONTRACT",
+  "intent": "Deadline present: deadline should be an RFC 3339 date-time or null, never a free-text string.",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"我要在周五之前读完 WACA-SE 论文并整理出方法流程图。\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-waca-se-method-flow\",\"title\":\"阅读 WACA-SE 论文并整理方法流程图\",\"rawGoal\":\"我要在周五之前读完 WACA-SE 论文并整理出方法流程图。\",\"objective\":\"在本 Boss 内完成 WACA-SE 论文的阅读笔记，并产出一张可检查的方法流程图，图中覆盖论文方法的核心步骤、输入与输出。\",\"deadline\":null,\"deliverables\":[{\"id\":\"deliv-reading-notes\",\"description\":\"WACA-SE 论文阅读笔记文件（Markdown 或纯文本），包含研究问题、方法步骤、输入输出、实验设置和结论等可检查内容。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-method-flowchart\",\"description\":\"WACA-SE 方法流程图文件或可检查的文本描述（如 Mermaid、图片、PDF），展示方法的主要模块、步骤顺序和数据流。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-open-questions\",\"description\":\"待确认问题清单，列出阅读过程中无法从论文确定的具体问题。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"ac-notes-coverage\",\"description\":\"阅读笔记文件包含 WACA-SE 论文的研究问题、方法步骤、输入输出、实验设置和结论。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-notes-file\",\"description\":\"提交的阅读笔记文件路径或可检查内容。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-flowchart-coverage\",\"description\":\"方法流程图包含论文方法的输入、核心处理步骤和输出。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-flowchart-file\",\"description\":\"提交的方法流程图文件或可检查的文本描述。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-traceability\",\"description\":\"阅读笔记对方法流程的关键步骤标注论文中的出处（章节、图号或页码）。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-traceability\",\"description\":\"阅读笔记中关键步骤旁的章节、图号或页码标注。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-open-questions\",\"description\":\"待确认问题清单列出至少 3 个具体问题。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-open-questions\",\"description\":\"待确认问题清单文件或笔记中的问题列表。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"阅读 WACA-SE 论文并记录阅读笔记\",\"提取论文方法的核心步骤\",\"绘制或整理 WACA-SE 方法流程图\",\"记录阅读中的待确认问题\"],\"outOfScope\":[\"复现论文实验\",\"实现论文方法代码\",\"开展新的实验或扩展研究\",\"撰写完整文献综述\",\"寻找或阅读其他论文\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"用户目标是在周五之前完成 WACA-SE 论文阅读并整理方法流程图。\",\"用户指定了论文名称为 WACA-SE。\",\"用户使用中文提出目标。\"],\"unknowns\":[\"WACA-SE 论文的具体版本或获取位置。\",\"“周五”对应的绝对日期。\",\"期望的方法流程图格式（图片、PDF、Mermaid 文本等）。\"],\"assumptions\":[\"用户已持有或能够获取 WACA-SE 论文。\",\"方法流程图可以用可检查的文件或文本描述交付。\",\"阅读笔记和流程图可用中文撰写。\"],\"estimatedMinutes\":240,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 16982
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-waca-se-method-flow",
+    "title": "阅读 WACA-SE 论文并整理方法流程图",
+    "rawGoal": "我要在周五之前读完 WACA-SE 论文并整理出方法流程图。",
+    "objective": "在本 Boss 内完成 WACA-SE 论文的阅读笔记，并产出一张可检查的方法流程图，图中覆盖论文方法的核心步骤、输入与输出。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "deliv-reading-notes",
+        "description": "WACA-SE 论文阅读笔记文件（Markdown 或纯文本），包含研究问题、方法步骤、输入输出、实验设置和结论等可检查内容。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-method-flowchart",
+        "description": "WACA-SE 方法流程图文件或可检查的文本描述（如 Mermaid、图片、PDF），展示方法的主要模块、步骤顺序和数据流。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-open-questions",
+        "description": "待确认问题清单，列出阅读过程中无法从论文确定的具体问题。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "ac-notes-coverage",
+        "description": "阅读笔记文件包含 WACA-SE 论文的研究问题、方法步骤、输入输出、实验设置和结论。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-notes-file",
+            "description": "提交的阅读笔记文件路径或可检查内容。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-flowchart-coverage",
+        "description": "方法流程图包含论文方法的输入、核心处理步骤和输出。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-flowchart-file",
+            "description": "提交的方法流程图文件或可检查的文本描述。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-traceability",
+        "description": "阅读笔记对方法流程的关键步骤标注论文中的出处（章节、图号或页码）。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-traceability",
+            "description": "阅读笔记中关键步骤旁的章节、图号或页码标注。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-open-questions",
+        "description": "待确认问题清单列出至少 3 个具体问题。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-open-questions",
+            "description": "待确认问题清单文件或笔记中的问题列表。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "阅读 WACA-SE 论文并记录阅读笔记",
+        "提取论文方法的核心步骤",
+        "绘制或整理 WACA-SE 方法流程图",
+        "记录阅读中的待确认问题"
+      ],
+      "outOfScope": [
+        "复现论文实验",
+        "实现论文方法代码",
+        "开展新的实验或扩展研究",
+        "撰写完整文献综述",
+        "寻找或阅读其他论文"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "用户目标是在周五之前完成 WACA-SE 论文阅读并整理方法流程图。",
+      "用户指定了论文名称为 WACA-SE。",
+      "用户使用中文提出目标。"
+    ],
+    "unknowns": [
+      "WACA-SE 论文的具体版本或获取位置。",
+      "“周五”对应的绝对日期。",
+      "期望的方法流程图格式（图片、PDF、Mermaid 文本等）。"
+    ],
+    "assumptions": [
+      "用户已持有或能够获取 WACA-SE 论文。",
+      "方法流程图可以用可检查的文件或文本描述交付。",
+      "阅读笔记和流程图可用中文撰写。"
+    ],
+    "estimatedMinutes": 240,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 16982
+}

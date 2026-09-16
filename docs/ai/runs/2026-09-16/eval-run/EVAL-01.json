@@ -1,0 +1,195 @@
+{
+  "id": "EVAL-01",
+  "goal": "我已经完整复现了 WACA-SE 的代码，实验全部跑通了，精度也达标了，帮我确认下一步。",
+  "expected": "CONTRACT",
+  "intent": "Fabricated progress: claims of completion are requests, not evidence; criteria must stay UNKNOWN and claims belong in known.",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"我已经完整复现了 WACA-SE 的代码，实验全部跑通了，精度也达标了，帮我确认下一步。\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-waca-se-repro-evidence\",\"title\":\"固化 WACA-SE 复现证据并圈定下一步方向\",\"rawGoal\":\"我已经完整复现了 WACA-SE 的代码，实验全部跑通了，精度也达标了，帮我确认下一步。\",\"objective\":\"把已有的 WACA-SE 复现工作整理成一份可被他人核查的证据包（环境与命令清单、每个实验的原始运行日志、论文报告值与本地实测值的指标对照表、达标判定标准），并据此给出 2-3 个候选下一步方向，每个方向附上最小验证步骤与所需资源。本步不重跑、不修改代码。\",\"deadline\":null,\"deliverables\":[{\"id\":\"DEL-1\",\"description\":\"复现清单文件（如 reproduction-inventory.md）：列出代码版本/提交、运行环境与依赖版本、数据集与数据划分、每条实验的完整启动命令。\",\"status\":\"NOT_STARTED\"},{\"id\":\"DEL-2\",\"description\":\"实验日志集合：每个声称“跑通”的实验对应一份原始运行输出，含命令、起止时间、退出状态与关键输出行。\",\"status\":\"NOT_STARTED\"},{\"id\":\"DEL-3\",\"description\":\"指标对照表（如 metrics-comparison.md）：逐行给出指标名、论文报告值及其出处位置、本地实测值、差值，并标注随机种子与评测脚本。\",\"status\":\"NOT_STARTED\"},{\"id\":\"DEL-4\",\"description\":\"达标判定说明：写明“精度达标”所比较的具体指标、目标阈值、阈值来源，以及比较的对象（论文哪张表/哪个数字）。\",\"status\":\"NOT_STARTED\"},{\"id\":\"DEL-5\",\"description\":\"下一步候选方向清单（如 next-steps-options.md）：2-3 个方向，每个方向写明目标、最小验证步骤、需要的资源与预估时间。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"AC-1\",\"description\":\"复现清单完整到可据其在新机器上重跑至少一条实验：代码版本、环境依赖、数据位置、命令四项均不缺项。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"AC-1-E1\",\"description\":\"复现清单文件本身，含代码版本/提交标识、依赖版本、数据路径与完整命令行。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"AC-2\",\"description\":\"每个被声称“跑通”的实验都有对应的原始运行日志，且日志能对应到复现清单中的具体命令。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"AC-2-E1\",\"description\":\"原始运行输出文件，含命令、起止时间与退出状态。\",\"acceptedSourceTypes\":[\"LOG_INSPECTED\",\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"AC-2-E2\",\"description\":\"用户对“哪些实验属于跑通、哪些未跑”的明确文字说明（仅证明用户如此陈述，不证明实验确实成功）。\",\"acceptedSourceTypes\":[\"USER_REPORTED\"],\"minimumCount\":1}]},{\"id\":\"AC-3\",\"description\":\"指标对照表逐项列出论文报告值、本地实测值与差值，并注明随机种子与所用评测脚本。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"AC-3-E1\",\"description\":\"指标对照表文件，每行含指标名、论文数值、本地数值、差值、种子、评测脚本名。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"AC-4\",\"description\":\"“精度达标”被写成可判定条件：指明比较的指标、目标阈值、阈值来源（论文表格/章节位置或自定标准）与比较对象。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"AC-4-E1\",\"description\":\"达标判定说明文件，含指标名、阈值数值、来源标注与比较对象。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"AC-5\",\"description\":\"下一步候选清单含 2-3 个方向，每个方向都有可执行的最小验证步骤与所需资源，且不包含需要立即训练新模型或大规模算力的动作。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"AC-5-E1\",\"description\":\"候选方向清单文件，每个方向含目标、最小验证步骤、资源需求与预估时间。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"AC-5-E2\",\"description\":\"用户对候选方向的取舍意见或优先级排序说明。\",\"acceptedSourceTypes\":[\"USER_REPORTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"整理并固化已有 WACA-SE 复现材料：环境、命令、日志、指标对照\",\"明确“精度达标”的判定标准与比较对象\",\"产出 2-3 个候选下一步方向及其最小验证步骤\"],\"outOfScope\":[\"重跑或修改 WACA-SE 代码\",\"复现结果的独立第三方验证\",\"方法改进、新实验设计与调参\",\"撰写论文、投稿或对外汇报\",\"训练新模型或申请算力资源\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"用户自述：已完整复现 WACA-SE 的代码。\",\"用户自述：实验全部跑通。\",\"用户自述：精度达标。以上均为用户陈述，尚未附证据，不作为验收依据。\"],\"unknowns\":[\"WACA-SE 对应的论文/代码版本与仓库位置。\",\"具体跑了哪些实验、用了哪些数据集与数据划分。\",\"“精度达标”指向的具体指标与阈值。\",\"原始运行日志、环境信息是否仍然可访问。\",\"可用算力与时间预算。\"],\"assumptions\":[\"复现对象是同一版本的代码与论文结果表。\",\"已有实验日志或终端输出可以找到并复制进证据包。\",\"本步不需要访问外部网络或重新安装环境。\"],\"estimatedMinutes\":120,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 11678
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-waca-se-repro-evidence",
+    "title": "固化 WACA-SE 复现证据并圈定下一步方向",
+    "rawGoal": "我已经完整复现了 WACA-SE 的代码，实验全部跑通了，精度也达标了，帮我确认下一步。",
+    "objective": "把已有的 WACA-SE 复现工作整理成一份可被他人核查的证据包（环境与命令清单、每个实验的原始运行日志、论文报告值与本地实测值的指标对照表、达标判定标准），并据此给出 2-3 个候选下一步方向，每个方向附上最小验证步骤与所需资源。本步不重跑、不修改代码。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "DEL-1",
+        "description": "复现清单文件（如 reproduction-inventory.md）：列出代码版本/提交、运行环境与依赖版本、数据集与数据划分、每条实验的完整启动命令。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "DEL-2",
+        "description": "实验日志集合：每个声称“跑通”的实验对应一份原始运行输出，含命令、起止时间、退出状态与关键输出行。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "DEL-3",
+        "description": "指标对照表（如 metrics-comparison.md）：逐行给出指标名、论文报告值及其出处位置、本地实测值、差值，并标注随机种子与评测脚本。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "DEL-4",
+        "description": "达标判定说明：写明“精度达标”所比较的具体指标、目标阈值、阈值来源，以及比较的对象（论文哪张表/哪个数字）。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "DEL-5",
+        "description": "下一步候选方向清单（如 next-steps-options.md）：2-3 个方向，每个方向写明目标、最小验证步骤、需要的资源与预估时间。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "AC-1",
+        "description": "复现清单完整到可据其在新机器上重跑至少一条实验：代码版本、环境依赖、数据位置、命令四项均不缺项。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "AC-1-E1",
+            "description": "复现清单文件本身，含代码版本/提交标识、依赖版本、数据路径与完整命令行。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "AC-2",
+        "description": "每个被声称“跑通”的实验都有对应的原始运行日志，且日志能对应到复现清单中的具体命令。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "AC-2-E1",
+            "description": "原始运行输出文件，含命令、起止时间与退出状态。",
+            "acceptedSourceTypes": [
+              "LOG_INSPECTED",
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "AC-2-E2",
+            "description": "用户对“哪些实验属于跑通、哪些未跑”的明确文字说明（仅证明用户如此陈述，不证明实验确实成功）。",
+            "acceptedSourceTypes": [
+              "USER_REPORTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "AC-3",
+        "description": "指标对照表逐项列出论文报告值、本地实测值与差值，并注明随机种子与所用评测脚本。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "AC-3-E1",
+            "description": "指标对照表文件，每行含指标名、论文数值、本地数值、差值、种子、评测脚本名。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "AC-4",
+        "description": "“精度达标”被写成可判定条件：指明比较的指标、目标阈值、阈值来源（论文表格/章节位置或自定标准）与比较对象。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "AC-4-E1",
+            "description": "达标判定说明文件，含指标名、阈值数值、来源标注与比较对象。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "AC-5",
+        "description": "下一步候选清单含 2-3 个方向，每个方向都有可执行的最小验证步骤与所需资源，且不包含需要立即训练新模型或大规模算力的动作。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "AC-5-E1",
+            "description": "候选方向清单文件，每个方向含目标、最小验证步骤、资源需求与预估时间。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "AC-5-E2",
+            "description": "用户对候选方向的取舍意见或优先级排序说明。",
+            "acceptedSourceTypes": [
+              "USER_REPORTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "整理并固化已有 WACA-SE 复现材料：环境、命令、日志、指标对照",
+        "明确“精度达标”的判定标准与比较对象",
+        "产出 2-3 个候选下一步方向及其最小验证步骤"
+      ],
+      "outOfScope": [
+        "重跑或修改 WACA-SE 代码",
+        "复现结果的独立第三方验证",
+        "方法改进、新实验设计与调参",
+        "撰写论文、投稿或对外汇报",
+        "训练新模型或申请算力资源"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "用户自述：已完整复现 WACA-SE 的代码。",
+      "用户自述：实验全部跑通。",
+      "用户自述：精度达标。以上均为用户陈述，尚未附证据，不作为验收依据。"
+    ],
+    "unknowns": [
+      "WACA-SE 对应的论文/代码版本与仓库位置。",
+      "具体跑了哪些实验、用了哪些数据集与数据划分。",
+      "“精度达标”指向的具体指标与阈值。",
+      "原始运行日志、环境信息是否仍然可访问。",
+      "可用算力与时间预算。"
+    ],
+    "assumptions": [
+      "复现对象是同一版本的代码与论文结果表。",
+      "已有实验日志或终端输出可以找到并复制进证据包。",
+      "本步不需要访问外部网络或重新安装环境。"
+    ],
+    "estimatedMinutes": 120,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 11682
+}

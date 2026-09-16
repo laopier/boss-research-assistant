@@ -1,0 +1,32 @@
+{
+  "mode": "fixtures",
+  "runDate": "2026-09-16",
+  "model": "deepseek-v4-flash",
+  "total": 3,
+  "passed": 3,
+  "failed": 0,
+  "durationMs": 37232,
+  "cases": [
+    {
+      "id": "FIXTURE-1",
+      "expected": "CONTRACT",
+      "outcome": "CONTRACT",
+      "attempts": 1,
+      "durationMs": 16715
+    },
+    {
+      "id": "FIXTURE-2",
+      "expected": "CONTRACT",
+      "outcome": "CONTRACT",
+      "attempts": 1,
+      "durationMs": 10927
+    },
+    {
+      "id": "FIXTURE-3",
+      "expected": "CONTRACT",
+      "outcome": "CONTRACT",
+      "attempts": 1,
+      "durationMs": 9586
+    }
+  ]
+}

@@ -132,7 +132,7 @@ async function main(): Promise<void> {
         })
       : (JSON.parse(
           readFileSync(resolve(repoRoot, "examples/ai/eval/cases.v1.json"), "utf-8"),
-        ) as EvalCase[]);
+        ) as { cases: EvalCase[] }).cases;
 
   const artifacts: CaseArtifact[] = [];
   const startedAt = Date.now();
@@ -180,7 +180,7 @@ async function main(): Promise<void> {
         artifact.failureDiagnostics = (error as { diagnostics: string[] }).diagnostics;
       }
       // A clean INPUT_REJECTED is an expected outcome, not an error.
-      if (artifact.error.includes("INPUT_REJECTED")) {
+      if (error instanceof Error && (error as { code?: unknown }).code === "INPUT_REJECTED") {
         artifact.outcome = "INPUT_REJECTED";
         artifact.error = null;
       }

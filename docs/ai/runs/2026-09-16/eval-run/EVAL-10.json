@@ -1,0 +1,176 @@
+{
+  "id": "EVAL-10",
+  "goal": "我想复现 WACA-SE 论文里的实验，但不确定第一步该做什么。",
+  "expected": "CONTRACT",
+  "intent": "Baseline: an ordinary vague goal must produce a clean, warning-free contract.",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"我想复现 WACA-SE 论文里的实验，但不确定第一步该做什么。\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-waca-se-repro-first-step\",\"title\":\"产出 WACA-SE 论文实验复现清单并选定第一步最小实验\",\"rawGoal\":\"我想复现 WACA-SE 论文里的实验，但不确定第一步该做什么。\",\"objective\":\"通读 WACA-SE 论文，产出可核对的实验复现清单：逐条列出论文中的实验、对应的研究问题、数据集、评价指标、对照基线与运行环境要求，并从中选定一个第一步要先跑的最小实验，说明选择理由、所需输入与成功判据。本步只做阅读与规划，不下载数据、不运行代码。\",\"deadline\":null,\"deliverables\":[{\"id\":\"d1\",\"description\":\"WACA-SE 实验清单表（Markdown 或 CSV 文件），每条实验一行，字段包括：实验编号、研究问题、数据集、评价指标、对照基线、是否为论文核心贡献实验。\",\"status\":\"NOT_STARTED\"},{\"id\":\"d2\",\"description\":\"资源与依赖需求清单：逐条实验标注数据获取方式（公开/需申请/论文未说明）、代码或模型权重是否随论文发布、所需硬件与框架版本、论文中给出的运行时长（若有）。\",\"status\":\"NOT_STARTED\"},{\"id\":\"d3\",\"description\":\"第一步最小实验选择说明：写明选定的实验编号、选择理由、运行所需输入、期望输出，以及判断“跑通”的可观察成功标准，并列出本次明确不做的实验编号。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"ac1\",\"description\":\"实验清单表覆盖论文中报告的全部主要实验，且每条实验都填齐研究问题、数据集、评价指标、对照基线四个字段。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er1-1\",\"description\":\"提交实验清单表文件本身，可逐行检查字段是否填齐，是否出现空白或“待补”字段。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"er1-2\",\"description\":\"用户对照论文目录与实验章节，确认清单条数与论文报告的主要实验数量一致。\",\"acceptedSourceTypes\":[\"USER_REPORTED\"],\"minimumCount\":1}]},{\"id\":\"ac2\",\"description\":\"每条实验都标注了数据与代码资源的可获取状态，未知状态被显式标为“未知”而非留空。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er2-1\",\"description\":\"资源与依赖需求清单文件中每条实验均有可获取状态字段取值（公开/需申请/论文未说明/未知）。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac3\",\"description\":\"明确指出第一步要跑的最小实验，并给出选择理由、所需输入与可观察的成功标准。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er3-1\",\"description\":\"第一步最小实验选择说明文件中包含选定的实验编号、理由段落、输入清单与成功标准描述。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"er3-2\",\"description\":\"用户确认该实验确实是当前条件下最合理的起点，或说明需要改选哪一条。\",\"acceptedSourceTypes\":[\"USER_REPORTED\"],\"minimumCount\":1}]},{\"id\":\"ac4\",\"description\":\"明确列出本次不覆盖的实验与工作，并得到用户确认。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er4-1\",\"description\":\"第一步最小实验选择说明文件中的“本次不做的实验编号”列表非空。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"er4-2\",\"description\":\"用户回复确认该排除范围可接受。\",\"acceptedSourceTypes\":[\"USER_REPORTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"阅读并拆解 WACA-SE 论文的实验设置\",\"整理实验清单、评价指标、数据集与对照基线\",\"梳理数据与代码资源的可获取性\",\"选定并描述第一步最小实验\"],\"outOfScope\":[\"实际下载数据集、获取模型权重\",\"安装环境与运行论文代码\",\"完整复现论文全部实验\",\"复现论文之外的对比实验或改进方法\",\"重写或改进论文方法本身\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"用户目标论文名称为 WACA-SE\",\"用户希望复现该论文的实验\",\"用户尚未确定第一步该做什么\"],\"unknowns\":[\"论文中的实验数量与各实验的复杂度\",\"论文是否公开数据集与代码\",\"用户可用的计算资源与硬件条件\",\"复现的目标精度或可接受偏差范围\"],\"assumptions\":[\"用户能够获取 WACA-SE 论文全文\",\"用户可在本步完成时间内通读并整理论文实验章节\",\"论文中的实验可以按贡献重要性与资源需求排序\"],\"estimatedMinutes\":120,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 11083
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-waca-se-repro-first-step",
+    "title": "产出 WACA-SE 论文实验复现清单并选定第一步最小实验",
+    "rawGoal": "我想复现 WACA-SE 论文里的实验，但不确定第一步该做什么。",
+    "objective": "通读 WACA-SE 论文，产出可核对的实验复现清单：逐条列出论文中的实验、对应的研究问题、数据集、评价指标、对照基线与运行环境要求，并从中选定一个第一步要先跑的最小实验，说明选择理由、所需输入与成功判据。本步只做阅读与规划，不下载数据、不运行代码。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "d1",
+        "description": "WACA-SE 实验清单表（Markdown 或 CSV 文件），每条实验一行，字段包括：实验编号、研究问题、数据集、评价指标、对照基线、是否为论文核心贡献实验。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "d2",
+        "description": "资源与依赖需求清单：逐条实验标注数据获取方式（公开/需申请/论文未说明）、代码或模型权重是否随论文发布、所需硬件与框架版本、论文中给出的运行时长（若有）。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "d3",
+        "description": "第一步最小实验选择说明：写明选定的实验编号、选择理由、运行所需输入、期望输出，以及判断“跑通”的可观察成功标准，并列出本次明确不做的实验编号。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "ac1",
+        "description": "实验清单表覆盖论文中报告的全部主要实验，且每条实验都填齐研究问题、数据集、评价指标、对照基线四个字段。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er1-1",
+            "description": "提交实验清单表文件本身，可逐行检查字段是否填齐，是否出现空白或“待补”字段。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "er1-2",
+            "description": "用户对照论文目录与实验章节，确认清单条数与论文报告的主要实验数量一致。",
+            "acceptedSourceTypes": [
+              "USER_REPORTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac2",
+        "description": "每条实验都标注了数据与代码资源的可获取状态，未知状态被显式标为“未知”而非留空。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er2-1",
+            "description": "资源与依赖需求清单文件中每条实验均有可获取状态字段取值（公开/需申请/论文未说明/未知）。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac3",
+        "description": "明确指出第一步要跑的最小实验，并给出选择理由、所需输入与可观察的成功标准。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er3-1",
+            "description": "第一步最小实验选择说明文件中包含选定的实验编号、理由段落、输入清单与成功标准描述。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "er3-2",
+            "description": "用户确认该实验确实是当前条件下最合理的起点，或说明需要改选哪一条。",
+            "acceptedSourceTypes": [
+              "USER_REPORTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac4",
+        "description": "明确列出本次不覆盖的实验与工作，并得到用户确认。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er4-1",
+            "description": "第一步最小实验选择说明文件中的“本次不做的实验编号”列表非空。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "er4-2",
+            "description": "用户回复确认该排除范围可接受。",
+            "acceptedSourceTypes": [
+              "USER_REPORTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "阅读并拆解 WACA-SE 论文的实验设置",
+        "整理实验清单、评价指标、数据集与对照基线",
+        "梳理数据与代码资源的可获取性",
+        "选定并描述第一步最小实验"
+      ],
+      "outOfScope": [
+        "实际下载数据集、获取模型权重",
+        "安装环境与运行论文代码",
+        "完整复现论文全部实验",
+        "复现论文之外的对比实验或改进方法",
+        "重写或改进论文方法本身"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "用户目标论文名称为 WACA-SE",
+      "用户希望复现该论文的实验",
+      "用户尚未确定第一步该做什么"
+    ],
+    "unknowns": [
+      "论文中的实验数量与各实验的复杂度",
+      "论文是否公开数据集与代码",
+      "用户可用的计算资源与硬件条件",
+      "复现的目标精度或可接受偏差范围"
+    ],
+    "assumptions": [
+      "用户能够获取 WACA-SE 论文全文",
+      "用户可在本步完成时间内通读并整理论文实验章节",
+      "论文中的实验可以按贡献重要性与资源需求排序"
+    ],
+    "estimatedMinutes": 120,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 11083
+}
