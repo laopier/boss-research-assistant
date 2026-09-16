@@ -1,0 +1,20 @@
+{
+  "name": "boss-research-assistant-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Goal Discovery AI workflow sources for Boss Research Assistant. Merges into the Web app under src/lib/goal-discovery on the integration branch.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --import tsx --test src/test/validation.test.ts src/test/generator.test.ts src/test/prompt.test.ts src/test/factory.test.ts",
+    "gen:prompt-md": "node --import tsx scripts/gen-prompt-md.ts"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.5.1",
+    "tsx": "^4.19.0",
+    "typescript": "6.0.2"
+  }
+}

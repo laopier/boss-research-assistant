@@ -6,7 +6,7 @@
   "title": "Read and understand an IR-drop research paper",
   "rawGoal": "我想读懂一篇 IR-drop 论文，但不知道应该看到什么程度。",
   "objective": "在90分钟内阅读指定的 IR-drop 论文，基于 Abstract 和 Introduction 提炼研究问题、已有方法和本文贡献，并绘制三者的关系图",
-  "deadline": "null",
+  "deadline": null,
   "deliverables": [
     { "id": "DEL-1", "description": "用户自己描述的论文problem和previous method还有contribution", "status": "NOT_STARTED" },
     {

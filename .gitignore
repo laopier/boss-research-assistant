@@ -37,3 +37,6 @@ uploads/
 *.ckpt
 datasets/
 weights/
+
+# Local assistant workspace
+.learnbuddy/
