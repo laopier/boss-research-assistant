@@ -55,7 +55,7 @@ test("user prompt wraps the goal in the request envelope", () => {
 });
 
 test("generated markdown fenced block matches the runtime prompt byte for byte", () => {
-  const markdown = readFileSync(promptMdPath, "utf-8");
+  const markdown = readFileSync(promptMdPath, "utf-8").replace(/\r\n/g, "\n");
   const match = markdown.match(/```\n([\s\S]*?)\n```/);
   assert.ok(match, "docs/ai/prompts/goal-discovery.v1.md must contain a fenced block");
   if (match![1] !== GOAL_DISCOVERY_SYSTEM_PROMPT) {

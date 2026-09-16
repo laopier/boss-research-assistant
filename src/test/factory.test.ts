@@ -9,7 +9,7 @@ import {
   DEFAULT_API_BASE,
   DEFAULT_MODEL,
   getGenerator,
-  KNOWN_FIXTURE_SIGNATURES,
+  loadKnownFixtureSignatures,
 } from "../lib/goal-discovery/factory";
 import { GenerationError } from "../lib/goal-discovery/generator";
 import { LLMContractGenerator } from "../lib/goal-discovery/llm-generator";
@@ -52,14 +52,14 @@ test("unknown BOSS_GENERATOR value is CONFIG_ERROR", () => {
   );
 });
 
-test("KNOWN_FIXTURE_SIGNATURES covers the three unique fixture ids", () => {
-  const ids = KNOWN_FIXTURE_SIGNATURES.map((signature) => signature.id).sort();
+test("loadKnownFixtureSignatures covers the three unique fixture ids", () => {
+  const ids = loadKnownFixtureSignatures().map((signature) => signature.id).sort();
   assert.deepEqual(ids, [
     "boss-dataset-investigation-demo",
     "boss-literature-reading-demo",
     "boss-waca-se-demo",
   ]);
-  for (const signature of KNOWN_FIXTURE_SIGNATURES) {
+  for (const signature of loadKnownFixtureSignatures()) {
     assert.ok(signature.title.length > 0);
     assert.ok(signature.objective.length > 0);
   }

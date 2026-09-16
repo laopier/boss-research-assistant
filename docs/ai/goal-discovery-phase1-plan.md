@@ -52,10 +52,30 @@ Goal Discovery 是把"模糊意图"转成"有边界的下一步目标"的适配�
 | 步骤 | 状态 |
 | --- | --- |
 | A 源码 + 测试 | ✅ 重建完成，64/64 全绿（原版 86 个，语义覆盖等价） |
-| B 真实模型首调（3 fixture 场景） | ⬜ 待重跑（见 §6 事故） |
-| E 评测跑批（10 对抗样例） | ⬜ 待重跑 |
-| F 集成冒烟（merge + route 接线） | ⬜ 待重做 |
-| G PR | ⬜ 待做 |
+| B 真实模型首调（3 fixture 场景） | ✅ 重跑完成 3/3（`docs/ai/runs/2026-09-16/first-run/`） |
+| E 评测跑批（10 对抗样例） | ✅ 重跑完成 10/10，含 EVAL-10 中间轮双失败披露（`docs/ai/runs/2026-09-16/eval-run/`） |
+| F 集成冒烟（merge + route 接线） | ✅ 2026-09-16 完成，五项全部通过（详见下） |
+| G PR | ⬜ 待推送后发起 |
+
+### F 集成冒烟结果（2026-09-16，`integration/mvp0-ai`）
+
+- **merge**：Web 垂直切片 + AI 源码合入 `integration/mvp0-ai`（f4b7869，三处冲突
+  解决：package.json / tsconfig.json / .gitignore）。
+- **route 接线**：`src/app/api/contracts/generate/route.ts` 调 `getGenerator()`，
+  按 `BOSS_GENERATOR` 返回 `generation: "AI" | "MOCK"`；INPUT_REJECTED→400、
+  CONFIG_ERROR→500 带配置消息、其余→500 通用重试提示，不兜底 fixture。
+- **冒烟五项**（dev server，端口 3100）：
+  1. llm 模式正常目标 → HTTP 200，`generation: "AI"`，真实 DeepSeek 合同
+     （中文、DRAFT/LIVE/revision 1、目标边界清晰）；
+  2. mock 模式正常目标 → HTTP 200，`generation: "MOCK"`，初始态语义正确
+     （criterion 全 UNKNOWN、evidence/blockers/changeHistory 全空）；
+  3. 空目标 → HTTP 400 `INVALID_REQUEST`；
+  4. 501 字符超长目标 → HTTP 400 `INVALID_REQUEST`；
+  5. 页面 HTML 渲染正常（标题/表单/textarea），D3/D4 一并修复（见 §7）。
+- **修复记录**：`factory.ts` 原 `KNOWN_FIXTURE_SIGNATURES` 在模块顶层用
+  `__dirname` 定位 fixture，Turbopack dev server 下解析为 `d:\ROOT` 导致
+  route 模块加载即崩（所有请求 500）。已改为惰性 `loadKnownFixtureSignatures()`
+  （多候选根 + 单文件容错），测试与 runner 同步更新。
 
 ## §6 事故记录（2026-09-16 21:11）
 
@@ -73,9 +93,12 @@ runner 脚本、评测集与真实模型运行工件。恢复措施：远端对�
 ## §7 缺陷附录（当前状态）
 
 - ~~D1 `literature-reading.json` deadline="null"~~ 已在重建提交中修复。
-- D3 `src/app/page.tsx` "模拟数据"徽标硬编码（Web 所有权，待 Web owner 处理）。
-- D4 页面 Boss 状态显示原始枚举值，与 `mvp0-acceptance.md` 中文文案表不一致
-  （Web 所有权）。
+- ~~D3 `src/app/page.tsx` "模拟数据"徽标硬编码~~ 已在 `integration/mvp0-ai` 修复：
+  按 `generation` 条件渲染（AI 生成 / 模拟数据），文案同步更新。
+- ~~D4 页面 Boss 状态显示原始枚举值~~ 已在 `integration/mvp0-ai` 修复：
+  按 `mvp0-acceptance.md` 文案表映射（DRAFT 草稿 / ACTIVE 进行中 / PARTIAL
+  部分完成 / CLEAR 已完成 / BLOCKED 受阻）。D3/D4 属 Web 所有权，改动已在
+  集成分支完成，请 Web owner review。
 - ~~D6 缺 `.env.example`~~ 已补。
 
 ## §8 提交记录

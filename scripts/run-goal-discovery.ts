@@ -16,7 +16,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { BossContractJson } from "../src/lib/goal-discovery/contract-types";
-import { KNOWN_FIXTURE_SIGNATURES } from "../src/lib/goal-discovery/factory";
+import { loadKnownFixtureSignatures } from "../src/lib/goal-discovery/factory";
 import { LLMContractGenerator } from "../src/lib/goal-discovery/llm-generator";
 import { LlmRequest, LlmResponse, LlmTransport } from "../src/lib/goal-discovery/llm-generator";
 import { OpenAICompatibleTransport } from "../src/lib/goal-discovery/llm-generator";
@@ -148,7 +148,7 @@ async function main(): Promise<void> {
     );
     const generator = new LLMContractGenerator({
       transport,
-      validationOptions: { knownFixtureSignatures: KNOWN_FIXTURE_SIGNATURES },
+      validationOptions: { knownFixtureSignatures: loadKnownFixtureSignatures() },
     });
 
     const artifact: CaseArtifact = {
@@ -166,7 +166,7 @@ async function main(): Promise<void> {
       const contract = await generator.generate(testCase.goal);
       artifact.contract = contract;
       const recheck = validateContract(testCase.goal, contract, {
-        knownFixtureSignatures: KNOWN_FIXTURE_SIGNATURES,
+        knownFixtureSignatures: loadKnownFixtureSignatures(),
       });
       artifact.postValidation = {
         outcome: recheck.outcome,

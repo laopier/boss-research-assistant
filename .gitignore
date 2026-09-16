@@ -6,6 +6,8 @@
 # JavaScript / TypeScript
 node_modules/
 .next/
+.next-*/
+tsconfig.tsbuildinfo
 dist/
 build/
 coverage/

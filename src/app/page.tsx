@@ -13,6 +13,14 @@ const statusText = {
   FAIL: "未通过",
 };
 
+const bossStatusText = {
+  DRAFT: "草稿",
+  ACTIVE: "进行中",
+  PARTIAL: "部分完成",
+  CLEAR: "已完成",
+  BLOCKED: "受阻",
+};
+
 export default function Home() {
   const [goal, setGoal] = useState("我想复现 WACA 论文，但不知道从哪里开始");
   const [result, setResult] = useState<GenerateBossContractResponse | null>(null);
@@ -48,7 +56,7 @@ export default function Home() {
         <div className="brand"><span>B</span> Boss 科研助手</div>
         <p className="eyebrow">MVP-0 · Goal-to-Contract Vertical Slice</p>
         <h1>先把模糊目标，变成<br />一个能验收的 Boss。</h1>
-        <p className="intro">告诉 Boss 你想研究什么。当前版本会返回仓库固定 WACA 示例，用来验证产品链路与团队接口。</p>
+        <p className="intro">告诉 Boss 你想研究什么。系统会把目标收敛成一份可验收的 Boss Contract；未配置模型密钥时使用离线模拟生成。</p>
       </header>
 
       <section className="input-panel" aria-labelledby="goal-heading">
@@ -93,14 +101,18 @@ function ContractView({ data }: { data: GenerateBossContractResponse }) {
           <p className="eyebrow">当前 Boss Contract</p>
           <h2>{contract.objective}</h2>
         </div>
-        <span className="mock-badge">模拟数据</span>
+        {data.generation === "AI" ? (
+          <span className="ai-badge">AI 生成</span>
+        ) : (
+          <span className="mock-badge">模拟数据</span>
+        )}
       </div>
 
       <div className="meta-grid">
         <article><span>合同版本</span><strong>Revision {contract.revision}</strong></article>
         <article><span>预计时间</span><strong>{contract.estimatedMinutes} 分钟</strong></article>
         <article><span>协作模式</span><strong>{contract.assistanceMode}</strong></article>
-        <article><span>状态</span><strong>{contract.status}</strong></article>
+        <article><span>状态</span><strong>{bossStatusText[contract.status]}</strong></article>
       </div>
 
       <div className="content-grid">
@@ -117,7 +129,7 @@ function ContractView({ data }: { data: GenerateBossContractResponse }) {
 
         <article className="evidence-card">
           <h3>Evidence Map</h3>
-          <p className="muted">当前展示仓库固定 WACA 示例的验收状态。</p>
+          <p className="muted">每条验收标准的证据要求与当前状态。</p>
           {contract.acceptanceCriteria.map((criterion) => (
             <div className="evidence" key={criterion.id}>
               <span>{criterion.description}</span>

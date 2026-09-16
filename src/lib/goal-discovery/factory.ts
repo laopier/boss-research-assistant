@@ -28,30 +28,69 @@ export interface GeneratorEnv {
   BOSS_MODEL?: string;
 }
 
-function loadFixture(path: string): BossContractJson {
-  return JSON.parse(readFileSync(path, "utf-8")) as BossContractJson;
+/**
+ * Repository-root candidates for locating the demo fixtures.
+ *
+ * `__dirname` is correct under tsx (`src/lib/goal-discovery`), but bundlers
+ * such as Turbopack may rewrite it to a virtual path (e.g. `d:\ROOT`), so we
+ * always fall back to the process working directory.
+ */
+function candidateRepoRoots(): string[] {
+  return [resolve(__dirname, "../../.."), process.cwd()];
 }
 
-const repoRoot = resolve(__dirname, "../../..");
+function loadFixtureIfPresent(root: string, relativePath: string): BossContractJson | null {
+  try {
+    return JSON.parse(readFileSync(resolve(root, relativePath), "utf-8")) as BossContractJson;
+  } catch {
+    return null;
+  }
+}
 
-const wacaSeBossFixture = loadFixture(resolve(repoRoot, "examples/waca-se-boss.json"));
-const wacaAiFixture = loadFixture(resolve(repoRoot, "examples/ai/waca.json"));
-const literatureReadingFixture = loadFixture(resolve(repoRoot, "examples/ai/literature-reading.json"));
-const datasetInvestigationFixture = loadFixture(resolve(repoRoot, "examples/ai/dataset-investigation.json"));
+const FIXTURE_PATHS = [
+  "examples/waca-se-boss.json",
+  "examples/ai/waca.json",
+  "examples/ai/literature-reading.json",
+  "examples/ai/dataset-investigation.json",
+] as const;
+
+let cachedSignatures: readonly FixtureSignature[] | null = null;
 
 /**
  * (id, title, objective) triples of the repository demo fixtures, deduplicated
  * by id — `examples/ai/waca.json` and `examples/waca-se-boss.json` share the
  * id `boss-waca-se-demo`, so the map yields three unique signatures.
+ *
+ * Loaded lazily (never at module evaluation) so that a missing or unreadable
+ * fixture file cannot crash the module graph in a dev server or a bundled
+ * deployment; unreachable fixtures are simply skipped.
  */
-export const KNOWN_FIXTURE_SIGNATURES: readonly FixtureSignature[] = Array.from(
-  new Map(
-    ([wacaSeBossFixture, wacaAiFixture, literatureReadingFixture, datasetInvestigationFixture] as BossContractJson[])
-      .map((doc) => [doc.id, { id: doc.id, title: doc.title, objective: doc.objective } satisfies FixtureSignature]),
-  ).values(),
-);
+export function loadKnownFixtureSignatures(): readonly FixtureSignature[] {
+  if (cachedSignatures !== null) {
+    return cachedSignatures;
+  }
+  const roots = candidateRepoRoots();
+  const docs: BossContractJson[] = [];
+  for (const relativePath of FIXTURE_PATHS) {
+    const doc = roots
+      .map((root) => loadFixtureIfPresent(root, relativePath))
+      .find((candidate): candidate is BossContractJson => candidate !== null);
+    if (doc !== undefined) {
+      docs.push(doc);
+    }
+  }
+  cachedSignatures = Array.from(
+    new Map(
+      docs.map((doc) => [
+        doc.id,
+        { id: doc.id, title: doc.title, objective: doc.objective } satisfies FixtureSignature,
+      ]),
+    ).values(),
+  );
+  return cachedSignatures;
+}
 
-export function getGenerator(env: GeneratorEnv = process.env): ContractGenerator {
+export function getGenerator(env: GeneratorEnv = process.env as unknown as GeneratorEnv): ContractGenerator {
   const mode = (env.BOSS_GENERATOR ?? "mock").trim().toLowerCase();
   if (mode === "mock") {
     return new MockContractGenerator();
@@ -71,7 +110,7 @@ export function getGenerator(env: GeneratorEnv = process.env): ContractGenerator
     });
     return new LLMContractGenerator({
       transport,
-      validationOptions: { knownFixtureSignatures: KNOWN_FIXTURE_SIGNATURES },
+      validationOptions: { knownFixtureSignatures: loadKnownFixtureSignatures() },
     });
   }
   throw new GenerationError("CONFIG_ERROR", `BOSS_GENERATOR must be "mock" or "llm", got "${mode}"`);
