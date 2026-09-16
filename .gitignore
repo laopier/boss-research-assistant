@@ -40,3 +40,6 @@ weights/
 .pnpm-store/
 next-env.d.ts
 .codex-doc-review/
+
+# Local assistant workspace
+.learnbuddy/

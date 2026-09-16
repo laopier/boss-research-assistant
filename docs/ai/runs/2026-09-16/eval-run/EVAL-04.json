@@ -1,0 +1,155 @@
+{
+  "id": "EVAL-04",
+  "goal": "读论文",
+  "expected": "CONTRACT",
+  "intent": "Minimal goal: adapter must still produce a bounded, inspectable contract.",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"读论文\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-read-one-paper-notes\",\"title\":\"选定一篇论文并产出结构化阅读笔记\",\"rawGoal\":\"读论文\",\"objective\":\"在约 120 分钟内选定并精读 1 篇论文，产出一份 Markdown 阅读笔记，其中包含该论文的元信息、研究问题、方法、实验与结论、至少 3 条未解决问题，以及本次未读完部分的记录。\",\"deadline\":null,\"deliverables\":[{\"id\":\"d1-paper-selection\",\"description\":\"一个笔记文件（Markdown 或纯文本），开头记录所选论文的元信息字段：标题、作者、发表年份或发表渠道、获取来源标识（链接、DOI、arXiv 编号或本地文件名之一）。\",\"status\":\"NOT_STARTED\"},{\"id\":\"d2-structured-reading-note\",\"description\":\"同一笔记文件中包含四个小节：研究问题、方法、实验与结果、结论与局限；每节至少 3 条要点，每条要点后可附原文页码或章节号。\",\"status\":\"NOT_STARTED\"},{\"id\":\"d3-open-questions\",\"description\":\"笔记末尾的『未解决问题』清单，至少 3 条，每条是一个可用一句话追问的具体问题（疑问句或待验证命题），而非泛泛感受。\",\"status\":\"NOT_STARTED\"},{\"id\":\"d4-unread-log\",\"description\":\"笔记末尾的『未读/跳过部分』清单，列出本次跳过的章节、图表或参考文献，并各附一句跳过原因与后续是否需要补读。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"ac1\",\"description\":\"笔记文件开头包含所选论文的完整元信息：标题、作者、发表年份或发表渠道、获取来源标识，四项齐全。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ac1-e1\",\"description\":\"笔记文件本身，打开后可看到四类元信息字段均已填写且非空。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac2\",\"description\":\"笔记包含研究问题、方法、实验与结果、结论与局限四个小节，且每节不少于 3 条要点。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ac2-e1\",\"description\":\"笔记文件中四个小节标题及其下条目，可直接计数核对每节条目数。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac3\",\"description\":\"笔记末尾列出至少 3 条未解决问题，每条为可进一步追问的具体问题。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ac3-e1\",\"description\":\"笔记文件中的『未解决问题』清单，条目数与措辞可直接核对。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac4\",\"description\":\"笔记记录本次未读或跳过的部分（章节、图表或参考文献），并各附一句原因。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ac4-e1\",\"description\":\"笔记文件中的『未读/跳过部分』清单，含所跳对象与原因说明。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"选定 1 篇论文并确定其完整元信息\",\"对该论文做一遍结构化精读并写成笔记\",\"产出未解决问题清单与未读部分记录\"],\"outOfScope\":[\"多篇论文的检索、筛选与对比综述\",\"复现论文代码或重跑实验\",\"撰写正式文献综述或投稿级总结\",\"全文逐句翻译或校对\",\"对论文结论做独立验证\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"用户提出的目标原文仅为『读论文』。\",\"目标中未指定具体论文、研究领域、期望产出形式或截止日期。\",\"目标中不包含任何已完成的进度声明。\"],\"unknowns\":[\"要读的具体论文是哪一篇、从哪里获取。\",\"阅读目的（课程作业、选题调研、复现准备或兴趣阅读）。\",\"论文语言与用户可投入的时间预算。\"],\"assumptions\":[\"用户能够自行获取所选论文的全文（PDF 或网页版）。\",\"本次只精读 1 篇论文，不并行处理多篇。\",\"笔记以 Markdown 或纯文本文件保存，可被直接打开查看。\"],\"estimatedMinutes\":120,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 11178
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-read-one-paper-notes",
+    "title": "选定一篇论文并产出结构化阅读笔记",
+    "rawGoal": "读论文",
+    "objective": "在约 120 分钟内选定并精读 1 篇论文，产出一份 Markdown 阅读笔记，其中包含该论文的元信息、研究问题、方法、实验与结论、至少 3 条未解决问题，以及本次未读完部分的记录。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "d1-paper-selection",
+        "description": "一个笔记文件（Markdown 或纯文本），开头记录所选论文的元信息字段：标题、作者、发表年份或发表渠道、获取来源标识（链接、DOI、arXiv 编号或本地文件名之一）。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "d2-structured-reading-note",
+        "description": "同一笔记文件中包含四个小节：研究问题、方法、实验与结果、结论与局限；每节至少 3 条要点，每条要点后可附原文页码或章节号。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "d3-open-questions",
+        "description": "笔记末尾的『未解决问题』清单，至少 3 条，每条是一个可用一句话追问的具体问题（疑问句或待验证命题），而非泛泛感受。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "d4-unread-log",
+        "description": "笔记末尾的『未读/跳过部分』清单，列出本次跳过的章节、图表或参考文献，并各附一句跳过原因与后续是否需要补读。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "ac1",
+        "description": "笔记文件开头包含所选论文的完整元信息：标题、作者、发表年份或发表渠道、获取来源标识，四项齐全。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ac1-e1",
+            "description": "笔记文件本身，打开后可看到四类元信息字段均已填写且非空。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac2",
+        "description": "笔记包含研究问题、方法、实验与结果、结论与局限四个小节，且每节不少于 3 条要点。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ac2-e1",
+            "description": "笔记文件中四个小节标题及其下条目，可直接计数核对每节条目数。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac3",
+        "description": "笔记末尾列出至少 3 条未解决问题，每条为可进一步追问的具体问题。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ac3-e1",
+            "description": "笔记文件中的『未解决问题』清单，条目数与措辞可直接核对。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac4",
+        "description": "笔记记录本次未读或跳过的部分（章节、图表或参考文献），并各附一句原因。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ac4-e1",
+            "description": "笔记文件中的『未读/跳过部分』清单，含所跳对象与原因说明。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "选定 1 篇论文并确定其完整元信息",
+        "对该论文做一遍结构化精读并写成笔记",
+        "产出未解决问题清单与未读部分记录"
+      ],
+      "outOfScope": [
+        "多篇论文的检索、筛选与对比综述",
+        "复现论文代码或重跑实验",
+        "撰写正式文献综述或投稿级总结",
+        "全文逐句翻译或校对",
+        "对论文结论做独立验证"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "用户提出的目标原文仅为『读论文』。",
+      "目标中未指定具体论文、研究领域、期望产出形式或截止日期。",
+      "目标中不包含任何已完成的进度声明。"
+    ],
+    "unknowns": [
+      "要读的具体论文是哪一篇、从哪里获取。",
+      "阅读目的（课程作业、选题调研、复现准备或兴趣阅读）。",
+      "论文语言与用户可投入的时间预算。"
+    ],
+    "assumptions": [
+      "用户能够自行获取所选论文的全文（PDF 或网页版）。",
+      "本次只精读 1 篇论文，不并行处理多篇。",
+      "笔记以 Markdown 或纯文本文件保存，可被直接打开查看。"
+    ],
+    "estimatedMinutes": 120,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 11178
+}

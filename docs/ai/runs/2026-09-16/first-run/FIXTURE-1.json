@@ -1,0 +1,166 @@
+{
+  "id": "FIXTURE-1",
+  "goal": "I want to reproduce WACA, but I do not know where to begin.",
+  "expected": "CONTRACT",
+  "intent": "replay rawGoal of examples/ai/waca.json",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"I want to reproduce WACA, but I do not know where to begin.\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-waca-reproduction-scope\",\"title\":\"Scope a first reproduction checkpoint for WACA\",\"rawGoal\":\"I want to reproduce WACA, but I do not know where to begin.\",\"objective\":\"Produce a one-page scope note and next-action checklist that define a bounded first checkpoint for reproducing WACA, including the source description to rely on, required inputs, expected outputs, and explicit exclusions.\",\"deadline\":null,\"deliverables\":[{\"id\":\"deliv-1\",\"description\":\"A file named waca-reproduction-scope.md containing a one-page scope note with sections for source description, first checkpoint, inputs, outputs, and out-of-scope items.\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-2\",\"description\":\"A file named waca-next-actions.md containing a checklist of at most five concrete next actions for the first reproduction checkpoint.\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"ac-1\",\"description\":\"The file waca-reproduction-scope.md exists and contains separate sections for source description, first checkpoint, inputs, outputs, and out-of-scope items.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-1\",\"description\":\"Inspect waca-reproduction-scope.md for the five named sections.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-2\",\"description\":\"The first checkpoint is a single bounded action with an observable success condition, not a full reproduction.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-2\",\"description\":\"Inspect the first checkpoint section of waca-reproduction-scope.md for one action and one observable success condition.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-3\",\"description\":\"The scope note lists at least one required input and one expected output for the first checkpoint, using placeholders where specifics are unknown and not inventing names beyond WACA.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-3\",\"description\":\"Inspect the inputs and outputs sections of waca-reproduction-scope.md for at least one input and one output.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-4\",\"description\":\"The out-of-scope section names full reproduction, benchmark or performance matching, and unresolved WACA subgoals.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-4\",\"description\":\"Inspect the out-of-scope section of waca-reproduction-scope.md for the three excluded categories.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-5\",\"description\":\"A next-action checklist exists with at most five items.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"er-5\",\"description\":\"Inspect waca-next-actions.md and count the checklist items.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"Defining what reproducing WACA means for a first bounded attempt\",\"Identifying or recording the source description to rely on\",\"Writing the first observable checkpoint, inputs, outputs, and exclusions\",\"Producing a next-action checklist for the first checkpoint\"],\"outOfScope\":[\"Full WACA implementation\",\"Downloading datasets or code\",\"Running experiments or benchmarks\",\"Matching published metrics or performance\",\"Resolving all unknowns about WACA before starting\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"The user wants to reproduce WACA.\",\"The user states they do not know where to begin.\",\"No deadline was provided.\",\"No prior WACA materials, artifacts, or evidence were provided.\"],\"unknowns\":[\"What WACA stands for.\",\"Which source description or release the user intends to reproduce.\",\"Required runtime, dependencies, data, and compute.\",\"What counts as a successful reproduction.\",\"Whether the user has access to any WACA materials.\"],\"assumptions\":[\"WACA is a named system or method with at least one authoritative description.\",\"A one-page scope note is sufficient for this first step.\",\"The user can spend about 60 minutes on this step.\",\"The first checkpoint can be defined before resolving every unknown.\"],\"estimatedMinutes\":60,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 16710
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-waca-reproduction-scope",
+    "title": "Scope a first reproduction checkpoint for WACA",
+    "rawGoal": "I want to reproduce WACA, but I do not know where to begin.",
+    "objective": "Produce a one-page scope note and next-action checklist that define a bounded first checkpoint for reproducing WACA, including the source description to rely on, required inputs, expected outputs, and explicit exclusions.",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "deliv-1",
+        "description": "A file named waca-reproduction-scope.md containing a one-page scope note with sections for source description, first checkpoint, inputs, outputs, and out-of-scope items.",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-2",
+        "description": "A file named waca-next-actions.md containing a checklist of at most five concrete next actions for the first reproduction checkpoint.",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "ac-1",
+        "description": "The file waca-reproduction-scope.md exists and contains separate sections for source description, first checkpoint, inputs, outputs, and out-of-scope items.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-1",
+            "description": "Inspect waca-reproduction-scope.md for the five named sections.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-2",
+        "description": "The first checkpoint is a single bounded action with an observable success condition, not a full reproduction.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-2",
+            "description": "Inspect the first checkpoint section of waca-reproduction-scope.md for one action and one observable success condition.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-3",
+        "description": "The scope note lists at least one required input and one expected output for the first checkpoint, using placeholders where specifics are unknown and not inventing names beyond WACA.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-3",
+            "description": "Inspect the inputs and outputs sections of waca-reproduction-scope.md for at least one input and one output.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-4",
+        "description": "The out-of-scope section names full reproduction, benchmark or performance matching, and unresolved WACA subgoals.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-4",
+            "description": "Inspect the out-of-scope section of waca-reproduction-scope.md for the three excluded categories.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-5",
+        "description": "A next-action checklist exists with at most five items.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "er-5",
+            "description": "Inspect waca-next-actions.md and count the checklist items.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "Defining what reproducing WACA means for a first bounded attempt",
+        "Identifying or recording the source description to rely on",
+        "Writing the first observable checkpoint, inputs, outputs, and exclusions",
+        "Producing a next-action checklist for the first checkpoint"
+      ],
+      "outOfScope": [
+        "Full WACA implementation",
+        "Downloading datasets or code",
+        "Running experiments or benchmarks",
+        "Matching published metrics or performance",
+        "Resolving all unknowns about WACA before starting"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "The user wants to reproduce WACA.",
+      "The user states they do not know where to begin.",
+      "No deadline was provided.",
+      "No prior WACA materials, artifacts, or evidence were provided."
+    ],
+    "unknowns": [
+      "What WACA stands for.",
+      "Which source description or release the user intends to reproduce.",
+      "Required runtime, dependencies, data, and compute.",
+      "What counts as a successful reproduction.",
+      "Whether the user has access to any WACA materials."
+    ],
+    "assumptions": [
+      "WACA is a named system or method with at least one authoritative description.",
+      "A one-page scope note is sufficient for this first step.",
+      "The user can spend about 60 minutes on this step.",
+      "The first checkpoint can be defined before resolving every unknown."
+    ],
+    "estimatedMinutes": 60,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 16715
+}

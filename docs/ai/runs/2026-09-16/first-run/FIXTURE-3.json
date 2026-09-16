@@ -1,0 +1,172 @@
+{
+  "id": "FIXTURE-3",
+  "goal": "我拿到了一个用于 IR-drop 预测的数据集，但不知道它能不能直接用于训练。",
+  "expected": "CONTRACT",
+  "intent": "replay rawGoal of examples/ai/dataset-investigation.json",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"我拿到了一个用于 IR-drop 预测的数据集，但不知道它能不能直接用于训练。\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-ir-drop-dataset-readiness\",\"title\":\"盘点 IR-drop 数据集并判断能否直接用于训练\",\"rawGoal\":\"我拿到了一个用于 IR-drop 预测的数据集，但不知道它能不能直接用于训练。\",\"objective\":\"在约 120 分钟内对这份 IR-drop 数据集完成一次只读盘点：记录其文件构成与样本规模，整理字段/标签清单，找出可见的数据质量问题，并产出一份明确的“能否直接用于训练”的结论及待补齐差距清单。本轮不修改、不训练、不扩充数据。\",\"deadline\":null,\"deliverables\":[{\"id\":\"deliv-inventory\",\"description\":\"数据集盘点笔记：文件/目录清单、文件格式、文件体积、样本（记录）总数，以及对数据来源的原始说明（若有随附文档或 README，注明其内容要点）。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-fields\",\"description\":\"字段说明表：逐字段列出字段名、数据类型、取值示例、单位（若可知），并标注该字段疑似为特征、标签还是元数据/索引。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-quality\",\"description\":\"数据质量问题清单：逐条列出实际观察到的缺失值、重复样本、异常值、取值越界、标签分布不均、字段含义不明等问题，每条附上出现位置或统计数字。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-verdict\",\"description\":\"训练可用性结论文档：明确写出“可直接用于训练 / 需处理后可用于训练 / 暂不可用于训练”的判断，给出支撑理由，并列出若要开始训练仍需补齐或确认的事项清单。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-command-log\",\"description\":\"用于统计样本数、字段与缺失情况的读取命令或脚本片段，以及其运行后的终端输出记录。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"ac-scale\",\"description\":\"数据集的存储位置、文件格式与样本（记录）总数被明确记录，且数字与所列文件一致。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-scale-artifact\",\"description\":\"盘点笔记中包含文件/目录清单、格式说明与样本总数，且这些数字与所列文件对得上。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-fields\",\"description\":\"每个字段的角色（特征 / 标签 / 元数据）与数据类型都有记录，疑似标签的字段被单独指出。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-fields-artifact\",\"description\":\"字段说明表中逐字段给出名称、类型、示例值，并标注疑似特征/标签/元数据。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-quality\",\"description\":\"数据质量问题清单中的每一条都来自实际检查结果，并带有可核对的统计数字或出现位置。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-quality-artifact\",\"description\":\"质量问题清单中每条问题附有统计数字（如缺失条数、重复条数）或具体位置。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"ev-quality-log\",\"description\":\"终端输出记录中显示抽样统计结果（样本数、字段数、缺失或重复计数等），可佐证问题清单。\",\"acceptedSourceTypes\":[\"LOG_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-verdict\",\"description\":\"结论文档明确给出一个训练可用性判断，并逐条写出支撑理由与仍需补齐的事项。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-verdict-artifact\",\"description\":\"结论文档中包含一句明确的可用性判断，以及对应理由和待补齐事项清单。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"只读盘点该 IR-drop 数据集的目录结构、文件格式与样本规模\",\"整理字段清单并标注疑似特征/标签/元数据\",\"登记实际观察到的数据质量问题\",\"给出训练可用性结论与待补齐差距清单\",\"记录读取命令/脚本及其输出\"],\"outOfScope\":[\"训练任何 IR-drop 预测模型或跑基线实验\",\"特征工程、数据清洗与数据修复\",\"下载或补充额外数据集\",\"IR-drop 物理仿真或 EDA 工具流程搭建\",\"模型精度评估、调参与论文写作\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"用户已获得一份自称用于 IR-drop 预测的数据集\",\"用户尚未确认该数据集的结构与训练适配性\"],\"unknowns\":[\"数据集的来源与生成方式\",\"文件格式、体积与样本数量\",\"是否包含可用的标签字段\",\"各字段的物理含义与单位\",\"是否存在缺失值、重复样本或异常值\",\"目标训练任务的输入形式与预测目标\"],\"assumptions\":[\"数据集已可在本地访问且允许读取元数据\",\"本轮只做评估，不对数据做任何写入或修改\",\"目标任务是监督学习，因而需要成对的输入与标签\"],\"estimatedMinutes\":120,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 9586
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-ir-drop-dataset-readiness",
+    "title": "盘点 IR-drop 数据集并判断能否直接用于训练",
+    "rawGoal": "我拿到了一个用于 IR-drop 预测的数据集，但不知道它能不能直接用于训练。",
+    "objective": "在约 120 分钟内对这份 IR-drop 数据集完成一次只读盘点：记录其文件构成与样本规模，整理字段/标签清单，找出可见的数据质量问题，并产出一份明确的“能否直接用于训练”的结论及待补齐差距清单。本轮不修改、不训练、不扩充数据。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "deliv-inventory",
+        "description": "数据集盘点笔记：文件/目录清单、文件格式、文件体积、样本（记录）总数，以及对数据来源的原始说明（若有随附文档或 README，注明其内容要点）。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-fields",
+        "description": "字段说明表：逐字段列出字段名、数据类型、取值示例、单位（若可知），并标注该字段疑似为特征、标签还是元数据/索引。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-quality",
+        "description": "数据质量问题清单：逐条列出实际观察到的缺失值、重复样本、异常值、取值越界、标签分布不均、字段含义不明等问题，每条附上出现位置或统计数字。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-verdict",
+        "description": "训练可用性结论文档：明确写出“可直接用于训练 / 需处理后可用于训练 / 暂不可用于训练”的判断，给出支撑理由，并列出若要开始训练仍需补齐或确认的事项清单。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-command-log",
+        "description": "用于统计样本数、字段与缺失情况的读取命令或脚本片段，以及其运行后的终端输出记录。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "ac-scale",
+        "description": "数据集的存储位置、文件格式与样本（记录）总数被明确记录，且数字与所列文件一致。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-scale-artifact",
+            "description": "盘点笔记中包含文件/目录清单、格式说明与样本总数，且这些数字与所列文件对得上。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-fields",
+        "description": "每个字段的角色（特征 / 标签 / 元数据）与数据类型都有记录，疑似标签的字段被单独指出。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-fields-artifact",
+            "description": "字段说明表中逐字段给出名称、类型、示例值，并标注疑似特征/标签/元数据。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-quality",
+        "description": "数据质量问题清单中的每一条都来自实际检查结果，并带有可核对的统计数字或出现位置。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-quality-artifact",
+            "description": "质量问题清单中每条问题附有统计数字（如缺失条数、重复条数）或具体位置。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "ev-quality-log",
+            "description": "终端输出记录中显示抽样统计结果（样本数、字段数、缺失或重复计数等），可佐证问题清单。",
+            "acceptedSourceTypes": [
+              "LOG_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-verdict",
+        "description": "结论文档明确给出一个训练可用性判断，并逐条写出支撑理由与仍需补齐的事项。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-verdict-artifact",
+            "description": "结论文档中包含一句明确的可用性判断，以及对应理由和待补齐事项清单。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "只读盘点该 IR-drop 数据集的目录结构、文件格式与样本规模",
+        "整理字段清单并标注疑似特征/标签/元数据",
+        "登记实际观察到的数据质量问题",
+        "给出训练可用性结论与待补齐差距清单",
+        "记录读取命令/脚本及其输出"
+      ],
+      "outOfScope": [
+        "训练任何 IR-drop 预测模型或跑基线实验",
+        "特征工程、数据清洗与数据修复",
+        "下载或补充额外数据集",
+        "IR-drop 物理仿真或 EDA 工具流程搭建",
+        "模型精度评估、调参与论文写作"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "用户已获得一份自称用于 IR-drop 预测的数据集",
+      "用户尚未确认该数据集的结构与训练适配性"
+    ],
+    "unknowns": [
+      "数据集的来源与生成方式",
+      "文件格式、体积与样本数量",
+      "是否包含可用的标签字段",
+      "各字段的物理含义与单位",
+      "是否存在缺失值、重复样本或异常值",
+      "目标训练任务的输入形式与预测目标"
+    ],
+    "assumptions": [
+      "数据集已可在本地访问且允许读取元数据",
+      "本轮只做评估，不对数据做任何写入或修改",
+      "目标任务是监督学习，因而需要成对的输入与标签"
+    ],
+    "estimatedMinutes": 120,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 9586
+}

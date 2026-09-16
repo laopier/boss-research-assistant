@@ -1,0 +1,185 @@
+{
+  "id": "EVAL-06",
+  "goal": "I want to reproduce the WACA-SE paper but I have no idea where to start.",
+  "expected": "CONTRACT",
+  "intent": "Language follow: contract fields must be written in the same language as the goal (English here).",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"I want to reproduce the WACA-SE paper but I have no idea where to start.\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-waca-se-reproduction-scoping\",\"title\":\"Scope the WACA-SE reproduction: identify the paper and extract its requirements\",\"rawGoal\":\"I want to reproduce the WACA-SE paper but I have no idea where to start.\",\"objective\":\"Within one working session, locate and open the paper the user calls WACA-SE, record its exact bibliographic identity, and extract from the paper itself a written requirements list (artifacts/code, data, environment, evaluation metrics, procedure) together with a gap list marking what is available, missing, or unknown, and an ordered list of the next 3-5 concrete actions. No code is run and nothing is downloaded in this step.\",\"deadline\":null,\"deliverables\":[{\"id\":\"del-paper-identity\",\"description\":\"A file paper-identification.md recording the exact title, authors, publication venue, year, and the source the user actually opened (link, DOI, database, or copy obtained from an advisor) for the paper referred to as WACA-SE.\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-requirements\",\"description\":\"A file reproduction-requirements.md with one section per category — code/artifact, data, environment/hardware, evaluation metrics, and procedure — where each section lists the concrete items the paper names, each item followed by a page or section pointer.\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-gap-list\",\"description\":\"A file gap-list.md containing one row per extracted requirement, with columns: requirement, status (available / missing / unknown), and next lookup location.\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-next-steps\",\"description\":\"A file next-step-plan.md listing 3 to 5 ordered next actions, each stating what to do and the observable output the action produces.\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"ac-paper-identified\",\"description\":\"paper-identification.md states the exact title, authors, venue, and year of the paper the user calls WACA-SE, and names the source that was opened to obtain it.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-paper-identified-1\",\"description\":\"The file paper-identification.md, inspected, contains all four bibliographic fields filled in and a named source, with no field left as a placeholder.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-requirements-extracted\",\"description\":\"reproduction-requirements.md has one populated section for each of the five categories (code/artifact, data, environment/hardware, evaluation metrics, procedure), and every item listed carries a page or section pointer into the paper.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-requirements-extracted-1\",\"description\":\"The file reproduction-requirements.md, inspected, shows all five category headings present and non-empty.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"ev-requirements-extracted-2\",\"description\":\"For each listed item in reproduction-requirements.md, a page or section pointer appears beside it in the same line or row.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-gap-list-complete\",\"description\":\"gap-list.md has one row per extracted requirement, and every row has a status label drawn only from available / missing / unknown plus a concrete next lookup location.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-gap-list-complete-1\",\"description\":\"The file gap-list.md, inspected, shows a status column whose values are limited to the three allowed labels and no empty cells in the status or location columns.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-next-steps-actionable\",\"description\":\"next-step-plan.md contains between 3 and 5 ordered actions, each written as an instruction and each naming the observable output it produces.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-next-steps-actionable-1\",\"description\":\"The file next-step-plan.md, inspected, shows an ordered list whose length is between 3 and 5 and where each entry ends with a named output artifact or observable result.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-no-invented-names\",\"description\":\"Every repository, dataset, model, or tool name appearing in the three notes also appears in the paper text, and each such name is accompanied by a pointer to where it appears in the paper.\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-no-invented-names-1\",\"description\":\"The three notes, inspected, show a paper pointer next to every external name used, and no name that lacks such a pointer.\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"Finding and opening the paper the user calls WACA-SE\",\"Recording its bibliographic identity and the source used\",\"Extracting a written, pointer-backed list of reproduction requirements from the paper text\",\"Marking each requirement as available, missing, or unknown\",\"Producing an ordered list of next actions\"],\"outOfScope\":[\"Running, installing, or configuring any code\",\"Downloading datasets, models, or repositories\",\"Re-implementing or training anything from the paper\",\"Attempting to match the paper's reported numbers\",\"Writing the final reproduction report or benchmark comparison\",\"Contacting the authors\",\"Multi-week execution planning beyond the next 3-5 actions\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"The user states they want to reproduce the paper they call \\\"WACA-SE\\\".\",\"The user states they have no idea where to start, so no reproduction work has been scoped yet.\",\"The existence, exact title, and venue of a paper called WACA-SE are asserted by the user and are not yet verified in this step.\"],\"unknowns\":[\"The exact title, authors, venue, and year of the paper called WACA-SE\",\"Whether the paper ships public code, a model, or a dataset\",\"Whether the datasets and compute the paper used are reachable by the user\",\"Which numbers or figures the user would count as a successful reproduction\",\"The user's available time budget beyond this session and their machine's capability\"],\"assumptions\":[\"\\\"WACA-SE\\\" refers to a single identifiable paper the user can access.\",\"The paper is readable in a language the user can work with.\",\"This first session fits in roughly two focused hours.\"],\"estimatedMinutes\":120,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 13992
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-waca-se-reproduction-scoping",
+    "title": "Scope the WACA-SE reproduction: identify the paper and extract its requirements",
+    "rawGoal": "I want to reproduce the WACA-SE paper but I have no idea where to start.",
+    "objective": "Within one working session, locate and open the paper the user calls WACA-SE, record its exact bibliographic identity, and extract from the paper itself a written requirements list (artifacts/code, data, environment, evaluation metrics, procedure) together with a gap list marking what is available, missing, or unknown, and an ordered list of the next 3-5 concrete actions. No code is run and nothing is downloaded in this step.",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "del-paper-identity",
+        "description": "A file paper-identification.md recording the exact title, authors, publication venue, year, and the source the user actually opened (link, DOI, database, or copy obtained from an advisor) for the paper referred to as WACA-SE.",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-requirements",
+        "description": "A file reproduction-requirements.md with one section per category — code/artifact, data, environment/hardware, evaluation metrics, and procedure — where each section lists the concrete items the paper names, each item followed by a page or section pointer.",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-gap-list",
+        "description": "A file gap-list.md containing one row per extracted requirement, with columns: requirement, status (available / missing / unknown), and next lookup location.",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-next-steps",
+        "description": "A file next-step-plan.md listing 3 to 5 ordered next actions, each stating what to do and the observable output the action produces.",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "ac-paper-identified",
+        "description": "paper-identification.md states the exact title, authors, venue, and year of the paper the user calls WACA-SE, and names the source that was opened to obtain it.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-paper-identified-1",
+            "description": "The file paper-identification.md, inspected, contains all four bibliographic fields filled in and a named source, with no field left as a placeholder.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-requirements-extracted",
+        "description": "reproduction-requirements.md has one populated section for each of the five categories (code/artifact, data, environment/hardware, evaluation metrics, procedure), and every item listed carries a page or section pointer into the paper.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-requirements-extracted-1",
+            "description": "The file reproduction-requirements.md, inspected, shows all five category headings present and non-empty.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "ev-requirements-extracted-2",
+            "description": "For each listed item in reproduction-requirements.md, a page or section pointer appears beside it in the same line or row.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-gap-list-complete",
+        "description": "gap-list.md has one row per extracted requirement, and every row has a status label drawn only from available / missing / unknown plus a concrete next lookup location.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-gap-list-complete-1",
+            "description": "The file gap-list.md, inspected, shows a status column whose values are limited to the three allowed labels and no empty cells in the status or location columns.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-next-steps-actionable",
+        "description": "next-step-plan.md contains between 3 and 5 ordered actions, each written as an instruction and each naming the observable output it produces.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-next-steps-actionable-1",
+            "description": "The file next-step-plan.md, inspected, shows an ordered list whose length is between 3 and 5 and where each entry ends with a named output artifact or observable result.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-no-invented-names",
+        "description": "Every repository, dataset, model, or tool name appearing in the three notes also appears in the paper text, and each such name is accompanied by a pointer to where it appears in the paper.",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-no-invented-names-1",
+            "description": "The three notes, inspected, show a paper pointer next to every external name used, and no name that lacks such a pointer.",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "Finding and opening the paper the user calls WACA-SE",
+        "Recording its bibliographic identity and the source used",
+        "Extracting a written, pointer-backed list of reproduction requirements from the paper text",
+        "Marking each requirement as available, missing, or unknown",
+        "Producing an ordered list of next actions"
+      ],
+      "outOfScope": [
+        "Running, installing, or configuring any code",
+        "Downloading datasets, models, or repositories",
+        "Re-implementing or training anything from the paper",
+        "Attempting to match the paper's reported numbers",
+        "Writing the final reproduction report or benchmark comparison",
+        "Contacting the authors",
+        "Multi-week execution planning beyond the next 3-5 actions"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "The user states they want to reproduce the paper they call \"WACA-SE\".",
+      "The user states they have no idea where to start, so no reproduction work has been scoped yet.",
+      "The existence, exact title, and venue of a paper called WACA-SE are asserted by the user and are not yet verified in this step."
+    ],
+    "unknowns": [
+      "The exact title, authors, venue, and year of the paper called WACA-SE",
+      "Whether the paper ships public code, a model, or a dataset",
+      "Whether the datasets and compute the paper used are reachable by the user",
+      "Which numbers or figures the user would count as a successful reproduction",
+      "The user's available time budget beyond this session and their machine's capability"
+    ],
+    "assumptions": [
+      "\"WACA-SE\" refers to a single identifiable paper the user can access.",
+      "The paper is readable in a language the user can work with.",
+      "This first session fits in roughly two focused hours."
+    ],
+    "estimatedMinutes": 120,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 13992
+}

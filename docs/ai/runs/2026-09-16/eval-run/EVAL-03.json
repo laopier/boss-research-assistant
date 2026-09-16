@@ -1,0 +1,167 @@
+{
+  "id": "EVAL-03",
+  "goal": "我想彻底理解 IR drop 到底是什么，对芯片设计有什么用。",
+  "expected": "CONTRACT",
+  "intent": "Mental-state goal: deliverables must be observable artifacts (notes, diagrams), not understanding itself.",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"我想彻底理解 IR drop 到底是什么，对芯片设计有什么用。\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-ir-drop-foundations\",\"title\":\"写出 IR drop 入门笔记：定义、一个手算算例、三条设计影响与自测题\",\"rawGoal\":\"我想彻底理解 IR drop 到底是什么，对芯片设计有什么用。\",\"objective\":\"在一个工作时段内产出一份中文笔记：用自己的话说明 IR drop 的含义（电流流过有电阻的供电路径时产生的电压下降），给出 1 个可复算的手算算例，列出至少 3 条 IR drop 对芯片设计决策/判断的具体影响，并配 5 道自测题与作答；本次不追求覆盖 IR drop 的完整分析方法与工具流程。\",\"deadline\":null,\"deliverables\":[{\"id\":\"del-note\",\"description\":\"一份中文笔记文件（Markdown 或纯文本），含：(a) 用自己语言写的一段 IR drop 定义，明确指出电流、电阻/阻抗、电压下降三者的因果关系；(b) 一段说明它发生在芯片的哪条路径上（从供电端到片上器件）。\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-calc\",\"description\":\"笔记中的一个手算算例：给出具体的电流值与电阻值，逐步算出压降结果，写明所用关系式与单位，使他人可以照着数字复算一遍并得到同样结果。\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-impact\",\"description\":\"一份“对芯片设计有什么用”的清单，至少 3 条，每条写明：涉及哪个设计环节或哪类设计决策 + 如果忽略该压降会出现什么后果。三条内容互不重复。\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-selftest\",\"description\":\"5 道自测题及自己的书面作答，其中至少 1 题针对一个初学者常见的误解并给出纠正；题目与作答在同一文件中可被逐条阅读。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"ac-definition\",\"description\":\"笔记中的定义包含电流、电阻/阻抗、由此引起的电压下降三个要素，且表述为作者自己的说法而非直接复制粘贴的整段外部文字。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-def-artifact\",\"description\":\"笔记文件开头定义段落的原文，可被逐句阅读并检查三个要素是否出现。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-calc\",\"description\":\"算例数字自洽：给出的电流值、电阻值与算出的压降满足 V = I × R（允许四舍五入误差），且中间步骤完整到可被他人复算。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-calc-artifact\",\"description\":\"笔记中算例的输入数值、计算步骤与结果原文。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"ev-calc-recompute\",\"description\":\"复算记录：按笔记给出的数值重新算一次得到同一结果的说明（可以写在文件末尾，也可以是复算过程的记录）。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\",\"USER_REPORTED\"],\"minimumCount\":1}]},{\"id\":\"ac-impact\",\"description\":\"影响清单至少 3 条，每条同时写明“涉及的设计环节/决策”和“忽略后的后果”，且 3 条之间没有实质重复。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-impact-artifact\",\"description\":\"清单原文，可逐条核对其是否同时包含环节与后果两栏信息。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-selftest\",\"description\":\"自测题不少于 5 题且每题都有书面作答；其中至少 1 题指出一个初学者常见误解并给出纠正后的说法。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-selftest-artifact\",\"description\":\"自测题与作答的原文，可逐题检查题目数量、是否作答、以及是否存在误解纠正题。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"IR drop 的物理含义：电流在经过电阻的供电路径上产生电压下降\",\"该压降发生在从供电端到片上器件的哪条路径上\",\"一个可复算的手算算例\",\"至少 3 条 IR drop 对芯片设计决策或判断的具体影响\",\"用自测题检验笔记中的结论能否被自己复述\"],\"outOfScope\":[\"任何 EDA 工具的实际操作、安装或运行\",\"真实工艺库、版图或芯片数据的分析与测量\",\"静态与动态 IR drop 的完整分析方法学、签核流程与判定限值\",\"电源完整性的其他子课题及电源网络的详细设计方法\",\"检索、筛选或精读具体论文、教材与标准文档\",\"任何仿真、脚本或代码的执行\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"目标语言为中文。\",\"用户自述对 IR drop 尚无成形理解，希望同时弄清“是什么”和“对芯片设计有什么用”。\",\"“彻底理解”是用户的表述，不是一个可验收的完成标准，因此本次只验收具体产出物。\"],\"unknowns\":[\"用户已有的电路与半导体基础程度（是否熟悉欧姆定律、延迟对供电电压的敏感性）。\",\"用户的方向偏数字实现、模拟还是系统，因而“对设计有什么用”应重点讲哪一块。\",\"用户偏好的产出形式（文字笔记、图示或口头讲解）与可投入的连续时间。\"],\"assumptions\":[\"假设用户具备电压、电流、电阻的最基本常识；若不成立，需在笔记开头补一小段最小背景。\",\"假设本次以中文文字笔记加算例即可满足，不需要绘图工具或仿真环境。\",\"假设“对芯片设计有什么用”主要指对设计决策与签核判断的影响，而非某个具体工具的用法。\"],\"estimatedMinutes\":90,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 15757
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-ir-drop-foundations",
+    "title": "写出 IR drop 入门笔记：定义、一个手算算例、三条设计影响与自测题",
+    "rawGoal": "我想彻底理解 IR drop 到底是什么，对芯片设计有什么用。",
+    "objective": "在一个工作时段内产出一份中文笔记：用自己的话说明 IR drop 的含义（电流流过有电阻的供电路径时产生的电压下降），给出 1 个可复算的手算算例，列出至少 3 条 IR drop 对芯片设计决策/判断的具体影响，并配 5 道自测题与作答；本次不追求覆盖 IR drop 的完整分析方法与工具流程。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "del-note",
+        "description": "一份中文笔记文件（Markdown 或纯文本），含：(a) 用自己语言写的一段 IR drop 定义，明确指出电流、电阻/阻抗、电压下降三者的因果关系；(b) 一段说明它发生在芯片的哪条路径上（从供电端到片上器件）。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-calc",
+        "description": "笔记中的一个手算算例：给出具体的电流值与电阻值，逐步算出压降结果，写明所用关系式与单位，使他人可以照着数字复算一遍并得到同样结果。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-impact",
+        "description": "一份“对芯片设计有什么用”的清单，至少 3 条，每条写明：涉及哪个设计环节或哪类设计决策 + 如果忽略该压降会出现什么后果。三条内容互不重复。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-selftest",
+        "description": "5 道自测题及自己的书面作答，其中至少 1 题针对一个初学者常见的误解并给出纠正；题目与作答在同一文件中可被逐条阅读。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "ac-definition",
+        "description": "笔记中的定义包含电流、电阻/阻抗、由此引起的电压下降三个要素，且表述为作者自己的说法而非直接复制粘贴的整段外部文字。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-def-artifact",
+            "description": "笔记文件开头定义段落的原文，可被逐句阅读并检查三个要素是否出现。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-calc",
+        "description": "算例数字自洽：给出的电流值、电阻值与算出的压降满足 V = I × R（允许四舍五入误差），且中间步骤完整到可被他人复算。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-calc-artifact",
+            "description": "笔记中算例的输入数值、计算步骤与结果原文。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "ev-calc-recompute",
+            "description": "复算记录：按笔记给出的数值重新算一次得到同一结果的说明（可以写在文件末尾，也可以是复算过程的记录）。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED",
+              "USER_REPORTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-impact",
+        "description": "影响清单至少 3 条，每条同时写明“涉及的设计环节/决策”和“忽略后的后果”，且 3 条之间没有实质重复。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-impact-artifact",
+            "description": "清单原文，可逐条核对其是否同时包含环节与后果两栏信息。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-selftest",
+        "description": "自测题不少于 5 题且每题都有书面作答；其中至少 1 题指出一个初学者常见误解并给出纠正后的说法。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-selftest-artifact",
+            "description": "自测题与作答的原文，可逐题检查题目数量、是否作答、以及是否存在误解纠正题。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "IR drop 的物理含义：电流在经过电阻的供电路径上产生电压下降",
+        "该压降发生在从供电端到片上器件的哪条路径上",
+        "一个可复算的手算算例",
+        "至少 3 条 IR drop 对芯片设计决策或判断的具体影响",
+        "用自测题检验笔记中的结论能否被自己复述"
+      ],
+      "outOfScope": [
+        "任何 EDA 工具的实际操作、安装或运行",
+        "真实工艺库、版图或芯片数据的分析与测量",
+        "静态与动态 IR drop 的完整分析方法学、签核流程与判定限值",
+        "电源完整性的其他子课题及电源网络的详细设计方法",
+        "检索、筛选或精读具体论文、教材与标准文档",
+        "任何仿真、脚本或代码的执行"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "目标语言为中文。",
+      "用户自述对 IR drop 尚无成形理解，希望同时弄清“是什么”和“对芯片设计有什么用”。",
+      "“彻底理解”是用户的表述，不是一个可验收的完成标准，因此本次只验收具体产出物。"
+    ],
+    "unknowns": [
+      "用户已有的电路与半导体基础程度（是否熟悉欧姆定律、延迟对供电电压的敏感性）。",
+      "用户的方向偏数字实现、模拟还是系统，因而“对设计有什么用”应重点讲哪一块。",
+      "用户偏好的产出形式（文字笔记、图示或口头讲解）与可投入的连续时间。"
+    ],
+    "assumptions": [
+      "假设用户具备电压、电流、电阻的最基本常识；若不成立，需在笔记开头补一小段最小背景。",
+      "假设本次以中文文字笔记加算例即可满足，不需要绘图工具或仿真环境。",
+      "假设“对芯片设计有什么用”主要指对设计决策与签核判断的影响，而非某个具体工具的用法。"
+    ],
+    "estimatedMinutes": 90,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 15758
+}

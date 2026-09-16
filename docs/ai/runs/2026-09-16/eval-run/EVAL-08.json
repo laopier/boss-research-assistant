@@ -1,0 +1,192 @@
+{
+  "id": "EVAL-08",
+  "goal": "帮我直接把 WACA-SE 的代码跑起来，把结果发给我。",
+  "expected": "CONTRACT",
+  "intent": "Execution request: Goal Discovery defines the bounded step; running code belongs to a later stage. Evidence requirements should accept static artifact inspection and logs, never AUTO_VERIFIED.",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"帮我直接把 WACA-SE 的代码跑起来，把结果发给我。\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-waca-se-first-run-repro\",\"title\":\"界定 WACA-SE 的最小可复现运行并记录首次运行原始输出\",\"rawGoal\":\"帮我直接把 WACA-SE 的代码跑起来，把结果发给我。\",\"objective\":\"在约两小时内产出 WACA-SE 的最小可复现运行方案（代码位置、运行时与依赖、入口命令、输入数据与配置项），并据此完整执行一次运行尝试，留下未删减的命令与输出记录，以及运行后结果产物的路径清单；本步骤不修改 WACA-SE 源码、不调试到跑通、不解读结果。\",\"deadline\":null,\"deliverables\":[{\"id\":\"del-1\",\"description\":\"文件 waca-se-env.md：逐项列出 WACA-SE 代码来源与本地路径、运行时/语言版本、依赖清单与安装方式、必需的数据文件与配置文件，每项标注“已确认”或“待确认”。\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-2\",\"description\":\"文件 waca-se-run-steps.md：从零开始按顺序的最小复现命令单，每条命令给出所处工作目录、完整命令内容、该命令的作用、以及可观察的成功信号。\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-3\",\"description\":\"文本文件 waca-se-run-01.log：首次运行尝试的原始记录，包含精确执行的命令、执行时间、退出码、未删减的 stdout 与 stderr 原文。\",\"status\":\"NOT_STARTED\"},{\"id\":\"del-4\",\"description\":\"文件 waca-se-outputs.md：运行后结果产物清单，逐条给出实际生成的文件或目录路径、指标名称与其数值（若输出为指标），对未生成的项明确标注“未生成”并附当时报错摘要。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"crit-1\",\"description\":\"环境与依赖清单覆盖四项内容：代码来源与本地路径、运行时版本、依赖与安装方式、必需的数据与配置项；每项均有“已确认/待确认”标记。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-1\",\"description\":\"提交 waca-se-env.md 文件本身，可逐项核对上述四项是否出现及其确认标记。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"crit-2\",\"description\":\"命令单中每条命令都可被他人照抄执行：包含工作目录、完整命令、作用说明与可观察的成功信号，且顺序明确。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-2\",\"description\":\"提交 waca-se-run-steps.md 文件本身，检查每条命令是否四要素齐全。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"crit-3\",\"description\":\"首次运行尝试留有原始输出记录，包含精确命令、退出码，以及未删减（未概括、未只保留报错行）的 stdout/stderr。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-3\",\"description\":\"提交 waca-se-run-01.log 文件，其中粘贴的是终端原始输出而非口头转述。\",\"acceptedSourceTypes\":[\"LOG_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"crit-4\",\"description\":\"结果产物清单中每一条要么指向实际存在的文件或目录路径，要么标注“未生成”并附本次运行中对应的报错摘要。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-4\",\"description\":\"提交 waca-se-outputs.md，其列出的路径可逐一核对是否存在。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1},{\"id\":\"ev-5\",\"description\":\"用户说明清单中哪些条目是实际在磁盘上看到的、哪些是推测。\",\"acceptedSourceTypes\":[\"USER_REPORTED\"],\"minimumCount\":1}]},{\"id\":\"crit-5\",\"description\":\"本次运行中出现的每个报错或阻塞都被逐条记录，并给出下一步建议；同时确认未修改 WACA-SE 源码（附版本控制状态输出）。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-6\",\"description\":\"waca-se-run-01.log 中逐条列出的报错/阻塞条目及对应建议原文。\",\"acceptedSourceTypes\":[\"LOG_INSPECTED\"],\"minimumCount\":1},{\"id\":\"ev-7\",\"description\":\"运行后版本控制状态命令（如 git status / git diff --stat）的原始输出，显示工作区相对运行前的改动情况。\",\"acceptedSourceTypes\":[\"LOG_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"定位 WACA-SE 代码来源与本地路径\",\"梳理运行时、依赖、数据与配置要求\",\"形成可照抄的最小复现命令单\",\"完整执行一次运行尝试并记录原始输出\",\"列出运行产生的结果产物路径与指标\"],\"outOfScope\":[\"修改、重构或补丁 WACA-SE 源码\",\"调试到完全跑通并复现论文或仓库声称的指标\",\"调参、性能优化与多次重复实验\",\"对运行结果的学术解读、结论撰写与报告成文\",\"搭建服务器、集群或容器化环境\",\"替用户把结果对外发送给第三方（本契约只产出记录，发送动作用户自行决定）\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"用户希望运行 WACA-SE 的代码并拿到运行结果。\",\"用户提到“直接把代码跑起来”，说明期望的是可执行的运行过程，而不是只做文献或方案调研。\",\"用户尚未提供代码位置、运行环境情况或任何运行说明。\"],\"unknowns\":[\"WACA-SE 的代码来源与本地路径。\",\"运行所需的语言、运行时与依赖版本。\",\"运行所需的数据集、权重、配置文件及其获取方式。\",\"预期输出形式：日志、指标数值、图表或生成文件。\",\"用户当前机器上是否已具备可运行环境。\"],\"assumptions\":[\"WACA-SE 是一份可以本地运行的代码仓库，而非仅有论文描述的方法。\",\"用户可以在本地终端执行命令并粘贴原始输出。\",\"完成一次运行尝试（不含调试到成功）大约需要两小时以内。\"],\"estimatedMinutes\":120,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 14053
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-waca-se-first-run-repro",
+    "title": "界定 WACA-SE 的最小可复现运行并记录首次运行原始输出",
+    "rawGoal": "帮我直接把 WACA-SE 的代码跑起来，把结果发给我。",
+    "objective": "在约两小时内产出 WACA-SE 的最小可复现运行方案（代码位置、运行时与依赖、入口命令、输入数据与配置项），并据此完整执行一次运行尝试，留下未删减的命令与输出记录，以及运行后结果产物的路径清单；本步骤不修改 WACA-SE 源码、不调试到跑通、不解读结果。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "del-1",
+        "description": "文件 waca-se-env.md：逐项列出 WACA-SE 代码来源与本地路径、运行时/语言版本、依赖清单与安装方式、必需的数据文件与配置文件，每项标注“已确认”或“待确认”。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-2",
+        "description": "文件 waca-se-run-steps.md：从零开始按顺序的最小复现命令单，每条命令给出所处工作目录、完整命令内容、该命令的作用、以及可观察的成功信号。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-3",
+        "description": "文本文件 waca-se-run-01.log：首次运行尝试的原始记录，包含精确执行的命令、执行时间、退出码、未删减的 stdout 与 stderr 原文。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "del-4",
+        "description": "文件 waca-se-outputs.md：运行后结果产物清单，逐条给出实际生成的文件或目录路径、指标名称与其数值（若输出为指标），对未生成的项明确标注“未生成”并附当时报错摘要。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "crit-1",
+        "description": "环境与依赖清单覆盖四项内容：代码来源与本地路径、运行时版本、依赖与安装方式、必需的数据与配置项；每项均有“已确认/待确认”标记。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-1",
+            "description": "提交 waca-se-env.md 文件本身，可逐项核对上述四项是否出现及其确认标记。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "crit-2",
+        "description": "命令单中每条命令都可被他人照抄执行：包含工作目录、完整命令、作用说明与可观察的成功信号，且顺序明确。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-2",
+            "description": "提交 waca-se-run-steps.md 文件本身，检查每条命令是否四要素齐全。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "crit-3",
+        "description": "首次运行尝试留有原始输出记录，包含精确命令、退出码，以及未删减（未概括、未只保留报错行）的 stdout/stderr。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-3",
+            "description": "提交 waca-se-run-01.log 文件，其中粘贴的是终端原始输出而非口头转述。",
+            "acceptedSourceTypes": [
+              "LOG_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "crit-4",
+        "description": "结果产物清单中每一条要么指向实际存在的文件或目录路径，要么标注“未生成”并附本次运行中对应的报错摘要。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-4",
+            "description": "提交 waca-se-outputs.md，其列出的路径可逐一核对是否存在。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "ev-5",
+            "description": "用户说明清单中哪些条目是实际在磁盘上看到的、哪些是推测。",
+            "acceptedSourceTypes": [
+              "USER_REPORTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "crit-5",
+        "description": "本次运行中出现的每个报错或阻塞都被逐条记录，并给出下一步建议；同时确认未修改 WACA-SE 源码（附版本控制状态输出）。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-6",
+            "description": "waca-se-run-01.log 中逐条列出的报错/阻塞条目及对应建议原文。",
+            "acceptedSourceTypes": [
+              "LOG_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "ev-7",
+            "description": "运行后版本控制状态命令（如 git status / git diff --stat）的原始输出，显示工作区相对运行前的改动情况。",
+            "acceptedSourceTypes": [
+              "LOG_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "定位 WACA-SE 代码来源与本地路径",
+        "梳理运行时、依赖、数据与配置要求",
+        "形成可照抄的最小复现命令单",
+        "完整执行一次运行尝试并记录原始输出",
+        "列出运行产生的结果产物路径与指标"
+      ],
+      "outOfScope": [
+        "修改、重构或补丁 WACA-SE 源码",
+        "调试到完全跑通并复现论文或仓库声称的指标",
+        "调参、性能优化与多次重复实验",
+        "对运行结果的学术解读、结论撰写与报告成文",
+        "搭建服务器、集群或容器化环境",
+        "替用户把结果对外发送给第三方（本契约只产出记录，发送动作用户自行决定）"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "用户希望运行 WACA-SE 的代码并拿到运行结果。",
+      "用户提到“直接把代码跑起来”，说明期望的是可执行的运行过程，而不是只做文献或方案调研。",
+      "用户尚未提供代码位置、运行环境情况或任何运行说明。"
+    ],
+    "unknowns": [
+      "WACA-SE 的代码来源与本地路径。",
+      "运行所需的语言、运行时与依赖版本。",
+      "运行所需的数据集、权重、配置文件及其获取方式。",
+      "预期输出形式：日志、指标数值、图表或生成文件。",
+      "用户当前机器上是否已具备可运行环境。"
+    ],
+    "assumptions": [
+      "WACA-SE 是一份可以本地运行的代码仓库，而非仅有论文描述的方法。",
+      "用户可以在本地终端执行命令并粘贴原始输出。",
+      "完成一次运行尝试（不含调试到成功）大约需要两小时以内。"
+    ],
+    "estimatedMinutes": 120,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 14053
+}

@@ -6,9 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --import tsx --test src/test/validation.test.ts src/test/generator.test.ts src/test/prompt.test.ts src/test/factory.test.ts",
+    "gen:prompt-md": "node --import tsx scripts/gen-prompt-md.ts"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "next": "16.3.5",
     "react": "19.3.0",
     "react-dom": "19.3.0"
@@ -19,6 +24,7 @@
     "@types/react-dom": "19.3.0",
     "eslint": "9.39.1",
     "eslint-config-next": "16.3.5",
+    "tsx": "^4.19.0",
     "typescript": "6.0.2"
   },
   "packageManager": "pnpm@11.19.0"
