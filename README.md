@@ -208,6 +208,7 @@ boss-research-assistant/
 │   ├── product-brief.md     # 用户痛点、产品承诺和 MVP 边界
 │   ├── contracts.md         # Contract v0 英文语义规则
 │   ├── contracts.zh-CN.md   # Contract v0 中文语义规则
+│   ├── web-handoff.zh-CN.md # Web MVP-0 交接说明与后续接手顺序
 │   └── collaboration.md     # 团队分工与 Git 工作流
 ├── README.md
 └── LICENSE
