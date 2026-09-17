@@ -37,3 +37,6 @@ uploads/
 *.ckpt
 datasets/
 weights/
+.pnpm-store/
+next-env.d.ts
+.codex-doc-review/

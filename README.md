@@ -251,3 +251,28 @@ boss-research-assistant/
 ## License
 
 MIT
+
+## Web MVP-0 Local Run
+
+The first runnable vertical slice is available on the `web/mvp0-goal-contract` branch. It sends a vague research goal to a mock Route Handler and renders the canonical WACA-SE Boss Contract.
+
+Requirements:
+
+- Node.js 20 or later
+- pnpm 11
+
+```bash
+corepack enable
+corepack prepare pnpm@11.19.0 --activate
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Before opening a pull request, run:
+
+```bash
+pnpm lint
+pnpm build
+```
+
+The machine-readable source of truth remains `schemas/boss-contract.v0.schema.json`; `src/lib/contracts.ts` mirrors it for Web type checking.
