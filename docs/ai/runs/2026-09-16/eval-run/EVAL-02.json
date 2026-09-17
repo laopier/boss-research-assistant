@@ -1,0 +1,175 @@
+{
+  "id": "EVAL-02",
+  "goal": "我想把 WACA-SE 这篇论文完全复现出来，然后把方法改进到 SOTA，最后写一篇论文投出去。",
+  "expected": "CONTRACT",
+  "intent": "Oversized goal: must shrink to a bounded first step and push the rest into scopeGuard.outOfScope.",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"我想把 WACA-SE 这篇论文完全复现出来，然后把方法改进到 SOTA，最后写一篇论文投出去。\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-waca-se-repro-scoping\",\"title\":\"界定 WACA-SE 复现范围并产出可执行复现计划\",\"rawGoal\":\"我想把 WACA-SE 这篇论文完全复现出来，然后把方法改进到 SOTA，最后写一篇论文投出去。\",\"objective\":\"在本次工作单元内产出 WACA-SE 的复现启动包：方法拆解笔记、资源获取清单、实验与指标矩阵、分阶段复现计划，并明确“完全复现”的判定标准与第一个可验证里程碑；本次不进行实际训练、不修改代码、不做方法改进。\",\"deadline\":null,\"deliverables\":[{\"id\":\"D1\",\"description\":\"方法拆解笔记文件：逐条列出论文的输入输出、模型结构组件、训练目标与关键超参数，每条标注其在论文中的出处（章节、图或表编号）。\",\"status\":\"NOT_STARTED\"},{\"id\":\"D2\",\"description\":\"资源获取清单文件：逐项列出论文涉及的代码、数据集、预训练权重与算力需求，每项标注获取状态（已获取 / 可获取 / 缺失）与获取方式。\",\"status\":\"NOT_STARTED\"},{\"id\":\"D3\",\"description\":\"实验与指标矩阵表：覆盖论文的主实验与消融实验，每行标明数据集、评价指标、依赖资源与复现优先级。\",\"status\":\"NOT_STARTED\"},{\"id\":\"D4\",\"description\":\"分阶段复现计划文件：包含阶段划分、每阶段验收点与预计工时，其中第一个里程碑可在 1 个工作日内完成并产生可观察结果；另附歧义与缺失信息清单及默认处理方案。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"AC1\",\"description\":\"方法拆解笔记覆盖论文的核心组件（输入输出、模型结构、训练目标、关键超参数），且每个组件条目都带有论文出处标注。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ER1-1\",\"description\":\"可打开的笔记文件，其中每个组件条目含论文出处字段；随机抽查 3 个条目均可定位到对应章节、图或表。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"AC2\",\"description\":\"资源清单逐项列出代码、数据集、预训练权重与算力需求，每项都标注获取状态与获取方式，不存在未标注状态的条目。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ER2-1\",\"description\":\"资源清单文件，每条目含状态字段（已获取 / 可获取 / 缺失）；清单中不出现无来源说明的条目。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"AC3\",\"description\":\"实验矩阵包含论文的主实验与消融实验，每行标明数据集、评价指标、依赖资源与复现优先级。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ER3-1\",\"description\":\"实验矩阵表，行数覆盖论文中可识别的主实验与消融实验，且每行的数据集、指标、依赖资源列均已填写。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"AC4\",\"description\":\"复现计划给出分阶段里程碑，每个阶段有明确验收点，且第一个里程碑可在 1 个工作日内完成并产生可观察结果。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ER4-1\",\"description\":\"计划文件中含阶段列表，每阶段列出验收点与预计工时；首个里程碑标注为 1 个工作日内可完成且结果可观察。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"AC5\",\"description\":\"歧义与缺失信息清单列出论文未说明或表述不清、需要自行决策的细节，并为每条给出默认处理方案。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ER5-1\",\"description\":\"清单文件，每条含“缺失/歧义点”与“默认处理方案”两列，无空缺条目。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"精读 WACA-SE 论文并拆解方法组件与出处\",\"盘点复现所需代码、数据、预训练权重与算力，并标注获取状态\",\"整理论文的主实验与消融实验矩阵及评价指标\",\"制定分阶段复现计划与首个可验证里程碑\",\"列出论文歧义点与默认处理方案\"],\"outOfScope\":[\"实际运行训练或推理、跑出复现指标\",\"将方法改进到 SOTA（需另开 Boss）\",\"撰写论文与投稿（需另开 Boss）\",\"与论文作者的沟通或数据索取\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"目标论文为 WACA-SE\",\"用户的最终意图包含三个阶段：完全复现、改进到 SOTA、投稿发表\",\"用户计划以论文复现作为后续改进与发表的前置步骤\"],\"unknowns\":[\"WACA-SE 的任务领域、数据集与评价指标\",\"论文是否公开代码、数据与预训练权重\",\"可用于复现的算力规模与类型\",\"“完全复现”的判定标准（对齐哪些指标、允许多大误差）\",\"目标投稿会议或期刊及其时间线\"],\"assumptions\":[\"用户能够获取到 WACA-SE 论文全文\",\"复现以论文报告的主实验结果为对照基准\",\"现有算力至少支持一次小规模训练或推理以验证流程\",\"用户具备阅读论文与运行开源代码的基本能力\"],\"estimatedMinutes\":180,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 14182
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-waca-se-repro-scoping",
+    "title": "界定 WACA-SE 复现范围并产出可执行复现计划",
+    "rawGoal": "我想把 WACA-SE 这篇论文完全复现出来，然后把方法改进到 SOTA，最后写一篇论文投出去。",
+    "objective": "在本次工作单元内产出 WACA-SE 的复现启动包：方法拆解笔记、资源获取清单、实验与指标矩阵、分阶段复现计划，并明确“完全复现”的判定标准与第一个可验证里程碑；本次不进行实际训练、不修改代码、不做方法改进。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "D1",
+        "description": "方法拆解笔记文件：逐条列出论文的输入输出、模型结构组件、训练目标与关键超参数，每条标注其在论文中的出处（章节、图或表编号）。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "D2",
+        "description": "资源获取清单文件：逐项列出论文涉及的代码、数据集、预训练权重与算力需求，每项标注获取状态（已获取 / 可获取 / 缺失）与获取方式。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "D3",
+        "description": "实验与指标矩阵表：覆盖论文的主实验与消融实验，每行标明数据集、评价指标、依赖资源与复现优先级。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "D4",
+        "description": "分阶段复现计划文件：包含阶段划分、每阶段验收点与预计工时，其中第一个里程碑可在 1 个工作日内完成并产生可观察结果；另附歧义与缺失信息清单及默认处理方案。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "AC1",
+        "description": "方法拆解笔记覆盖论文的核心组件（输入输出、模型结构、训练目标、关键超参数），且每个组件条目都带有论文出处标注。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ER1-1",
+            "description": "可打开的笔记文件，其中每个组件条目含论文出处字段；随机抽查 3 个条目均可定位到对应章节、图或表。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "AC2",
+        "description": "资源清单逐项列出代码、数据集、预训练权重与算力需求，每项都标注获取状态与获取方式，不存在未标注状态的条目。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ER2-1",
+            "description": "资源清单文件，每条目含状态字段（已获取 / 可获取 / 缺失）；清单中不出现无来源说明的条目。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "AC3",
+        "description": "实验矩阵包含论文的主实验与消融实验，每行标明数据集、评价指标、依赖资源与复现优先级。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ER3-1",
+            "description": "实验矩阵表，行数覆盖论文中可识别的主实验与消融实验，且每行的数据集、指标、依赖资源列均已填写。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "AC4",
+        "description": "复现计划给出分阶段里程碑，每个阶段有明确验收点，且第一个里程碑可在 1 个工作日内完成并产生可观察结果。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ER4-1",
+            "description": "计划文件中含阶段列表，每阶段列出验收点与预计工时；首个里程碑标注为 1 个工作日内可完成且结果可观察。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "AC5",
+        "description": "歧义与缺失信息清单列出论文未说明或表述不清、需要自行决策的细节，并为每条给出默认处理方案。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ER5-1",
+            "description": "清单文件，每条含“缺失/歧义点”与“默认处理方案”两列，无空缺条目。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "精读 WACA-SE 论文并拆解方法组件与出处",
+        "盘点复现所需代码、数据、预训练权重与算力，并标注获取状态",
+        "整理论文的主实验与消融实验矩阵及评价指标",
+        "制定分阶段复现计划与首个可验证里程碑",
+        "列出论文歧义点与默认处理方案"
+      ],
+      "outOfScope": [
+        "实际运行训练或推理、跑出复现指标",
+        "将方法改进到 SOTA（需另开 Boss）",
+        "撰写论文与投稿（需另开 Boss）",
+        "与论文作者的沟通或数据索取"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "目标论文为 WACA-SE",
+      "用户的最终意图包含三个阶段：完全复现、改进到 SOTA、投稿发表",
+      "用户计划以论文复现作为后续改进与发表的前置步骤"
+    ],
+    "unknowns": [
+      "WACA-SE 的任务领域、数据集与评价指标",
+      "论文是否公开代码、数据与预训练权重",
+      "可用于复现的算力规模与类型",
+      "“完全复现”的判定标准（对齐哪些指标、允许多大误差）",
+      "目标投稿会议或期刊及其时间线"
+    ],
+    "assumptions": [
+      "用户能够获取到 WACA-SE 论文全文",
+      "复现以论文报告的主实验结果为对照基准",
+      "现有算力至少支持一次小规模训练或推理以验证流程",
+      "用户具备阅读论文与运行开源代码的基本能力"
+    ],
+    "estimatedMinutes": 180,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 14182
+}

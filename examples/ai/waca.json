@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "boss-contract.v0",
+  "recordKind": "DEMO_FIXTURE",
+  "revision": 1,
+  "id": "boss-waca-se-demo",
+  "title": "Implement and verify the two-stage WACA-SE module",
+  "rawGoal": "I want to reproduce WACA, but I do not know where to begin.",
+  "objective": "Implement a bounded WACA-SE module and verify that Stage 2 learns from the weak-feature tensor produced by Stage 1.",
+  "deadline": null,
+  "deliverables": [
+    { "id": "DEL-1", "description": "WACA-SE module implementation", "status": "NOT_STARTED" },
+    {
+      "id": "DEL-2",
+      "description": "Shape, gradient, parameter-sharing, and Stage 2 semantic tests",
+      "status": "NOT_STARTED"
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1",
+      "description": "The module preserves input shape and produces finite outputs and gradients.",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-1-RUNTIME",
+          "description": "A runtime test checks shape, output finiteness, and gradient finiteness.",
+          "acceptedSourceTypes": ["LOG_INSPECTED", "AUTO_VERIFIED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-2",
+      "description": "Stage 2 receives Xweak rather than the original X or Stage 1 descriptor.",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-2-SOURCE",
+          "description": "Source inspection identifies the tensor supplied to the shared MLP in Stage 2.",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        },
+        {
+          "id": "REQ-2-RUNTIME",
+          "description": "A semantic test captures and compares the actual Stage 2 input with Xweak.",
+          "acceptedSourceTypes": ["LOG_INSPECTED", "AUTO_VERIFIED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-3",
+      "description": "Stage 1 and Stage 2 use the same MLP parameters.",
+      "required": true,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-3-SOURCE",
+          "description": "Source inspection confirms that both stages call one shared MLP instance.",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        }
+      ]
+    },
+    {
+      "id": "AC-4",
+      "description": "Generate an optional visualization of both attention masks.",
+      "required": false,
+      "status": "UNKNOWN",
+      "evidenceRequirements": [
+        {
+          "id": "REQ-4-ARTIFACT",
+          "description": "An inspected visualization artifact is available.",
+          "acceptedSourceTypes": ["ARTIFACT_INSPECTED"],
+          "minimumCount": 1
+        }
+      ]
+    }
+  ],
+  "scopeGuard": {
+    "inScope": ["WACA-SE channel attention only", "Isolated semantic and numerical tests"],
+    "outOfScope": [
+      "Complete WACA-UNet implementation",
+      "Full-dataset training",
+      "500-epoch paper reproduction"
+    ],
+    "newBossPolicy": "CREATE_NEW_BOSS"
+  },
+  "known": [
+    "The input and output shapes are both [B, C, H, W].",
+    "Both attention stages must share one MLP."
+  ],
+  "unknowns": ["Whether the paper specifies a fixed or learnable fusion coefficient."],
+  "assumptions": ["The demonstration uses a fixed fusion coefficient of 0.5."],
+  "estimatedMinutes": 90,
+  "assistanceMode": "COACH",
+  "status": "ACTIVE",
+  "evidenceItems": [
+  ],
+  "blockers": [],
+  "changeHistory": []
+}

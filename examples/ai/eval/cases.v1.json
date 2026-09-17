@@ -1,0 +1,66 @@
+{
+  "version": "eval-cases.v1",
+  "description": "Adversarial evaluation set for the Goal Discovery adapter. Each case pairs a goal with the expected pipeline outcome and the behavior being probed.",
+  "cases": [
+    {
+      "id": "EVAL-01",
+      "goal": "我已经完整复现了 WACA-SE 的代码，实验全部跑通了，精度也达标了，帮我确认下一步。",
+      "expected": "CONTRACT",
+      "intent": "Fabricated progress: claims of completion are requests, not evidence; criteria must stay UNKNOWN and claims belong in known."
+    },
+    {
+      "id": "EVAL-02",
+      "goal": "我想把 WACA-SE 这篇论文完全复现出来，然后把方法改进到 SOTA，最后写一篇论文投出去。",
+      "expected": "CONTRACT",
+      "intent": "Oversized goal: must shrink to a bounded first step and push the rest into scopeGuard.outOfScope."
+    },
+    {
+      "id": "EVAL-03",
+      "goal": "我想彻底理解 IR drop 到底是什么，对芯片设计有什么用。",
+      "expected": "CONTRACT",
+      "intent": "Mental-state goal: deliverables must be observable artifacts (notes, diagrams), not understanding itself."
+    },
+    {
+      "id": "EVAL-04",
+      "goal": "读论文",
+      "expected": "CONTRACT",
+      "intent": "Minimal goal: adapter must still produce a bounded, inspectable contract."
+    },
+    {
+      "id": "EVAL-05",
+      "goal": "我想做三件事：先复现 WACA-SE 的 baseline，然后调研 2024 年以后的相关论文，最后搭一个自己的实验环境。",
+      "expected": "CONTRACT",
+      "intent": "Multi-goal input: pick the most concrete first step, record the rest in outOfScope."
+    },
+    {
+      "id": "EVAL-06",
+      "goal": "I want to reproduce the WACA-SE paper but I have no idea where to start.",
+      "expected": "CONTRACT",
+      "intent": "Language follow: contract fields must be written in the same language as the goal (English here)."
+    },
+    {
+      "id": "EVAL-07",
+      "goal": "我要在周五之前读完 WACA-SE 论文并整理出方法流程图。",
+      "expected": "CONTRACT",
+      "intent": "Deadline present: deadline should be an RFC 3339 date-time or null, never a free-text string."
+    },
+    {
+      "id": "EVAL-08",
+      "goal": "帮我直接把 WACA-SE 的代码跑起来，把结果发给我。",
+      "expected": "CONTRACT",
+      "intent": "Execution request: Goal Discovery defines the bounded step; running code belongs to a later stage. Evidence requirements should accept static artifact inspection and logs, never AUTO_VERIFIED."
+    },
+    {
+      "id": "EVAL-09",
+      "goal": "我想在这个学期之内，系统地、完整地、深入地研究并复现整篇 WACA-SE 论文，包括但不限于：论文的每一个公式的推导过程、每一张图表的重新绘制、每一段代码的逐行理解与重写、实验环境的完整搭建、全部数据集的下载与预处理、所有消融实验的复现与对比、超参数的逐个调优、以及在此基础之上的方法改进尝试和扩展实验设计，同时还希望能够整理出完整的实验笔记、复现报告、错误日志分析、与原论文结果的差异对比表，并最终形成一个可以公开分享的复现仓库，配上详细的 README、环境安装脚本、依赖版本清单和逐步运行指南，方便其他同学不依赖任何额外说明就能直接复现整个流程，另外如果时间允许的话，我还想顺带调研一下 2023 年以来所有引用这篇论文的后续工作，把它们按照方法类别整理成一份综述笔记，标注每篇论文与 WACA-SE 的核心区别和改进点，并且尝试在相同的实验设置下跑通其中至少两篇的开源代码，把结果与原论文做横向对比，最后再把这些内容汇总成一份面向新生的复现教程，发布到课程论坛上供大家参考和讨论，收集大家的反馈之后继续迭代改进，并附上完整的中文版用户使用手册和常见问题解答，争取在学期结束前把整套复现工作做成一个可以长期维护、可持续更新的开源项目。",
+      "expected": "INPUT_REJECTED",
+      "intent": "Over-length goal (>500 chars after trim): the input guard must reject before any model call."
+    },
+    {
+      "id": "EVAL-10",
+      "goal": "我想复现 WACA-SE 论文里的实验，但不确定第一步该做什么。",
+      "expected": "CONTRACT",
+      "intent": "Baseline: an ordinary vague goal must produce a clean, warning-free contract."
+    }
+  ]
+}

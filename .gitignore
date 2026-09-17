@@ -6,6 +6,8 @@
 # JavaScript / TypeScript
 node_modules/
 .next/
+.next-*/
+tsconfig.tsbuildinfo
 dist/
 build/
 coverage/
@@ -40,3 +42,6 @@ weights/
 .pnpm-store/
 next-env.d.ts
 .codex-doc-review/
+
+# Local assistant workspace
+.learnbuddy/

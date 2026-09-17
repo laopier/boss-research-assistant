@@ -1,0 +1,164 @@
+{
+  "id": "EVAL-05",
+  "goal": "我想做三件事：先复现 WACA-SE 的 baseline，然后调研 2024 年以后的相关论文，最后搭一个自己的实验环境。",
+  "expected": "CONTRACT",
+  "intent": "Multi-goal input: pick the most concrete first step, record the rest in outOfScope.",
+  "outcome": "CONTRACT",
+  "attempts": [
+    {
+      "userPrompt": "{\"schemaVersion\":\"boss-contract.v0\",\"goal\":\"我想做三件事：先复现 WACA-SE 的 baseline，然后调研 2024 年以后的相关论文，最后搭一个自己的实验环境。\"}",
+      "rawOutput": "{\"schemaVersion\":\"boss-contract.v0\",\"recordKind\":\"LIVE\",\"revision\":1,\"id\":\"boss-waca-se-baseline-repro-start\",\"title\":\"产出 WACA-SE baseline 复现启动包：范围清单、运行命令与首次运行记录\",\"rawGoal\":\"我想做三件事：先复现 WACA-SE 的 baseline，然后调研 2024 年以后的相关论文，最后搭一个自己的实验环境。\",\"objective\":\"在本次工作时段内，产出一份可复核的 WACA-SE baseline 复现启动包：确认代码来源与版本、列出依赖与环境要求、记录至少一条按顺序执行的运行命令及其原始终端输出、并把首次运行得到的指标数值或失败报错整理成结果摘要，同时显式标出尚未跑通或尚未确认的部分。\",\"deadline\":null,\"deliverables\":[{\"id\":\"deliv-scope-checklist\",\"description\":\"一份复现范围与前置条件清单文件，逐条列出 WACA-SE baseline 的代码来源、版本或提交标识、依赖项、硬件与运行环境要求，并为每一条标注“已确认”或“待确认”及其确认依据来源。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-run-commands\",\"description\":\"一份运行命令记录文件，按执行先后列出为跑通 baseline 最小路径所使用的命令与环境变量，并在每条命令后附上粘贴的原始终端输出（含退出码或报错行）。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-first-run-summary\",\"description\":\"一份首次运行结果摘要（表格或条目式），记录运行日期、耗时、是否成功，成功时列出至少一个指标名称与数值，失败时记录报错信息与失败发生的步骤。\",\"status\":\"NOT_STARTED\"},{\"id\":\"deliv-open-questions\",\"description\":\"一份待确认问题清单，列出当前阻塞复现的未解问题和所需资源（如缺失的数据集、算力、权限、文档），并写明每个问题的下一步核查动作。\",\"status\":\"NOT_STARTED\"}],\"acceptanceCriteria\":[{\"id\":\"ac-scope-sourced\",\"description\":\"复现范围清单中的每一条代码来源、版本标识和依赖项都写明了具体来源与确认状态，且不存在未标注来源的条目。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-scope-artifact\",\"description\":\"检查复现范围与前置条件清单文件，确认每条条目均带有来源与确认状态字段。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-command-executed\",\"description\":\"至少有一条 baseline 运行命令被实际执行，并有与该命令对应的原始终端输出记录（含成功输出或报错）。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-run-log\",\"description\":\"运行命令记录文件中粘贴的终端输出段落，需能对应到具体命令且包含时间或退出码信息。\",\"acceptedSourceTypes\":[\"LOG_INSPECTED\"],\"minimumCount\":1},{\"id\":\"ev-run-user-note\",\"description\":\"用户对“该命令确实在本机或可访问机器上执行过”的说明，注明执行环境。\",\"acceptedSourceTypes\":[\"USER_REPORTED\"],\"minimumCount\":1}]},{\"id\":\"ac-result-recorded\",\"description\":\"首次运行结果摘要中记录了至少一个可比较的指标数值，或在运行失败时记录了明确报错信息与失败步骤。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-result-artifact\",\"description\":\"首次运行结果摘要文件中包含指标名称与数值，或包含报错文本与失败步骤描述。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]},{\"id\":\"ac-unresolved-marked\",\"description\":\"未跑通、未确认或存在不确定性的部分被显式列出，且未被标注为已完成或已通过。\",\"required\":true,\"status\":\"UNKNOWN\",\"evidenceRequirements\":[{\"id\":\"ev-open-questions\",\"description\":\"待确认问题清单文件，其中每条问题注明当前状态与下一步核查动作。\",\"acceptedSourceTypes\":[\"ARTIFACT_INSPECTED\"],\"minimumCount\":1}]}],\"scopeGuard\":{\"inScope\":[\"确认 WACA-SE baseline 的代码来源、版本与获取方式\",\"梳理并记录 baseline 运行所需的依赖、环境与硬件条件\",\"执行并记录最少一条跑通 baseline 的路径：命令、环境变量与原始终端输出\",\"整理首次运行的结果数值或失败报错，并列出尚未确认的问题\"],\"outOfScope\":[\"2024 年以后相关论文的系统调研与文献综述（本次不覆盖）\",\"自建实验环境的设计与搭建（本次不覆盖）\",\"baseline 的完整调参、指标对齐与多数据集全量复现\",\"针对 WACA-SE 的改进方法设计与对比实验\"],\"newBossPolicy\":\"CREATE_NEW_BOSS\"},\"known\":[\"用户明确希望先复现 WACA-SE 的 baseline。\",\"用户还提出后续要调研 2024 年以后的相关论文，并搭建自己的实验环境，这两项属于本次范围之外。\",\"用户尚未提供任何已完成的复现结果或运行输出作为依据。\"],\"unknowns\":[\"WACA-SE 官方或可用的代码仓库位置与可用版本。\",\"baseline 运行所需的数据集、权重或配置文件的获取途径。\",\"目标复现指标的具体名称与参考数值区间。\",\"可用的算力资源与运行环境（本机、服务器或集群）。\"],\"assumptions\":[\"WACA-SE 存在可获取的代码副本（公开仓库或用户已有本地副本）。\",\"用户能访问一台可运行该 baseline 最小路径的机器。\",\"单次 baseline 最小运行可在本次工作时段内完成或至少产生可记录的报错。\"],\"estimatedMinutes\":240,\"assistanceMode\":\"COACH\",\"status\":\"DRAFT\",\"evidenceItems\":[],\"blockers\":[],\"changeHistory\":[]}",
+      "durationMs": 11160
+    }
+  ],
+  "contract": {
+    "schemaVersion": "boss-contract.v0",
+    "recordKind": "LIVE",
+    "revision": 1,
+    "id": "boss-waca-se-baseline-repro-start",
+    "title": "产出 WACA-SE baseline 复现启动包：范围清单、运行命令与首次运行记录",
+    "rawGoal": "我想做三件事：先复现 WACA-SE 的 baseline，然后调研 2024 年以后的相关论文，最后搭一个自己的实验环境。",
+    "objective": "在本次工作时段内，产出一份可复核的 WACA-SE baseline 复现启动包：确认代码来源与版本、列出依赖与环境要求、记录至少一条按顺序执行的运行命令及其原始终端输出、并把首次运行得到的指标数值或失败报错整理成结果摘要，同时显式标出尚未跑通或尚未确认的部分。",
+    "deadline": null,
+    "deliverables": [
+      {
+        "id": "deliv-scope-checklist",
+        "description": "一份复现范围与前置条件清单文件，逐条列出 WACA-SE baseline 的代码来源、版本或提交标识、依赖项、硬件与运行环境要求，并为每一条标注“已确认”或“待确认”及其确认依据来源。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-run-commands",
+        "description": "一份运行命令记录文件，按执行先后列出为跑通 baseline 最小路径所使用的命令与环境变量，并在每条命令后附上粘贴的原始终端输出（含退出码或报错行）。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-first-run-summary",
+        "description": "一份首次运行结果摘要（表格或条目式），记录运行日期、耗时、是否成功，成功时列出至少一个指标名称与数值，失败时记录报错信息与失败发生的步骤。",
+        "status": "NOT_STARTED"
+      },
+      {
+        "id": "deliv-open-questions",
+        "description": "一份待确认问题清单，列出当前阻塞复现的未解问题和所需资源（如缺失的数据集、算力、权限、文档），并写明每个问题的下一步核查动作。",
+        "status": "NOT_STARTED"
+      }
+    ],
+    "acceptanceCriteria": [
+      {
+        "id": "ac-scope-sourced",
+        "description": "复现范围清单中的每一条代码来源、版本标识和依赖项都写明了具体来源与确认状态，且不存在未标注来源的条目。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-scope-artifact",
+            "description": "检查复现范围与前置条件清单文件，确认每条条目均带有来源与确认状态字段。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-command-executed",
+        "description": "至少有一条 baseline 运行命令被实际执行，并有与该命令对应的原始终端输出记录（含成功输出或报错）。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-run-log",
+            "description": "运行命令记录文件中粘贴的终端输出段落，需能对应到具体命令且包含时间或退出码信息。",
+            "acceptedSourceTypes": [
+              "LOG_INSPECTED"
+            ],
+            "minimumCount": 1
+          },
+          {
+            "id": "ev-run-user-note",
+            "description": "用户对“该命令确实在本机或可访问机器上执行过”的说明，注明执行环境。",
+            "acceptedSourceTypes": [
+              "USER_REPORTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-result-recorded",
+        "description": "首次运行结果摘要中记录了至少一个可比较的指标数值，或在运行失败时记录了明确报错信息与失败步骤。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-result-artifact",
+            "description": "首次运行结果摘要文件中包含指标名称与数值，或包含报错文本与失败步骤描述。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      },
+      {
+        "id": "ac-unresolved-marked",
+        "description": "未跑通、未确认或存在不确定性的部分被显式列出，且未被标注为已完成或已通过。",
+        "required": true,
+        "status": "UNKNOWN",
+        "evidenceRequirements": [
+          {
+            "id": "ev-open-questions",
+            "description": "待确认问题清单文件，其中每条问题注明当前状态与下一步核查动作。",
+            "acceptedSourceTypes": [
+              "ARTIFACT_INSPECTED"
+            ],
+            "minimumCount": 1
+          }
+        ]
+      }
+    ],
+    "scopeGuard": {
+      "inScope": [
+        "确认 WACA-SE baseline 的代码来源、版本与获取方式",
+        "梳理并记录 baseline 运行所需的依赖、环境与硬件条件",
+        "执行并记录最少一条跑通 baseline 的路径：命令、环境变量与原始终端输出",
+        "整理首次运行的结果数值或失败报错，并列出尚未确认的问题"
+      ],
+      "outOfScope": [
+        "2024 年以后相关论文的系统调研与文献综述（本次不覆盖）",
+        "自建实验环境的设计与搭建（本次不覆盖）",
+        "baseline 的完整调参、指标对齐与多数据集全量复现",
+        "针对 WACA-SE 的改进方法设计与对比实验"
+      ],
+      "newBossPolicy": "CREATE_NEW_BOSS"
+    },
+    "known": [
+      "用户明确希望先复现 WACA-SE 的 baseline。",
+      "用户还提出后续要调研 2024 年以后的相关论文，并搭建自己的实验环境，这两项属于本次范围之外。",
+      "用户尚未提供任何已完成的复现结果或运行输出作为依据。"
+    ],
+    "unknowns": [
+      "WACA-SE 官方或可用的代码仓库位置与可用版本。",
+      "baseline 运行所需的数据集、权重或配置文件的获取途径。",
+      "目标复现指标的具体名称与参考数值区间。",
+      "可用的算力资源与运行环境（本机、服务器或集群）。"
+    ],
+    "assumptions": [
+      "WACA-SE 存在可获取的代码副本（公开仓库或用户已有本地副本）。",
+      "用户能访问一台可运行该 baseline 最小路径的机器。",
+      "单次 baseline 最小运行可在本次工作时段内完成或至少产生可记录的报错。"
+    ],
+    "estimatedMinutes": 240,
+    "assistanceMode": "COACH",
+    "status": "DRAFT",
+    "evidenceItems": [],
+    "blockers": [],
+    "changeHistory": []
+  },
+  "postValidation": {
+    "outcome": "CONTRACT",
+    "diagnostics": []
+  },
+  "failureDiagnostics": null,
+  "error": null,
+  "durationMs": 11160
+}
