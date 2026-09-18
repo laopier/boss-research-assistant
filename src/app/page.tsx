@@ -4,13 +4,27 @@ import { FormEvent, useState } from "react";
 import {
   ApiErrorResponse,
   CONTRACT_SCHEMA_VERSION,
+  EvidenceItem,
   GenerateBossContractResponse,
 } from "@/lib/contracts";
 
-const statusText = {
+/**
+ * Copy tables.
+ *
+ * The left-hand values are owned by schemas/boss-contract.v0.schema.json and
+ * must never be renamed here. The Chinese copy for Boss, criterion, finding and
+ * review status is frozen in docs/product/mvp0-acceptance.md.
+ */
+const criterionStatusText = {
   UNKNOWN: "待验证",
   PASS: "通过",
   FAIL: "未通过",
+};
+
+const criterionStatusClass = {
+  UNKNOWN: "status status-unknown",
+  PASS: "status status-pass",
+  FAIL: "status status-fail",
 };
 
 const bossStatusText = {
@@ -20,6 +34,43 @@ const bossStatusText = {
   CLEAR: "已完成",
   BLOCKED: "受阻",
 };
+
+const deliverableStatusText = {
+  NOT_STARTED: "未开始",
+  IN_PROGRESS: "进行中",
+  DONE: "已完成",
+};
+
+const sourceTypeText = {
+  USER_REPORTED: "用户陈述",
+  ARTIFACT_INSPECTED: "已检查产物",
+  LOG_INSPECTED: "已检查日志",
+  AUTO_VERIFIED: "平台自动验证",
+};
+
+const findingText = {
+  PASS: "通过",
+  FAIL: "未通过",
+  INCONCLUSIVE: "无法判断",
+};
+
+const reviewStatusText = {
+  PENDING: "待审核",
+  ACCEPTED: "已接受",
+  REJECTED: "已拒绝",
+};
+
+function formatDeadline(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function Home() {
   const [goal, setGoal] = useState("我想复现 WACA 论文，但不知道从哪里开始");
@@ -94,12 +145,26 @@ export default function Home() {
 
 function ContractView({ data }: { data: GenerateBossContractResponse }) {
   const { contract } = data;
+
+  const evidenceByCriterion = new Map<string, EvidenceItem[]>();
+  for (const item of contract.evidenceItems) {
+    const bucket = evidenceByCriterion.get(item.criterionId);
+    if (bucket) bucket.push(item);
+    else evidenceByCriterion.set(item.criterionId, [item]);
+  }
+
+  const requiredCount = contract.acceptanceCriteria.filter((item) => item.required).length;
+  const failedRequired = contract.acceptanceCriteria.filter(
+    (item) => item.required && item.status === "FAIL",
+  ).length;
+
   return (
     <section className="contract" aria-live="polite">
       <div className="contract-heading">
         <div>
           <p className="eyebrow">当前 Boss Contract</p>
           <h2>{contract.objective}</h2>
+          <p className="raw-goal">原始目标：{contract.rawGoal}</p>
         </div>
         {data.generation === "AI" ? (
           <span className="ai-badge">AI 生成</span>
@@ -113,7 +178,18 @@ function ContractView({ data }: { data: GenerateBossContractResponse }) {
         <article><span>预计时间</span><strong>{contract.estimatedMinutes} 分钟</strong></article>
         <article><span>协作模式</span><strong>{contract.assistanceMode}</strong></article>
         <article><span>状态</span><strong>{bossStatusText[contract.status]}</strong></article>
+        <article>
+          <span>截止时间</span>
+          <strong>{contract.deadline ? formatDeadline(contract.deadline) : "未设定"}</strong>
+        </article>
       </div>
+
+      <p className="progress-note">
+        必需验收项 {requiredCount} 条
+        {failedRequired > 0
+          ? `，其中 ${failedRequired} 条未通过——Boss 不会因为「程序能跑」就判定完成。`
+          : "，全部通过后 Boss 才会进入已完成。"}
+      </p>
 
       <div className="content-grid">
         <article className="criteria-card">
@@ -121,28 +197,140 @@ function ContractView({ data }: { data: GenerateBossContractResponse }) {
           {contract.acceptanceCriteria.map((criterion, index) => (
             <div className="criterion" key={criterion.id}>
               <span className="index">{String(index + 1).padStart(2, "0")}</span>
-              <div><strong>{criterion.id}</strong><p>{criterion.description}</p></div>
-              <span className="status">{statusText[criterion.status]}</span>
+              <div>
+                <strong>{criterion.id}</strong>
+                <span className={criterion.required ? "tag tag-required" : "tag"}>
+                  {criterion.required ? "必需" : "可选"}
+                </span>
+                <p>{criterion.description}</p>
+                <ul className="requirement-list">
+                  {criterion.evidenceRequirements.map((requirement) => (
+                    <li key={requirement.id}>
+                      <code>{requirement.id}</code>
+                      <span>{requirement.description}</span>
+                      <span className="source-types">
+                        可接受来源：
+                        {requirement.acceptedSourceTypes
+                          .map((source) => sourceTypeText[source])
+                          .join(" / ")}
+                        ，至少 {requirement.minimumCount} 条
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <span className={criterionStatusClass[criterion.status]}>
+                {criterionStatusText[criterion.status]}
+              </span>
             </div>
           ))}
         </article>
 
         <article className="evidence-card">
           <h3>Evidence Map</h3>
-          <p className="muted">每条验收标准的证据要求与当前状态。</p>
-          {contract.acceptanceCriteria.map((criterion) => (
-            <div className="evidence" key={criterion.id}>
-              <span>{criterion.description}</span>
-              <strong>{statusText[criterion.status]}</strong>
-            </div>
-          ))}
+          <p className="muted">
+            每条验收标准对应的证据要求与已收集证据。证据必须来自实际读取，
+            本页不会替系统假设证据存在。
+          </p>
+
+          {contract.acceptanceCriteria.map((criterion) => {
+            const items = evidenceByCriterion.get(criterion.id) ?? [];
+            return (
+              <div className="evidence-group" key={criterion.id}>
+                <div className="evidence-group-head">
+                  <strong>{criterion.id}</strong>
+                  <span className={criterionStatusClass[criterion.status]}>
+                    {criterionStatusText[criterion.status]}
+                  </span>
+                </div>
+                {items.length === 0 ? (
+                  <p className="evidence-empty">
+                    {criterion.status === "UNKNOWN"
+                      ? "尚无证据：该验收项还没有被验证过。"
+                      : "尚无证据条目：当前状态由其他环节推导。"}
+                  </p>
+                ) : (
+                  items.map((item) => (
+                    <div className="evidence-item" key={item.id}>
+                      <div className="evidence-item-head">
+                        <span className="evidence-source">{sourceTypeText[item.sourceType]}</span>
+                        <span className="evidence-name">{item.sourceName}</span>
+                      </div>
+                      <p>{item.summary}</p>
+                      <div className="evidence-item-foot">
+                        <span>判定：{findingText[item.finding]}</span>
+                        <span>审核：{reviewStatusText[item.reviewStatus]}</span>
+                        <code>{item.requirementId}</code>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            );
+          })}
         </article>
       </div>
 
+      <section className="deliverables">
+        <h3>交付物</h3>
+        <div className="deliverable-grid">
+          {contract.deliverables.map((deliverable) => (
+            <article key={deliverable.id}>
+              <div className="deliverable-head">
+                <strong>{deliverable.id}</strong>
+                <span className="status status-unknown">
+                  {deliverableStatusText[deliverable.status]}
+                </span>
+              </div>
+              <p>{deliverable.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <div className="guard-grid">
-        <article><h3>范围边界</h3><ul>{contract.scopeGuard.inScope.map((item) => <li key={item}>{item}</li>)}</ul></article>
-        <article><h3>当前未知</h3><ul>{contract.unknowns.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article>
+          <h3>范围内</h3>
+          <ul>{contract.scopeGuard.inScope.map((item) => <li key={item}>{item}</li>)}</ul>
+        </article>
+        <article>
+          <h3>范围外</h3>
+          <ul>{contract.scopeGuard.outOfScope.map((item) => <li key={item}>{item}</li>)}</ul>
+        </article>
       </div>
+
+      <div className="clue-grid">
+        <article><h3>已知</h3><ul>{contract.known.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><h3>当前未知</h3><ul>{contract.unknowns.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><h3>假设</h3><ul>{contract.assumptions.map((item) => <li key={item}>{item}</li>)}</ul></article>
+      </div>
+
+      {contract.blockers.length > 0 && (
+        <section className="blockers">
+          <h3>阻塞项</h3>
+          {contract.blockers.map((blocker) => (
+            <div className="blocker" key={blocker.id}>
+              <strong>{blocker.id}</strong>
+              <p>{blocker.description}</p>
+              <p className="muted">影响验收项：{blocker.affectedCriteria.join(" / ")}</p>
+              <p className="muted">解除方式：{blocker.resolution}</p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {contract.changeHistory.length > 0 && (
+        <section className="history">
+          <h3>修订记录</h3>
+          {contract.changeHistory.map((record) => (
+            <div className="history-record" key={record.revision}>
+              <strong>Revision {record.revision}</strong>
+              <span className="muted">{record.changedAt} · {record.changedBy}</span>
+              <p>{record.reason}</p>
+            </div>
+          ))}
+        </section>
+      )}
     </section>
   );
 }
