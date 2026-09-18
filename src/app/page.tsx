@@ -3,10 +3,33 @@
 import { FormEvent, useState } from "react";
 import {
   ApiErrorResponse,
+  BossContract,
   CONTRACT_SCHEMA_VERSION,
   EvidenceItem,
   GenerateBossContractResponse,
 } from "@/lib/contracts";
+import wacaDemoFixture from "../../examples/waca-se-boss.json";
+
+/**
+ * The frozen MVP-0 demonstration case.
+ *
+ * docs/product/mvp0-acceptance.md fixes the demo truth as this fixture: the
+ * submitted WACA-SE module runs and preserves shape, but Stage 2 reuses Stage 1
+ * information instead of Xweak, so AC-2 is FAIL and the Boss stays PARTIAL
+ * rather than CLEAR. The expected sequence is PASS / FAIL / PASS / UNKNOWN, and
+ * the required badge is 模拟数据, which `generation: "MOCK"` produces below.
+ *
+ * Why it is offered explicitly: the generated path
+ * (POST /api/contracts/generate) always returns a fresh DRAFT contract whose
+ * criteria are all UNKNOWN, because Goal Discovery is forbidden from inventing
+ * evidence. So the failure story — the whole point of this product — cannot be
+ * reached through generation. This entry point makes the frozen case visible
+ * without changing the default path, the API, or the shared schema.
+ *
+ * The cast is safe: `src/test/validation.test.ts` validates every repository
+ * fixture against schemas/boss-contract.v0.schema.json, so drift fails the suite.
+ */
+const WACA_DEMO_FIXTURE = wacaDemoFixture as unknown as BossContract;
 
 /**
  * Copy tables.
@@ -101,6 +124,26 @@ export default function Home() {
     }
   }
 
+  /**
+   * Loads the frozen demonstration case instead of calling the API. Kept
+   * separate from submitGoal so the generated path stays the default.
+   *
+   * The fixture supplies the acceptance truth; the field supplies `rawGoal`, so
+   * the page shows the goal the presenter actually typed. This mirrors the
+   * original MVP-0 mock, which also replaced only `rawGoal`.
+   */
+  function loadDemoCase() {
+    setError("");
+    const submitted = goal.trim();
+    setResult({
+      generation: "MOCK",
+      contract: {
+        ...WACA_DEMO_FIXTURE,
+        rawGoal: submitted || WACA_DEMO_FIXTURE.rawGoal,
+      },
+    });
+  }
+
   return (
     <main>
       <header className="hero">
@@ -128,6 +171,16 @@ export default function Home() {
           </div>
           {error && <p className="error" role="alert">{error}</p>}
         </form>
+
+        <div className="demo-entry">
+          <p className="muted">
+            也可以直接载入固定的 WACA 演示案例：那份合同已经跑过一次验收，其中一项因为阶段间
+            复用了错误输入而被判定为<strong>未通过</strong>，所以它停在「部分完成」而非「已完成」。
+          </p>
+          <button type="button" className="button-secondary" onClick={loadDemoCase} disabled={loading}>
+            载入 WACA 演示案例
+          </button>
+        </div>
       </section>
 
       {!result && (
@@ -165,6 +218,11 @@ function ContractView({ data }: { data: GenerateBossContractResponse }) {
           <p className="eyebrow">当前 Boss Contract</p>
           <h2>{contract.objective}</h2>
           <p className="raw-goal">原始目标：{contract.rawGoal}</p>
+          {contract.recordKind === "DEMO_FIXTURE" && (
+            <p className="demo-caption">
+              固定演示案例 · 来源 <code>examples/waca-se-boss.json</code>
+            </p>
+          )}
         </div>
         {data.generation === "AI" ? (
           <span className="ai-badge">AI 生成</span>
