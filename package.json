@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "tsc -p tsconfig.json && node --import tsx --test src/test/validation.test.ts src/test/generator.test.ts src/test/prompt.test.ts src/test/factory.test.ts",
+    "test": "tsc -p tsconfig.json && node --import tsx --test src/test/validation.test.ts src/test/generator.test.ts src/test/prompt.test.ts src/test/factory.test.ts src/test/route.test.ts",
     "gen:prompt-md": "node --import tsx scripts/gen-prompt-md.ts"
   },
   "dependencies": {
