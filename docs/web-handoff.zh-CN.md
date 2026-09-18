@@ -1,6 +1,6 @@
 # Boss Web 交接复核（Web Owner 上手版）
 
-复核日期：2026-09-17
+复核日期：2026-09-17（2026-09-18 增补 §0 进度快照）
 复核对象：`main`（`329ea1d`）
 取代：分支 `web/mvp0-goal-contract` 上的旧版《Boss Web 工程交接文档》
 
@@ -8,6 +8,44 @@
 > 且内容已被 PR #5 / PR #6 之后的进展推翻。本文档为复核后的准确版本。
 > 团队通用上手指南请看 `docs/teammate-onboarding.md`；本文档只讲 **Web Owner 视角的
 > 现状、边界与下一步**。
+
+---
+
+## 0. 进度快照（2026-09-18 增补）
+
+### 已推送到远端、待开 PR 的分支（7 个）
+
+| # | 分支 | 内容 | 依赖 |
+| --- | --- | --- | --- |
+| 1 | `fix/pnpm-lockfile-sync` | 修 lockfile 与 `package.json` 不同步 —— `README` 写的 `pnpm install --frozen-lockfile` 原本**直接失败** | — |
+| 2 | `fix/invalid-json-status` | 请求体非法 JSON 返回 400 而非 500（含 14 个回归测试） | — |
+| 3 | `chore/merge-waca-demo-acceptance` | 把队长冻结的演示真值 cherry-pick 到当前 `main`（作者保留 `laopier`） | — |
+| 4 | `chore/web-polish` | 应用图标（此前 `favicon.ico` 一直 404）+ 修 onboarding 里会让依赖分叉的 `npm install` 建议 | — |
+| 5 | `feat/web-contract-detail-render` | 补全此前完全没渲染的合同字段；`PASS/FAIL/UNKNOWN` 改三色；加 WACA 演示入口 | — |
+| 6 | `feat/failure-loop` | **闭环后半段**：接受合同 → 记录证据 → 审核 → 推导 → 失败资产库 → 孵化下一个 Boss | 需 5 先合 |
+| 7 | `feat/deployment` | `output: 'standalone'` + `Dockerfile` + 部署文档 | 需 1 先合 |
+
+> 分支 6、7 基于 5、1 而非 `main`（都与上游大改同一文件），上游合并后需 rebase。
+
+### 本次新增的能力（§1 描述的是补强前的状态）
+
+- **失败闭环**（分支 6）：此前产品只有闭环前半段（目标 → 合同 → 验收定义），
+  「失败经验累积及孵化」这一细分方向的**后半段完全不存在**。现在已接通。
+  推导规则严格实现 `docs/contracts.zh-CN.md` 的 §3 §4 §7 §8 §11，未自造；
+  孵化复用既有生成接口，所以 mock / llm 两种模式都可用，且不会与 AI owner
+  的生成器形成第二条漂移路径。
+- **失败故事可达**（分支 5）：`docs/product/mvp0-acceptance.md` 冻结的演示真值
+  此前在跑起来的页面上**看不到**；现已有明确标注的演示入口。
+- **测试基线**：从 64 提到 **109**（+14 路由回归、+34 推导引擎、+11 组件渲染）。
+  其中推导引擎会跑 WACA fixture 并要求还原出官方声明的状态 ——
+  **规则与产品真值互相锁定**。
+
+### 仍然阻塞
+
+- 🔴 **零部署**。作品链接是赛事硬性必需项，仓库仍无任何部署配置（分支 7 已备好）。
+- 🔴 **7 个 PR 全未开**：GitHub 连接器身份对该私有库无权限，只能网页操作。
+- ⚠️ **队长未拍板演示路径**（WACA 失败故事 vs 通用生成故事）。
+- ⚠️ **`AI 工具使用` 占 25%，LearnBuddy 记录归档无人负责**，且是必需提交项。
 
 ---
 
