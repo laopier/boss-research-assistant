@@ -64,11 +64,20 @@ EOF
 ## 3. 安装依赖
 
 ```bash
-pnpm install
-# 或：npm install
+pnpm install --frozen-lockfile
 ```
 
 > 首次安装可能慢（47000+ 文件）。如果中途卡住，重试即可（pnpm 有重入保护）。
+>
+> ⚠️ **请只用 pnpm，不要用 `npm install`。** 本仓库的依赖锁定在
+> `pnpm-lock.yaml`，npm 会无视它并生成一个 `package-lock.json`，
+> 两个 lockfile 并存会让后面每个人的依赖版本不一致。
+>
+> 早期这里写的是不带 `--frozen-lockfile` 的 `pnpm install`，
+> 当时是为了绕过 lockfile 与 `package.json` 不同步的问题
+> （会报 `ERR_PNPM_OUTDATED_LOCKFILE`）。该问题已由
+> `fix/pnpm-lockfile-sync` 修复，所以现在可以也应该用
+> `--frozen-lockfile` —— 它会保证你装到的版本与提交锁定的完全一致。
 
 ---
 
