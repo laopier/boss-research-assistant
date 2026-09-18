@@ -7,6 +7,12 @@
   --green: #245c45;
   --lime: #dbea9b;
   --orange: #d77635;
+  --pass-ink: #1c5334;
+  --pass-bg: #d9efdf;
+  --fail-ink: #8f2c1f;
+  --fail-bg: #f8dcd6;
+  --unknown-ink: #5d635c;
+  --unknown-bg: #ecedea;
 }
 
 * { box-sizing: border-box; }
@@ -36,29 +42,67 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .contract { margin-top: 32px; padding: 34px; border-radius: 24px; }
 .contract-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 30px; }
 .contract h2 { max-width: 820px; margin: 0; font-family: Georgia, "Songti SC", serif; font-size: clamp(26px, 4vw, 40px); font-weight: 500; line-height: 1.3; }
+.raw-goal { margin: 14px 0 0; color: var(--muted); font-size: 13px; }
 .mock-badge { flex: none; padding: 7px 10px; color: #76501f; background: #f5e4bd; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .ai-badge { flex: none; padding: 7px 10px; color: #1f4d7a; background: #d6e8f7; border-radius: 999px; font-size: 12px; font-weight: 700; }
-.meta-grid { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.meta-grid article { display: flex; flex-direction: column; gap: 8px; min-height: 90px; padding: 18px; border-right: 1px solid var(--line); }
-.meta-grid article:last-child { border: 0; }
+
+/* Bordered grid trick: the 1px gap IS the divider, so cells can wrap freely. */
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.meta-grid article { display: flex; flex-direction: column; gap: 8px; min-height: 90px; padding: 18px; background: var(--panel); }
 .meta-grid span, .muted { color: var(--muted); font-size: 13px; }
-.content-grid { display: grid; grid-template-columns: 1.45fr 1fr; gap: 28px; margin-top: 34px; }
+.progress-note { margin: 18px 0 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.content-grid { display: grid; grid-template-columns: 1.45fr 1fr; gap: 28px; margin-top: 34px; align-items: start; }
 h3 { margin: 0 0 16px; font-size: 15px; }
 .criterion { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: start; padding: 16px 0; border-top: 1px solid var(--line); }
 .criterion p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .index { color: var(--orange); font-family: Georgia, serif; }
-.status { padding: 5px 8px; color: var(--muted); background: #eef0ec; border-radius: 6px; font-size: 11px; }
+.tag { margin-left: 8px; padding: 2px 7px; color: var(--muted); background: #eef0ec; border-radius: 5px; font-size: 11px; font-weight: 600; }
+.tag-required { color: #7a4a12; background: #f6e6c8; }
+
+/* Status chips. PASS/FAIL must be visually distinct: a failed required
+   criterion is the single most important signal on this page. */
+.status { padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.status-pass { color: var(--pass-ink); background: var(--pass-bg); }
+.status-fail { color: var(--fail-ink); background: var(--fail-bg); }
+.status-unknown { color: var(--unknown-ink); background: var(--unknown-bg); }
+
+.requirement-list { margin: 10px 0 0; padding: 0; list-style: none; }
+.requirement-list li { display: flex; flex-direction: column; gap: 3px; padding: 9px 0 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.requirement-list code, .evidence-item-foot code { width: fit-content; padding: 2px 6px; color: var(--green); background: #eef3ec; border-radius: 5px; font-size: 11px; }
+.source-types { color: #8b918a; font-size: 11px; }
+
 .evidence-card { padding: 22px; background: #eff3e9; border-radius: 16px; }
-.evidence { display: flex; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid #d3dacd; font-size: 13px; }
-.evidence strong { color: var(--muted); font-size: 11px; }
+.evidence-group { padding: 14px 0; border-bottom: 1px solid #d3dacd; }
+.evidence-group:last-child { border-bottom: 0; padding-bottom: 0; }
+.evidence-group-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.evidence-group-head strong { font-size: 13px; }
+.evidence-empty { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.evidence-item { margin-top: 10px; padding: 12px; background: rgba(255, 255, 255, .68); border-radius: 10px; }
+.evidence-item p { margin: 7px 0; font-size: 12px; line-height: 1.6; }
+.evidence-item-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.evidence-source { padding: 3px 7px; color: var(--pass-ink); background: var(--pass-bg); border-radius: 5px; font-size: 10px; font-weight: 700; }
+.evidence-name { color: var(--muted); font-size: 11px; }
+.evidence-item-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 11px; }
+
+.deliverables, .blockers, .history { margin-top: 34px; padding-top: 28px; border-top: 1px solid var(--line); }
+.deliverable-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.deliverable-grid article { padding: 16px 18px; background: #f7f7f2; border-radius: 12px; }
+.deliverable-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.deliverable-grid p { margin: 9px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+
 .guard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 34px; padding-top: 28px; border-top: 1px solid var(--line); }
+.clue-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 34px; padding-top: 28px; border-top: 1px solid var(--line); }
 ul { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.blocker, .history-record { padding: 14px 0; border-top: 1px solid var(--line); }
+.blocker p, .history-record p { margin: 6px 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.history-record span { margin-left: 10px; }
 
 @media (max-width: 760px) {
   main { width: min(100% - 24px, 1120px); padding-top: 18px; }
   .brand { margin-bottom: 46px; }
   .input-panel, .contract { padding: 20px; }
-  .empty-state, .meta-grid, .content-grid, .guard-grid { grid-template-columns: 1fr; }
-  .meta-grid article { border-right: 0; border-bottom: 1px solid var(--line); }
+  .empty-state, .content-grid, .guard-grid, .clue-grid { grid-template-columns: 1fr; }
   .contract-heading { flex-direction: column; }
+  .criterion { grid-template-columns: 28px 1fr; }
+  .criterion .status { grid-column: 2; justify-self: start; }
 }
