@@ -4,6 +4,13 @@
 复核对象：`main`（`329ea1d`）
 取代：分支 `web/mvp0-goal-contract` 上的旧版《Boss Web 工程交接文档》
 
+> **2026-09-19 集成更新：** 本文余下内容保留为集成前历史快照。当前集成分支已经
+> 汇入 PR #7、#8、#9、#10、#12、#13；PR #11 的功能被 #12 覆盖，因此不重复合并
+> 它最后一份过期交接快照。当前版本已具备 WACA 演示入口、完整 Contract 渲染、
+> 本地 Evidence/Failure Loop、Docker 与 standalone 部署配置；非法 JSON 已按契约返回
+> 400；锁定安装已允许 esbuild 构建脚本。最终测试与构建通过后，此快照对应的旧缺口
+> 均以当前代码和 `docs/deployment.zh-CN.md` 为准。
+
 > ⚠️ 旧版交接文档**从未合并进 `main`**（其提交是 `e8c8416`，不在 `main` 祖先链上），
 > 且内容已被 PR #5 / PR #6 之后的进展推翻。本文档为复核后的准确版本。
 > 团队通用上手指南请看 `docs/teammate-onboarding.md`；本文档只讲 **Web Owner 视角的

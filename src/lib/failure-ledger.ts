@@ -88,6 +88,67 @@ export function emptyLedger(): Ledger {
   return { version: 1, evidence: [], accepted: {}, contexts: {}, incubations: {} };
 }
 
+const SOURCE_TYPES: EvidenceSourceType[] = [
+  "USER_REPORTED",
+  "ARTIFACT_INSPECTED",
+  "LOG_INSPECTED",
+  "AUTO_VERIFIED",
+];
+const FINDINGS: EvidenceFinding[] = ["PASS", "FAIL", "INCONCLUSIVE"];
+const REVIEW_STATUSES: EvidenceReviewStatus[] = ["PENDING", "ACCEPTED", "REJECTED"];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isEvidenceRecord(value: unknown): value is EvidenceRecord {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === "string" &&
+    typeof value.contractId === "string" &&
+    typeof value.contractRevision === "number" &&
+    Number.isInteger(value.contractRevision) &&
+    typeof value.criterionId === "string" &&
+    typeof value.requirementId === "string" &&
+    SOURCE_TYPES.includes(value.sourceType as EvidenceSourceType) &&
+    typeof value.sourceName === "string" &&
+    typeof value.summary === "string" &&
+    FINDINGS.includes(value.finding as EvidenceFinding) &&
+    REVIEW_STATUSES.includes(value.reviewStatus as EvidenceReviewStatus) &&
+    typeof value.recordedAt === "string"
+  );
+}
+
+function isBossContext(value: unknown): value is BossContext {
+  return (
+    isRecord(value) &&
+    typeof value.contractId === "string" &&
+    typeof value.objective === "string" &&
+    typeof value.rawGoal === "string"
+  );
+}
+
+function isIncubation(value: unknown): value is Incubation {
+  return (
+    isRecord(value) &&
+    typeof value.fromEvidenceId === "string" &&
+    typeof value.fromContractId === "string" &&
+    typeof value.criterionId === "string" &&
+    typeof value.summary === "string"
+  );
+}
+
+function isStringMap(value: unknown): value is Record<string, string> {
+  return isRecord(value) && Object.values(value).every((item) => typeof item === "string");
+}
+
+function isValueMap<T>(
+  value: unknown,
+  predicate: (item: unknown) => item is T,
+): value is Record<string, T> {
+  return isRecord(value) && Object.values(value).every(predicate);
+}
+
 /**
  * Reads the ledger, degrading to an empty one on anything unexpected.
  *
@@ -101,13 +162,22 @@ export function loadLedger(storage: LedgerStorage | null): Ledger {
     const raw = storage.getItem(LEDGER_STORAGE_KEY);
     if (!raw) return emptyLedger();
     const parsed = JSON.parse(raw) as Partial<Ledger>;
-    if (parsed.version !== 1 || !Array.isArray(parsed.evidence)) return emptyLedger();
+    if (
+      parsed.version !== 1 ||
+      !Array.isArray(parsed.evidence) ||
+      !parsed.evidence.every(isEvidenceRecord) ||
+      !isStringMap(parsed.accepted) ||
+      !isValueMap(parsed.contexts, isBossContext) ||
+      !isValueMap(parsed.incubations, isIncubation)
+    ) {
+      return emptyLedger();
+    }
     return {
       version: 1,
       evidence: parsed.evidence,
-      accepted: parsed.accepted ?? {},
-      contexts: parsed.contexts ?? {},
-      incubations: parsed.incubations ?? {},
+      accepted: parsed.accepted,
+      contexts: parsed.contexts,
+      incubations: parsed.incubations,
     };
   } catch {
     return emptyLedger();

@@ -151,9 +151,9 @@ ls -R .next/standalone/examples
 | 4 | 空目标 / 501 字符 / 错误 `schemaVersion` | 400 `INVALID_REQUEST` |
 | 5 | 页面在窄屏（手机）可读可操作 | 内容不溢出、按钮可点 |
 
-已知既有缺陷（**上线前建议先修**）：请求体不是合法 JSON 时返回
-**500 `INTERNAL_ERROR`**，而 `docs/api-contract.md` 与旧版路由约定的是
-**400 `INVALID_REQUEST`**（非法 JSON 属客户端错误）。本地 dev 与生产模式均已复现。
+非法 JSON、空请求体、错误 `schemaVersion` 与不合法目标现在均返回
+**400 `INVALID_REQUEST`**，并已由 `src/test/route.test.ts` 覆盖。服务端配置或
+生成器内部故障才返回 **500 `INTERNAL_ERROR`**。
 
 ---
 

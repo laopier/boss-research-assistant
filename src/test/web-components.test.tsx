@@ -16,7 +16,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { AcceptanceCriterion } from "../lib/contracts";
 import {
-  CriterionDerivation,
   EvidenceRecord,
   FailureAsset,
   deriveCriterion,

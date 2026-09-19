@@ -287,6 +287,20 @@ describe("ledger storage", () => {
     assert.deepEqual(loadLedger(memoryStorage('{"version":99}')), emptyLedger());
   });
 
+  it("rejects structurally invalid nested storage instead of crashing later", () => {
+    const malformedEvidence = JSON.stringify({
+      ...emptyLedger(),
+      evidence: [{ id: "EV-1", sourceName: null }],
+    });
+    const malformedMaps = JSON.stringify({
+      ...emptyLedger(),
+      accepted: [],
+    });
+
+    assert.deepEqual(loadLedger(memoryStorage(malformedEvidence)), emptyLedger());
+    assert.deepEqual(loadLedger(memoryStorage(malformedMaps)), emptyLedger());
+  });
+
   it("survives a storage implementation that throws", () => {
     const hostile: LedgerStorage = {
       getItem: () => {

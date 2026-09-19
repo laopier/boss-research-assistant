@@ -37,10 +37,11 @@ The expected criterion truth is fixed as follows:
 The demo must not convert this result to `CLEAR`. Passing numerical smoke tests
 does not override the accepted semantic failure recorded for AC-2.
 
-MVP-0 includes the goal input, mock request path, Contract rendering,
-Acceptance Criteria, and an Evidence Map placeholder. Live AI calls, Local
-Evidence Bridge, Understanding Check scheduling, authentication, persistence,
-and databases remain outside this acceptance scope.
+The frozen MVP-0 minimum includes the goal input, mock request path, Contract
+rendering, Acceptance Criteria, and an Evidence Map. The current product also
+contains a browser-local evidence and failure loop as an additive extension.
+Live AI calls, Local Evidence Bridge, Understanding Check scheduling,
+authentication, and server-side databases remain outside this acceptance scope.
 
 ## Product Status Copy
 
@@ -108,7 +109,7 @@ returned by the API or stored in a criterion.
 - [ ] The result displays the `模拟数据` badge.
 - [ ] The expected objective and Boss metadata are visible.
 - [ ] AC-1, AC-2, AC-3, and AC-4 display the frozen statuses.
-- [ ] The Evidence Map placeholder is visible.
+- [ ] The Evidence Map is visible and keeps each item attached to its criterion.
 - [ ] An empty goal cannot be submitted.
 - [ ] An API error is presented to the user rather than silently ignored.
 - [ ] The core flow remains usable in a narrow viewport.
