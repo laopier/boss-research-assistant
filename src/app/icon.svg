@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Matches the .brand mark in globals.css: a rounded green tile with a
+       serif "B". Before this file existed the app had no icon at all, so every
+       request to /favicon.ico returned 404. -->
+  <rect width="32" height="32" rx="9" fill="#245c45"/>
+  <text
+    x="16"
+    y="23.5"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="21"
+    fill="#ffffff"
+  >B</text>
+</svg>
