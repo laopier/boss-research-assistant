@@ -89,7 +89,7 @@ returned by the API or stored in a criterion.
 2. Follow the README to install locked dependencies and start the application.
 3. Open `http://localhost:3000`.
 4. Confirm that the page loads without an application error.
-5. Enter the frozen WACA goal and select `生成 Boss Contract`.
+5. Enter the frozen WACA goal and select `载入 WACA 演示案例`.
 6. Confirm that the result is visibly marked as simulated data.
 7. Confirm that the objective, metadata, four criteria, and Evidence Map are
    displayed.

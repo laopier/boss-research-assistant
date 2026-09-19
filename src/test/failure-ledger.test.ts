@@ -148,6 +148,13 @@ describe("criterion derivation (§3, §7, §8)", () => {
     assert.equal(result.status, "UNKNOWN", "USER_REPORTED is not in acceptedSourceTypes");
   });
 
+  it("does not let a rejected source type force a FAIL verdict (§7)", () => {
+    const result = deriveCriterion(criterion(), [
+      evidence({ sourceType: "USER_REPORTED", finding: "FAIL" }),
+    ]);
+    assert.equal(result.status, "UNKNOWN", "an invalid source must not affect the verdict");
+  });
+
   it("enforces minimumCount (§7)", () => {
     const twoRequired = criterion({
       evidenceRequirements: [

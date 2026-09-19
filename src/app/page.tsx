@@ -402,7 +402,7 @@ function ContractView({
           <h3>验收标准与证据</h3>
           {contract.acceptanceCriteria.map((criterion) => (
             <EvidenceEntry
-              key={criterion.id}
+              key={`${contract.id}:${criterion.id}`}
               criterion={criterion}
               derivation={deriveCriterion(criterion, evidenceByCriterion.get(criterion.id) ?? [])}
               records={evidenceByCriterion.get(criterion.id) ?? []}

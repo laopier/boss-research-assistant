@@ -264,13 +264,18 @@ export function deriveCriterion(
   criterion: AcceptanceCriterion,
   records: readonly EvidenceRecord[],
 ): CriterionDerivation {
-  const requirementIds = new Set(criterion.evidenceRequirements.map((item) => item.id));
+  const requirements = new Map(
+    criterion.evidenceRequirements.map((item) => [item.id, item] as const),
+  );
 
   // §8: only accepted evidence counts.
   const accepted = records.filter((item) => item.reviewStatus === "ACCEPTED");
   // §7: evidence must map to a requirement of this criterion, so unrelated
   // evidence cannot be used to pad a count.
-  const relevant = accepted.filter((item) => requirementIds.has(item.requirementId));
+  const relevant = accepted.filter((item) => {
+    const requirement = requirements.get(item.requirementId);
+    return requirement?.acceptedSourceTypes.includes(item.sourceType) ?? false;
+  });
   const pendingCount = records.filter((item) => item.reviewStatus !== "ACCEPTED").length;
 
   // §3: accepted evidence showing the criterion is not satisfied takes priority.
