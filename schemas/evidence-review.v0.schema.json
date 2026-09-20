@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boss-research-assistant.local/schemas/evidence-review.v0.schema.json",
+  "title": "Evidence Review verdict v0",
+  "description": "Structural shape of an evidence review verdict returned by POST /api/evidence/review. Semantic rules that a schema cannot express (the proof-boundary ceiling, REJECTED must stay INCONCLUSIVE) live in src/lib/evidence-review/validation.ts and run after this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "finding", "rationale", "proofBoundary", "suggestedNextEvidence"],
+  "properties": {
+    "decision": {
+      "description": "Whether the submitted content is admissible evidence. ACCEPTED does not mean the criterion passed.",
+      "enum": ["ACCEPTED", "REJECTED", "INCONCLUSIVE"]
+    },
+    "finding": {
+      "description": "What the admitted content shows about the criterion.",
+      "enum": ["PASS", "FAIL", "INCONCLUSIVE"]
+    },
+    "rationale": {
+      "description": "Why this verdict was reached, naming what was observed and which rule applied.",
+      "$ref": "#/$defs/nonEmptyString"
+    },
+    "proofBoundary": {
+      "description": "The highest thing the submitted content actually proves. Never higher than the submitted source type, and never AUTO_VERIFIED, because reading pasted text cannot establish that the platform executed a check.",
+      "enum": ["USER_REPORTED", "ARTIFACT_INSPECTED", "LOG_INSPECTED", "AUTO_VERIFIED"]
+    },
+    "suggestedNextEvidence": {
+      "description": "What to submit next. Required in practice whenever the verdict is not ACCEPTED.",
+      "type": "array",
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/suggestedEvidence" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "sourceType": {
+      "enum": ["USER_REPORTED", "ARTIFACT_INSPECTED", "LOG_INSPECTED", "AUTO_VERIFIED"]
+    },
+    "suggestedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "hint"],
+      "properties": {
+        "sourceType": { "$ref": "#/$defs/sourceType" },
+        "hint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    }
+  }
+}
