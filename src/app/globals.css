@@ -105,13 +105,61 @@ h3 { margin: 0 0 16px; font-size: 15px; }
 .review-pending { color: #76501f; background: #f5e4bd; }
 .review-accepted { color: var(--pass-ink); background: var(--pass-bg); }
 .review-rejected { color: var(--fail-ink); background: var(--fail-bg); }
+.review-overridden { color: #7a4a12; background: #f6e6c8; }
 .review-actions, .actions { display: inline-flex; gap: 8px; }
+
+/* A submission whose review is waiting for a decision. It is the one place on
+   the page that needs the user's attention, so it gets a warm left edge rather
+   than a loud background: FAIL must stay the loudest signal here. */
+.evidence-item-attention { box-shadow: inset 3px 0 0 var(--orange); }
+
+/* The verdict panel. The order of these blocks is the order of the questions a
+   user asks: did it count, what did it find, how far does it prove, what next. */
+.review-panel { margin-top: 10px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+/* Says whose decision this is, before any of the content. "AI 建议" and "已采纳"
+   must never be confusable, because the whole point of the boundary is that the
+   user can tell which one they are looking at. */
+.review-headline { margin: 0 0 8px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+.review-callout { margin: 0 0 10px; padding: 8px 10px; color: #76501f; background: #fbf5e6; border-radius: 8px; font-size: 12px; line-height: 1.6; }
+.review-verdict { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.review-provenance { color: var(--muted); font-size: 11px; }
+.review-rationale { margin: 10px 0 0; color: var(--ink); font-size: 12px; line-height: 1.7; }
+.review-boundary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.review-boundary-label { color: var(--muted); font-size: 11px; font-weight: 700; }
+/* Deliberately a different colour from the PASS chip: "how much this proves" is
+   not a verdict and must not read like one. */
+.review-boundary-value { padding: 3px 8px; color: #1f4d7a; background: #e2edf7; border-radius: 5px; font-size: 11px; font-weight: 700; }
+.source-type-declared { color: var(--muted); font-size: 11px; }
+.review-boundary .field-hint { flex: 1 0 100%; margin: 4px 0 0; }
+.review-suggestions { margin-top: 10px; }
+.review-suggestions strong { font-size: 12px; }
+.review-suggestions ul { margin: 6px 0 0; padding-left: 0; list-style: none; font-size: 12px; }
+.review-suggestions li { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; color: var(--muted); line-height: 1.6; }
+.suggested-source { flex: none; padding: 2px 7px; color: var(--green); background: #eef3ec; border-radius: 5px; font-size: 11px; font-weight: 700; }
+.override-audit { margin: 10px 0 0; padding: 8px 10px; color: #76501f; background: #fbf5e6; border-left: 2px solid var(--orange); border-radius: 6px; font-size: 11px; line-height: 1.7; }
+.review-actions-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.review-actions-row button { padding: 9px 14px; font-size: 12px; }
+.review-actions-row .muted { flex: 1 1 220px; line-height: 1.6; }
+
+/* Override form. Visually the same family as .gate: a place where something
+   consequential is about to happen, and the user should feel that. */
+.override-form { margin-top: 12px; padding: 14px; background: #fbf5e6; border: 1px solid #efe0c2; border-radius: 10px; }
+.override-form label { display: block; margin-bottom: 12px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.override-form input, .override-form select, .override-form textarea { display: block; width: 100%; margin: 6px 0 0; padding: 9px 11px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; outline: none; font-size: 13px; font-weight: 400; }
+.override-form textarea { min-height: 66px; resize: vertical; line-height: 1.6; }
+.override-form input:focus, .override-form select:focus, .override-form textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(36, 92, 69, .1); }
+.override-warning { margin: 0 0 12px; color: var(--fail-ink); font-size: 12px; line-height: 1.6; }
+
+/* Scope guard for this round: pasted text only, sent to the reviewer. */
+.privacy-note { margin: 4px 0 12px; padding: 10px 12px; color: var(--muted); background: #eef3ec; border-radius: 9px; font-size: 11px; line-height: 1.7; }
+.privacy-note code { padding: 1px 5px; background: #e2e8e0; border-radius: 4px; }
+.privacy-note strong { color: var(--ink); }
 
 .evidence-actions { margin-top: 12px; }
 .evidence-form { padding: 16px; background: #f7f7f2; border-radius: 12px; }
 .evidence-form label { display: block; margin-bottom: 12px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .evidence-form input, .evidence-form select, .evidence-form textarea { display: block; width: 100%; margin: 6px 0 0; padding: 9px 11px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; outline: none; font-size: 13px; font-weight: 400; }
-.evidence-form textarea { min-height: 62px; resize: vertical; line-height: 1.6; }
+.evidence-form textarea { min-height: 110px; resize: vertical; line-height: 1.6; }
 .evidence-form input:focus, .evidence-form select:focus, .evidence-form textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(36, 92, 69, .1); }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .field-hint { margin: -4px 0 12px; color: #8b918a; font-size: 11px; line-height: 1.5; }

@@ -5,7 +5,10 @@ import {
   Deliverable,
   EvidenceSourceType,
 } from "@/lib/contracts";
+import type { ReviewDecision } from "@/lib/evidence-review/types";
 import { EvidenceFinding, EvidenceReviewStatus } from "@/lib/failure-ledger";
+
+import type { ReviewerKind } from "@/lib/evidence-review/client";
 
 /**
  * UI copy tables.
@@ -81,3 +84,47 @@ export const reviewStatusText: Record<EvidenceReviewStatus, string> = {
 };
 
 export const findings: EvidenceFinding[] = ["PASS", "FAIL", "INCONCLUSIVE"];
+
+/**
+ * The review verdict's own vocabulary. `decision` answers "may this count?",
+ * `finding` answers "what does it show?" — see docs/contracts.zh-CN.md §8.
+ */
+export const reviewDecisionText: Record<ReviewDecision, string> = {
+  ACCEPTED: "接受",
+  REJECTED: "拒绝",
+  INCONCLUSIVE: "无法判断",
+};
+
+export const reviewDecisionClass: Record<ReviewDecision, string> = {
+  ACCEPTED: "status status-pass",
+  REJECTED: "status status-fail",
+  INCONCLUSIVE: "status status-unknown",
+};
+
+export const reviewerKindText: Record<ReviewerKind, string> = {
+  MOCK: "规则审核（离线）",
+  AI: "AI 审核（DeepSeek）",
+};
+
+/**
+ * What the reviewer was actually able to look at, which is not the same as the
+ * source the submitter declared.
+ *
+ * DUPLICATE ON PURPOSE: `evidence-review/validation.ts` exports the identical
+ * table as `PROOF_BOUNDARY_TEXT`, but that module imports Ajv and the JSON
+ * schema and must never reach the browser bundle. `src/test/web-components.test.tsx`
+ * asserts the two tables are equal, so the copy cannot drift silently.
+ */
+export const proofBoundaryText: Record<EvidenceSourceType, string> = {
+  USER_REPORTED: "用户陈述",
+  ARTIFACT_INSPECTED: "成果内容",
+  LOG_INSPECTED: "运行日志",
+  AUTO_VERIFIED: "平台执行",
+};
+
+export const proofBoundaryHint: Record<EvidenceSourceType, string> = {
+  USER_REPORTED: "审核器只看到了一句陈述，因此只能证明「用户声称做过」。",
+  ARTIFACT_INSPECTED: "审核器看到了提交的成果内容，并不能证明它在运行时正确。",
+  LOG_INSPECTED: "审核器看到了提交的运行日志；平台本身没有执行该命令。",
+  AUTO_VERIFIED: "平台亲自执行了隔离验证。粘贴的文本永远达不到这一层。",
+};

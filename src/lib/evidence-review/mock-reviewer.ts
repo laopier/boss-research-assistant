@@ -82,15 +82,36 @@ function firstMatch(patterns: readonly RegExp[], text: string): string | null {
 }
 
 /**
+ * Identifier boundaries: `test_shape`, `stage2_input`, `Stage2Descriptor`.
+ *
+ * Evidence is overwhelmingly written in this form — a command line, a file
+ * name, a symbol — so a tokenizer that treats `tests/test_shape.py` as one word
+ * finds no overlap with the criterion it literally tests, and the relevance
+ * check then blocks the most natural submission there is.
+ */
+const CASE_OR_DIGIT_BOUNDARY = /(?<=[a-z])(?=[A-Z])|(?<=[A-Za-z])(?=[0-9])|(?<=[0-9])(?=[A-Za-z])/;
+const IDENTIFIER_SEPARATOR = /[_./\\-]+/;
+
+/**
  * Tokens used for a relevance check: latin words of 3+ characters and CJK
  * bigrams. Deliberately generous — a false "relevant" only means the reviewer
  * looks at the content, while a false "irrelevant" would block real evidence,
- * so the check only fires when there is no overlap at all.
+ * so the check only fires when there is no overlap at all, and each identifier
+ * contributes both itself and its parts.
  */
 export function contentTokens(text: string): Set<string> {
   const tokens = new Set<string>();
-  for (const match of text.toLowerCase().match(/[a-z0-9_./-]{3,}/g) ?? []) {
-    tokens.add(match);
+  const add = (candidate: string) => {
+    const token = candidate.toLowerCase();
+    // Bare numbers carry no topical meaning and would match every log, so they
+    // are dropped on both the whole-token and the split path.
+    if (token.length >= 3 && !/^[0-9]+$/.test(token)) tokens.add(token);
+  };
+  for (const raw of text.match(/[A-Za-z0-9_./\\-]{3,}/g) ?? []) {
+    add(raw);
+    for (const chunk of raw.split(CASE_OR_DIGIT_BOUNDARY)) {
+      for (const part of chunk.split(IDENTIFIER_SEPARATOR)) add(part);
+    }
   }
   for (const run of text.match(/[\u4e00-\u9fff]+/g) ?? []) {
     if (run.length === 1) {

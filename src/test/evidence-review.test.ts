@@ -17,7 +17,7 @@ import { describe, it } from "node:test";
 
 import type { EvidenceSourceType } from "../lib/contracts";
 import { LLMEvidenceReviewer } from "../lib/evidence-review/llm-reviewer";
-import { MockEvidenceReviewer } from "../lib/evidence-review/mock-reviewer";
+import { MockEvidenceReviewer, contentTokens } from "../lib/evidence-review/mock-reviewer";
 import { buildEvidenceReviewUserPrompt } from "../lib/evidence-review/prompt";
 import type {
   EvidenceReviewRequest,
@@ -401,6 +401,34 @@ describe("MockEvidenceReviewer", () => {
     assert.equal(review.decision, "INCONCLUSIVE");
     assert.equal(review.finding, "INCONCLUSIVE");
     assert.match(review.rationale, /看不出/);
+  });
+
+  it("recognises a pytest log as relevant to the criterion it tests", async () => {
+    // Regression: the relevance check used to tokenise `tests/test_shape.py` as
+    // one word, so a real passing test log was reported as unrelated and the
+    // offline demo could not produce a PASS at all.
+    const review = await reviewer.review(
+      makeRequest({
+        content: "$ python -m pytest tests/test_shape.py -q\n1 passed, 0 failed in 0.31s",
+        sourceName: "pytest_shape.txt",
+        criterionDescription: "The submitted WACA-SE module runs and preserves shape",
+        requirementDescription: "A runtime test checks shape and gradient",
+        acceptedSourceTypes: ["LOG_INSPECTED"],
+      }),
+    );
+    assert.equal(review.decision, "ACCEPTED");
+    assert.equal(review.finding, "PASS");
+    assert.equal(review.proofBoundary, "LOG_INSPECTED");
+  });
+
+  it("splits identifiers and drops bare numbers when tokenising", () => {
+    const tokens = contentTokens("$ pytest tests/test_shape.py --stage2_input 123");
+    for (const expected of ["pytest", "tests", "test", "shape", "stage", "input"]) {
+      assert.ok(tokens.has(expected), `expected token "${expected}" in ${[...tokens].join(",")}`);
+    }
+    assert.equal(tokens.has("123"), false, "a bare number would match every log");
+    assert.equal(tokens.has("test_shape"), false, "the glued form is split, not compared");
+    assert.ok(tokens.has("tests/test_shape.py"), "the whole path is still comparable");
   });
 
   it("still accepts an explicit failure even when the text never names the criterion", async () => {

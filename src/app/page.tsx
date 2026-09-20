@@ -8,9 +8,10 @@ import {
   GenerateBossContractResponse,
 } from "@/lib/contracts";
 import {
-  EvidenceReviewStatus,
   FailureAsset,
   Ledger,
+  OverrideDraft,
+  ReviewOutcome,
   buildIncubationGoal,
   deriveBoss,
   deriveCriterion,
@@ -19,8 +20,9 @@ import {
   withContext,
   withImportedEvidence,
   withIncubation,
+  withOverride,
   withRecordedEvidence,
-  withReview,
+  withReviewOutcome,
 } from "@/lib/failure-ledger";
 import {
   getLedgerServerSnapshot,
@@ -30,7 +32,7 @@ import {
   updateLedger,
 } from "@/lib/ledger-store";
 import wacaDemoFixture from "../../examples/waca-se-boss.json";
-import { EvidenceDraftInput, EvidenceEntry } from "./evidence-entry";
+import { EvidenceEntry, EvidenceSubmissionInput } from "./evidence-entry";
 import { FailureLibrary } from "./failure-library";
 import {
   assistanceModeText,
@@ -175,9 +177,21 @@ export default function Home() {
     updateLedger((current) => withAcceptedContract(current, contract.id, new Date().toISOString()));
   }
 
-  function recordEvidence(criterionId: string, input: EvidenceDraftInput) {
-    if (!contract) return;
+  /**
+   * Records one submission and returns its id.
+   *
+   * Written before the review is requested, on purpose: "the user submitted
+   * this" is a fact the ledger should hold even if the reviewer is unreachable,
+   * and the resulting PENDING record is what lets the page say "已经记录，但还
+   * 没有被审核" instead of pretending nothing happened. The verdict itself is
+   * NOT written here — see `adoptReview`.
+   *
+   * `content` is intentionally dropped: it is review input, not ledger state.
+   */
+  function recordEvidence(criterionId: string, input: EvidenceSubmissionInput): string {
     const at = new Date().toISOString();
+    const id = `ev-${at}-${Math.random().toString(36).slice(2, 8)}`;
+    if (!contract) return id;
     updateLedger((current) =>
       withRecordedEvidence(
         current,
@@ -185,15 +199,32 @@ export default function Home() {
           contractId: contract.id,
           contractRevision: contract.revision,
           criterionId,
-          ...input,
+          requirementId: input.requirementId,
+          sourceType: input.sourceType,
+          sourceName: input.sourceName,
+          summary: input.summary,
         },
-        { id: `ev-${at}-${Math.random().toString(36).slice(2, 8)}`, recordedAt: at },
+        { id, recordedAt: at },
       ),
     );
+    return id;
   }
 
-  function reviewEvidence(evidenceId: string, reviewStatus: EvidenceReviewStatus) {
-    updateLedger((current) => withReview(current, evidenceId, reviewStatus));
+  /** Adopts a review the user accepted. This is the only path from advice to state. */
+  function adoptReview(outcome: ReviewOutcome) {
+    updateLedger((current) => withReviewOutcome(current, outcome));
+    setNotice("已采纳审核结论，相关验收项的状态已按证据重新推导。");
+  }
+
+  /**
+   * Applies a human decision that disagrees with the review.
+   *
+   * The rejected advice is passed along so the ledger keeps both halves of the
+   * story: what the reviewer said, and why a person overruled it.
+   */
+  function overrideEvidence(draft: OverrideDraft, outcome: ReviewOutcome | undefined) {
+    updateLedger((current) => withOverride(current, draft, outcome));
+    setNotice("已按人工判定覆盖，审计记录已写入本地账本。");
   }
 
   /**
@@ -294,9 +325,11 @@ export default function Home() {
           boss={boss}
           lineage={lineage}
           records={contractRecords}
+          ledger={ledger}
           onAccept={acceptContract}
           onRecord={recordEvidence}
-          onReview={reviewEvidence}
+          onAdopt={adoptReview}
+          onOverride={overrideEvidence}
         />
       )}
 
@@ -314,9 +347,11 @@ interface ContractViewProps {
   boss: ReturnType<typeof deriveBoss>;
   lineage: Ledger["incubations"][string] | undefined;
   records: Ledger["evidence"];
+  ledger: Ledger;
   onAccept: () => void;
-  onRecord: (criterionId: string, input: EvidenceDraftInput) => void;
-  onReview: (evidenceId: string, reviewStatus: EvidenceReviewStatus) => void;
+  onRecord: (criterionId: string, input: EvidenceSubmissionInput) => string;
+  onAdopt: (outcome: ReviewOutcome) => void;
+  onOverride: (draft: OverrideDraft, outcome: ReviewOutcome | undefined) => void;
 }
 
 function ContractView({
@@ -326,9 +361,11 @@ function ContractView({
   boss,
   lineage,
   records,
+  ledger,
   onAccept,
   onRecord,
-  onReview,
+  onAdopt,
+  onOverride,
 }: ContractViewProps) {
   const evidenceByCriterion = new Map<string, Ledger["evidence"]>();
   for (const item of records) {
@@ -406,9 +443,11 @@ function ContractView({
               criterion={criterion}
               derivation={deriveCriterion(criterion, evidenceByCriterion.get(criterion.id) ?? [])}
               records={evidenceByCriterion.get(criterion.id) ?? []}
+              ledger={ledger}
               locked={!accepted}
               onRecord={(input) => onRecord(criterion.id, input)}
-              onReview={onReview}
+              onAdopt={onAdopt}
+              onOverride={onOverride}
             />
           ))}
         </article>

@@ -15,19 +15,26 @@ import {
   EvidenceRecord,
   Ledger,
   LedgerStorage,
+  MIN_OVERRIDE_REASON_LENGTH,
+  ReviewOutcome,
   buildIncubationGoal,
   clampGoal,
   deriveBoss,
   deriveCriterion,
   emptyLedger,
+  isAuditableOverride,
+  latestOverrideFor,
   listFailures,
   loadLedger,
+  reviewFor,
+  reviewStatusForDecision,
   saveLedger,
   withAcceptedContract,
   withContext,
   withIncubation,
+  withOverride,
   withRecordedEvidence,
-  withReview,
+  withReviewOutcome,
 } from "../lib/failure-ledger";
 
 function criterion(overrides: Partial<AcceptanceCriterion> = {}): AcceptanceCriterion {
@@ -274,6 +281,59 @@ describe("Boss derivation (§4)", () => {
 });
 
 describe("ledger storage", () => {
+  it("round-trips reviews and the override log through a storage implementation", () => {
+    const storage = memoryStorage();
+    const reviewed = withReviewOutcome(
+      recorded(),
+      outcome({ finding: "FAIL", proofBoundary: "USER_REPORTED", suggestedNextEvidence: [] }),
+    );
+    const ledger = withOverride(
+      reviewed,
+      {
+        evidenceId: "EV-1",
+        toStatus: "REJECTED",
+        reason: "这段内容只能证明用户声称做过，不足以判定。",
+        at: "2026-09-18T10:30:00.000Z",
+      },
+      reviewed.reviews["EV-1"],
+    );
+
+    assert.equal(saveLedger(storage, ledger), true);
+    assert.deepEqual(loadLedger(storage), ledger);
+    const reloaded = loadLedger(storage);
+    assert.equal(reloaded.reviews["EV-1"].rationale, ledger.reviews["EV-1"].rationale);
+    assert.equal(reloaded.overrides[0].reason, ledger.overrides[0].reason);
+  });
+
+  it("reads a payload written before reviews and overrides existed", () => {
+    // The shape the first published build wrote: no `reviews`, no `overrides`.
+    const legacy = JSON.stringify({
+      version: 1,
+      evidence: [evidence()],
+      accepted: { "boss-1": "2026-09-18T10:00:00.000Z" },
+      contexts: {},
+      incubations: {},
+    });
+    const loaded = loadLedger(memoryStorage(legacy));
+    assert.equal(loaded.evidence.length, 1, "an older payload must not be discarded");
+    assert.equal(loaded.accepted["boss-1"], "2026-09-18T10:00:00.000Z");
+    assert.deepEqual(loaded.reviews, {});
+    assert.deepEqual(loaded.overrides, []);
+  });
+
+  it("fails closed on a present but malformed review or override", () => {
+    const malformedReview = JSON.stringify({
+      ...emptyLedger(),
+      reviews: { "EV-1": { evidenceId: "EV-1", decision: "PROBABLY" } },
+    });
+    const malformedOverrides = JSON.stringify({ ...emptyLedger(), overrides: { "EV-1": {} } });
+    const nullReviews = JSON.stringify({ ...emptyLedger(), reviews: null });
+
+    assert.deepEqual(loadLedger(memoryStorage(malformedReview)), emptyLedger());
+    assert.deepEqual(loadLedger(memoryStorage(malformedOverrides)), emptyLedger());
+    assert.deepEqual(loadLedger(memoryStorage(nullReviews)), emptyLedger());
+  });
+
   it("round-trips through a storage implementation", () => {
     const storage = memoryStorage();
     const ledger = withAcceptedContract(emptyLedger(), "boss-1", "2026-09-18T10:00:00.000Z");
@@ -321,7 +381,7 @@ describe("ledger storage", () => {
 });
 
 describe("recording and review", () => {
-  it("records new evidence as PENDING (§8)", () => {
+  it("records new evidence as PENDING and asserts no verdict (§8)", () => {
     const ledger = withRecordedEvidence(
       emptyLedger(),
       {
@@ -332,16 +392,20 @@ describe("recording and review", () => {
         sourceType: "LOG_INSPECTED",
         sourceName: "log",
         summary: "ok",
-        finding: "PASS",
       },
       { id: "EV-1", recordedAt: "2026-09-18T10:00:00.000Z" },
     );
     assert.equal(ledger.evidence.length, 1);
     assert.equal(ledger.evidence[0].reviewStatus, "PENDING");
+    assert.equal(
+      ledger.evidence[0].finding,
+      "INCONCLUSIVE",
+      "a submitter cannot state a verdict; the review supplies it",
+    );
     assert.equal(deriveCriterion(criterion(), ledger.evidence).status, "UNKNOWN");
   });
 
-  it("accepts evidence and then it affects the status", () => {
+  it("adopts a review and then it affects the status", () => {
     const recorded = withRecordedEvidence(
       emptyLedger(),
       {
@@ -352,12 +416,14 @@ describe("recording and review", () => {
         sourceType: "LOG_INSPECTED",
         sourceName: "log",
         summary: "ok",
-        finding: "PASS",
       },
       { id: "EV-1", recordedAt: "2026-09-18T10:00:00.000Z" },
     );
-    const accepted = withReview(recorded, "EV-1", "ACCEPTED");
-    assert.equal(deriveCriterion(criterion(), accepted.evidence).status, "PASS");
+    const adopted = withReviewOutcome(
+      recorded,
+      outcome({ evidenceId: "EV-1", decision: "ACCEPTED", finding: "PASS" }),
+    );
+    assert.equal(deriveCriterion(criterion(), adopted.evidence).status, "PASS");
   });
 
   it("leaves other evidence untouched when reviewing one item", () => {
@@ -366,7 +432,10 @@ describe("recording and review", () => {
       draft("EV-2"),
       meta("EV-2", 2),
     );
-    const reviewed = withReview(base, "EV-2", "REJECTED");
+    const reviewed = withOverride(
+      base,
+      { evidenceId: "EV-2", toStatus: "REJECTED", reason: "这段文本与验收项无关。", at: "2026-09-18T10:05:00.000Z" },
+    );
     assert.equal(reviewed.evidence.find((item) => item.id === "EV-1")?.reviewStatus, "PENDING");
     assert.equal(reviewed.evidence.find((item) => item.id === "EV-2")?.reviewStatus, "REJECTED");
   });
@@ -381,13 +450,195 @@ function draft(criterionId: string) {
     sourceType: "LOG_INSPECTED" as const,
     sourceName: "log",
     summary: "ok",
-    finding: "PASS" as const,
   };
 }
 
 function meta(id: string, hour: number) {
   return { id, recordedAt: `2026-09-18T${String(hour).padStart(2, "0")}:00:00.000Z` };
 }
+
+function outcome(overrides: Partial<ReviewOutcome> = {}): ReviewOutcome {
+  return {
+    evidenceId: "EV-1",
+    decision: "ACCEPTED",
+    finding: "PASS",
+    rationale: "日志显示 12 个用例全部通过。",
+    proofBoundary: "LOG_INSPECTED",
+    suggestedNextEvidence: [],
+    reviewerKind: "MOCK",
+    promptVersion: "evidence-review.mock.v1",
+    reviewedAt: "2026-09-18T10:01:00.000Z",
+    ...overrides,
+  };
+}
+
+/** One recorded, unreviewed piece of evidence, ready to be reviewed. */
+function recorded(id = "EV-1"): Ledger {
+  return withRecordedEvidence(emptyLedger(), draft("AC-1"), {
+    id,
+    recordedAt: "2026-09-18T10:00:00.000Z",
+  });
+}
+
+describe("review adoption and audited overrides", () => {
+  it("maps a decision onto a ledger status, keeping INCONCLUSIVE as pending", () => {
+    assert.equal(reviewStatusForDecision("ACCEPTED"), "ACCEPTED");
+    assert.equal(reviewStatusForDecision("REJECTED"), "REJECTED");
+    assert.equal(
+      reviewStatusForDecision("INCONCLUSIVE"),
+      "PENDING",
+      "an undecided review must keep asking for evidence, not close the criterion",
+    );
+  });
+
+  it("takes the finding from the review, not from the submitter", () => {
+    // The submission says nothing; the reviewer read a traceback in it.
+    const ledger = withReviewOutcome(
+      recorded(),
+      outcome({ finding: "FAIL", rationale: "日志含 Traceback，Stage 2 收到 X。" }),
+    );
+    assert.equal(ledger.evidence[0].finding, "FAIL");
+    assert.equal(deriveCriterion(criterion(), ledger.evidence).status, "FAIL");
+    assert.equal(reviewFor(ledger, "EV-1")?.rationale, "日志含 Traceback，Stage 2 收到 X。");
+  });
+
+  it("keeps INCONCLUSIVE evidence out of the derivation but visible on the record", () => {
+    const ledger = withReviewOutcome(
+      recorded(),
+      outcome({ decision: "INCONCLUSIVE", finding: "INCONCLUSIVE" }),
+    );
+    assert.equal(ledger.evidence[0].reviewStatus, "PENDING");
+    assert.equal(reviewFor(ledger, "EV-1")?.decision, "INCONCLUSIVE");
+    assert.equal(deriveCriterion(criterion(), ledger.evidence).status, "UNKNOWN");
+    assert.equal(deriveCriterion(criterion(), ledger.evidence).pendingCount, 1);
+  });
+
+  it("does not let a rejected submission move the criterion (§8)", () => {
+    const ledger = withReviewOutcome(
+      recorded(),
+      outcome({ decision: "REJECTED", finding: "INCONCLUSIVE", rationale: "与验收项无关。" }),
+    );
+    assert.equal(ledger.evidence[0].reviewStatus, "REJECTED");
+    const derived = deriveCriterion(criterion(), ledger.evidence);
+    assert.equal(derived.status, "UNKNOWN");
+    assert.equal(derived.acceptedCount, 0, "a rejected submission is not evidence");
+    // `pendingCount` counts everything that is not accepted — a rejection is
+    // "not accepted" too. The distinction the UI needs is which source decides,
+    // and only ACCEPTED does.
+    assert.equal(derived.pendingCount, 1);
+  });
+
+  it("refuses a review of evidence the ledger does not hold", () => {
+    const ledger = withReviewOutcome(recorded(), outcome({ evidenceId: "EV-MISSING" }));
+    assert.equal(ledger.evidence.length, 1);
+    assert.equal(ledger.evidence[0].reviewStatus, "PENDING");
+    assert.equal(reviewFor(ledger, "EV-MISSING"), undefined, "no orphan review");
+  });
+
+  it("records an override as a transition with a reason, and keeps the review it overrode", () => {
+    const reviewed = withReviewOutcome(
+      recorded(),
+      outcome({ decision: "REJECTED", finding: "INCONCLUSIVE", rationale: "没有看到运行输出。" }),
+    );
+    const overridden = withOverride(
+      reviewed,
+      {
+        evidenceId: "EV-1",
+        toStatus: "ACCEPTED",
+        toFinding: "PASS",
+        reason: "已在本地重跑，输出附在 PR 描述里。",
+        at: "2026-09-18T10:30:00.000Z",
+      },
+      reviewed.reviews["EV-1"],
+    );
+
+    assert.equal(overridden.evidence[0].reviewStatus, "ACCEPTED");
+    assert.equal(deriveCriterion(criterion(), overridden.evidence).status, "PASS");
+
+    const audit = latestOverrideFor(overridden, "EV-1");
+    assert.ok(audit, "the override must be visible in the audit trail");
+    assert.equal(audit.fromStatus, "REJECTED");
+    assert.equal(audit.toStatus, "ACCEPTED");
+    assert.equal(audit.reason, "已在本地重跑，输出附在 PR 描述里。");
+    assert.equal(
+      reviewFor(overridden, "EV-1")?.rationale,
+      "没有看到运行输出。",
+      "the AI's advice survives the human disagreement",
+    );
+  });
+
+  it("refuses an override with no usable reason", () => {
+    const base = recorded();
+    const blank = withOverride(base, {
+      evidenceId: "EV-1",
+      toStatus: "ACCEPTED",
+      reason: "   ",
+      at: "2026-09-18T10:30:00.000Z",
+    });
+    const tooShort = withOverride(base, {
+      evidenceId: "EV-1",
+      toStatus: "ACCEPTED",
+      reason: "行吧",
+      at: "2026-09-18T10:30:00.000Z",
+    });
+    assert.equal(blank, base, "a blank reason must not change the ledger");
+    assert.equal(tooShort, base);
+    assert.equal(base.overrides.length, 0);
+    assert.equal(isAuditableOverride({ reason: "x".repeat(MIN_OVERRIDE_REASON_LENGTH) }), true);
+    assert.equal(
+      isAuditableOverride({ reason: "x".repeat(MIN_OVERRIDE_REASON_LENGTH - 1) }),
+      false,
+      "the length gate is the form's, and it must match the reducer's",
+    );
+    assert.equal(isAuditableOverride({ reason: `  ${"x".repeat(MIN_OVERRIDE_REASON_LENGTH)}  ` }), true);
+  });
+
+  it("defaults the overridden finding to the review's, not to PASS", () => {
+    const reviewed = withReviewOutcome(recorded(), outcome({ finding: "FAIL" }));
+    const overridden = withOverride(
+      reviewed,
+      { evidenceId: "EV-1", toStatus: "REJECTED", reason: "这条日志不是本轮产生的。", at: "t" },
+      reviewed.reviews["EV-1"],
+    );
+    assert.equal(overridden.evidence[0].reviewStatus, "REJECTED");
+    assert.equal(
+      overridden.evidence[0].finding,
+      "FAIL",
+      "disagreeing with the decision must not silently rewrite what the content shows",
+    );
+  });
+
+  it("keeps every override, newest last, when a user changes their mind twice", () => {
+    const base = recorded();
+    const first = withOverride(base, {
+      evidenceId: "EV-1",
+      toStatus: "ACCEPTED",
+      reason: "第一次：本地重跑通过。",
+      at: "2026-09-18T10:30:00.000Z",
+    });
+    const second = withOverride(first, {
+      evidenceId: "EV-1",
+      toStatus: "REJECTED",
+      reason: "发现跑的是旧版本，撤回。",
+      at: "2026-09-18T11:00:00.000Z",
+    });
+
+    assert.equal(second.overrides.length, 2, "the audit log is append-only");
+    assert.equal(second.evidence[0].reviewStatus, "REJECTED");
+    assert.equal(latestOverrideFor(second, "EV-1")?.reason, "发现跑的是旧版本，撤回。");
+  });
+
+  it("refuses an override of evidence the ledger does not hold", () => {
+    const base = recorded();
+    const result = withOverride(base, {
+      evidenceId: "EV-MISSING",
+      toStatus: "ACCEPTED",
+      reason: "这段理由足够长，应该被接受。",
+      at: "t",
+    });
+    assert.equal(result, base);
+  });
+});
 
 describe("agreement with the frozen product truth", () => {
   // The strongest available check on this module: run the derivation over the

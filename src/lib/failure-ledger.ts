@@ -5,6 +5,7 @@ import {
   CriterionStatus,
   EvidenceSourceType,
 } from "./contracts";
+import type { ReviewDecision, ReviewFinding, SuggestedEvidence } from "./evidence-review/types";
 
 /**
  * Failure ledger: the acceptance gate, evidence recording, status derivation,
@@ -29,6 +30,17 @@ import {
  * - §8  Only `reviewStatus: "ACCEPTED"` evidence participates in the
  *       computation, and being accepted does not imply a `PASS` finding.
  * - §11 An out-of-scope need becomes a new Boss instead of widening this one.
+ *
+ * Two things are deliberately NOT expressible here, because the demo's worst
+ * defect was that both were possible:
+ *
+ * - A submitter cannot state a `finding`. Recording evidence writes
+ *   `INCONCLUSIVE`, and the verdict arrives from the review boundary, so
+ *   "我写了一段话，我自己判定通过，我自己接受" has no representation.
+ * - A human decision cannot be anonymous. There is no longer a reducer that
+ *   flips `reviewStatus` on its own: it is either `withReviewOutcome` (adopting
+ *   a review) or `withOverride` (adopting a review and then disagreeing with it,
+ *   with a written reason).
  *
  * Everything here is a pure function over an immutable ledger, so the rules are
  * unit-testable without a browser, a server, or a database.
@@ -66,9 +78,76 @@ export interface Incubation {
   summary: string;
 }
 
+/**
+ * A review the user adopted, as returned by `POST /api/evidence/review`.
+ *
+ * This is the reviewer's *advice* plus the record of its adoption. It is kept
+ * after the fact for one reason: the page has to be able to explain, weeks
+ * later, why a criterion moved — "这个结论是 AI 给的，还是人改的？理由是什么？"
+ * The applied verdict itself lives on the evidence record; this is the evidence
+ * of how it got there.
+ */
+export interface ReviewOutcome {
+  evidenceId: string;
+  decision: ReviewDecision;
+  finding: ReviewFinding;
+  rationale: string;
+  /** The highest thing the reviewed content actually proves (§6). */
+  proofBoundary: EvidenceSourceType;
+  suggestedNextEvidence: SuggestedEvidence[];
+  /** Which reviewer produced this: the deterministic mock, or the AI. */
+  reviewerKind: "MOCK" | "AI";
+  promptVersion: string;
+  reviewedAt: string;
+}
+
+/**
+ * A human override must be explainable to be worth storing, so a reason shorter
+ * than this is refused. The threshold is the same one the review boundary uses
+ * for "meaningful content": the goal is to force a sentence, not a keystroke.
+ */
+export const MIN_OVERRIDE_REASON_LENGTH = 8;
+
+/** One entry in the append-only record of human disagreement. */
+export interface ReviewOverride {
+  evidenceId: string;
+  /** The status the record actually held before the human intervened. */
+  fromStatus: EvidenceReviewStatus;
+  fromFinding: EvidenceFinding;
+  toStatus: EvidenceReviewStatus;
+  toFinding: EvidenceFinding;
+  reason: string;
+  at: string;
+}
+
+export interface OverrideDraft {
+  evidenceId: string;
+  toStatus: EvidenceReviewStatus;
+  /** Defaults to the review's finding: overriding the decision is not the same
+   *  as also changing what the content shows. */
+  toFinding?: EvidenceFinding;
+  reason: string;
+  at: string;
+}
+
+/**
+ * True when an override carries enough of an explanation to be auditable.
+ *
+ * Takes only the reason so a form can ask "may I enable the confirm button?"
+ * without having to fabricate a draft (and, in particular, without inventing a
+ * timestamp it has not decided yet).
+ */
+export function isAuditableOverride(draft: Pick<OverrideDraft, "reason">): boolean {
+  return draft.reason.trim().length >= MIN_OVERRIDE_REASON_LENGTH;
+}
+
 export interface Ledger {
   version: 1;
   evidence: EvidenceRecord[];
+  /** evidenceId -> the review the user adopted for that evidence, if any. */
+  reviews: Record<string, ReviewOutcome>;
+  /** Append-only audit trail of human overrides. Entries are never rewritten. */
+  overrides: ReviewOverride[];
   /** contractId -> ISO timestamp of the moment the user accepted the contract. */
   accepted: Record<string, string>;
   contexts: Record<string, BossContext>;
@@ -85,7 +164,15 @@ export interface LedgerStorage {
 }
 
 export function emptyLedger(): Ledger {
-  return { version: 1, evidence: [], accepted: {}, contexts: {}, incubations: {} };
+  return {
+    version: 1,
+    evidence: [],
+    reviews: {},
+    overrides: [],
+    accepted: {},
+    contexts: {},
+    incubations: {},
+  };
 }
 
 const SOURCE_TYPES: EvidenceSourceType[] = [
@@ -96,6 +183,8 @@ const SOURCE_TYPES: EvidenceSourceType[] = [
 ];
 const FINDINGS: EvidenceFinding[] = ["PASS", "FAIL", "INCONCLUSIVE"];
 const REVIEW_STATUSES: EvidenceReviewStatus[] = ["PENDING", "ACCEPTED", "REJECTED"];
+const REVIEW_DECISIONS: ReviewDecision[] = ["ACCEPTED", "REJECTED", "INCONCLUSIVE"];
+const REVIEWER_KINDS: Array<ReviewOutcome["reviewerKind"]> = ["MOCK", "AI"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -138,6 +227,52 @@ function isIncubation(value: unknown): value is Incubation {
   );
 }
 
+function isSuggestedEvidence(value: unknown): value is SuggestedEvidence {
+  return (
+    isRecord(value) &&
+    SOURCE_TYPES.includes(value.sourceType as EvidenceSourceType) &&
+    typeof value.hint === "string"
+  );
+}
+
+/**
+ * Validates a stored review outcome.
+ *
+ * Storage is untrusted and this payload is rendered directly, so anything that
+ * is not a string ends up as React's "Objects are not valid as a child" crash.
+ * Bounds are not re-checked here — the wire validation in
+ * `evidence-review/validation.ts` already did that, and a long rationale is
+ * truncated at render time rather than treated as corruption.
+ */
+function isReviewOutcome(value: unknown): value is ReviewOutcome {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.evidenceId === "string" &&
+    REVIEW_DECISIONS.includes(value.decision as ReviewDecision) &&
+    FINDINGS.includes(value.finding as EvidenceFinding) &&
+    typeof value.rationale === "string" &&
+    SOURCE_TYPES.includes(value.proofBoundary as EvidenceSourceType) &&
+    Array.isArray(value.suggestedNextEvidence) &&
+    value.suggestedNextEvidence.every(isSuggestedEvidence) &&
+    REVIEWER_KINDS.includes(value.reviewerKind as ReviewOutcome["reviewerKind"]) &&
+    typeof value.promptVersion === "string" &&
+    typeof value.reviewedAt === "string"
+  );
+}
+
+function isReviewOverride(value: unknown): value is ReviewOverride {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.evidenceId === "string" &&
+    REVIEW_STATUSES.includes(value.fromStatus as EvidenceReviewStatus) &&
+    FINDINGS.includes(value.fromFinding as EvidenceFinding) &&
+    REVIEW_STATUSES.includes(value.toStatus as EvidenceReviewStatus) &&
+    FINDINGS.includes(value.toFinding as EvidenceFinding) &&
+    typeof value.reason === "string" &&
+    typeof value.at === "string"
+  );
+}
+
 function isStringMap(value: unknown): value is Record<string, string> {
   return isRecord(value) && Object.values(value).every((item) => typeof item === "string");
 }
@@ -155,6 +290,12 @@ function isValueMap<T>(
  * Storage is treated as untrusted: a corrupt payload, a quota error, or a
  * browser with storage disabled must never break the page. Losing the ledger is
  * recoverable; a blank app is not.
+ *
+ * `reviews` and `overrides` were added after the first published build, so a
+ * payload written by that build simply does not have them. A missing key is
+ * filled in with its empty value and the ledger loads; a *present but malformed*
+ * key is corruption like any other and fails closed, consistently with the rest
+ * of this function.
  */
 export function loadLedger(storage: LedgerStorage | null): Ledger {
   if (!storage) return emptyLedger();
@@ -162,10 +303,15 @@ export function loadLedger(storage: LedgerStorage | null): Ledger {
     const raw = storage.getItem(LEDGER_STORAGE_KEY);
     if (!raw) return emptyLedger();
     const parsed = JSON.parse(raw) as Partial<Ledger>;
+    const reviews = parsed.reviews === undefined ? {} : parsed.reviews;
+    const overrides = parsed.overrides === undefined ? [] : parsed.overrides;
     if (
       parsed.version !== 1 ||
       !Array.isArray(parsed.evidence) ||
       !parsed.evidence.every(isEvidenceRecord) ||
+      !isValueMap(reviews, isReviewOutcome) ||
+      !Array.isArray(overrides) ||
+      !overrides.every(isReviewOverride) ||
       !isStringMap(parsed.accepted) ||
       !isValueMap(parsed.contexts, isBossContext) ||
       !isValueMap(parsed.incubations, isIncubation)
@@ -175,6 +321,8 @@ export function loadLedger(storage: LedgerStorage | null): Ledger {
     return {
       version: 1,
       evidence: parsed.evidence,
+      reviews,
+      overrides,
       accepted: parsed.accepted,
       contexts: parsed.contexts,
       incubations: parsed.incubations,
@@ -216,7 +364,6 @@ export interface EvidenceDraft {
   sourceType: EvidenceSourceType;
   sourceName: string;
   summary: string;
-  finding: EvidenceFinding;
 }
 
 export function withRecordedEvidence(
@@ -224,28 +371,119 @@ export function withRecordedEvidence(
   draft: EvidenceDraft,
   meta: { id: string; recordedAt: string },
 ): Ledger {
-  // Freshly recorded evidence starts PENDING: the user still has to accept it
-  // before it can influence any status (§8).
   const record: EvidenceRecord = {
     ...draft,
     id: meta.id,
+    // The submitter states what they did and what they are handing over; they do
+    // not get to state a verdict. Until a review says otherwise the record
+    // asserts nothing, which is exactly what INCONCLUSIVE means.
+    finding: "INCONCLUSIVE",
+    // Freshly recorded evidence starts PENDING: the user still has to have it
+    // reviewed and adopt the review before it can influence any status (§8).
     reviewStatus: "PENDING",
     recordedAt: meta.recordedAt,
   };
   return { ...ledger, evidence: [...ledger.evidence, record] };
 }
 
-export function withReview(
-  ledger: Ledger,
-  evidenceId: string,
-  reviewStatus: EvidenceReviewStatus,
-): Ledger {
+/** §8, in the direction the UI needs it: a review decision becomes a ledger status. */
+export function reviewStatusForDecision(decision: ReviewDecision): EvidenceReviewStatus {
+  if (decision === "ACCEPTED") return "ACCEPTED";
+  if (decision === "REJECTED") return "REJECTED";
+  // INCONCLUSIVE is not a rejection of the person; it is a statement that this
+  // content does not decide anything. The record stays PENDING so the page keeps
+  // asking for evidence instead of quietly closing the criterion.
+  return "PENDING";
+}
+
+/**
+ * Adopts a review: the record's status and finding become the reviewer's, and
+ * the outcome is kept so the page can explain the verdict later.
+ *
+ * The finding comes from the review and never from the submission. A submitter's
+ * claim of "测试全部通过" cannot survive a reviewer that read the same text and
+ * found a traceback — and, with `withRecordedEvidence` above, there was never a
+ * claim stored to begin with.
+ *
+ * A review of evidence that is not in the ledger is refused rather than stored:
+ * it would be an orphan that no criterion can ever reference.
+ */
+export function withReviewOutcome(ledger: Ledger, outcome: ReviewOutcome): Ledger {
+  const target = ledger.evidence.find((item) => item.id === outcome.evidenceId);
+  if (!target) return ledger;
   return {
     ...ledger,
     evidence: ledger.evidence.map((item) =>
-      item.id === evidenceId ? { ...item, reviewStatus } : item,
+      item.id === outcome.evidenceId
+        ? {
+            ...item,
+            reviewStatus: reviewStatusForDecision(outcome.decision),
+            finding: outcome.finding,
+          }
+        : item,
     ),
+    reviews: { ...ledger.reviews, [outcome.evidenceId]: outcome },
   };
+}
+
+/**
+ * Applies a human decision that disagrees with a review, and writes down why.
+ *
+ * Two things are recorded together on purpose: the review stays in `reviews`
+ * (so "AI 说了什么" is retrievable) and the override joins the append-only
+ * `overrides` log (so "谁在什么时候把它改成了什么、理由是什么" is retrievable).
+ * An override with no usable reason is refused outright — an unexplained
+ * override is indistinguishable from the self-approval this boundary exists to
+ * remove, and `isAuditableOverride` lets the UI disable the button before
+ * getting here.
+ */
+export function withOverride(
+  ledger: Ledger,
+  draft: OverrideDraft,
+  outcome?: ReviewOutcome,
+): Ledger {
+  const target = ledger.evidence.find((item) => item.id === draft.evidenceId);
+  if (!target || !isAuditableOverride(draft)) return ledger;
+
+  const base = outcome ? withReviewOutcome(ledger, outcome) : ledger;
+  const toFinding = draft.toFinding ?? target.finding;
+
+  return {
+    ...base,
+    evidence: base.evidence.map((item) =>
+      item.id === draft.evidenceId
+        ? { ...item, reviewStatus: draft.toStatus, finding: toFinding }
+        : item,
+    ),
+    overrides: [
+      ...ledger.overrides,
+      {
+        evidenceId: draft.evidenceId,
+        fromStatus: target.reviewStatus,
+        fromFinding: target.finding,
+        toStatus: draft.toStatus,
+        toFinding,
+        reason: draft.reason.trim(),
+        at: draft.at,
+      },
+    ],
+  };
+}
+
+/** The review adopted for a piece of evidence, or undefined if none was. */
+export function reviewFor(ledger: Ledger, evidenceId: string): ReviewOutcome | undefined {
+  return ledger.reviews[evidenceId];
+}
+
+/**
+ * The most recent human override of a piece of evidence, or undefined.
+ *
+ * The log is append-only, so "was this overridden" must read the last entry
+ * rather than the first: a user who changes their mind twice has two, and the
+ * later one is the truth.
+ */
+export function latestOverrideFor(ledger: Ledger, evidenceId: string): ReviewOverride | undefined {
+  return ledger.overrides.filter((item) => item.evidenceId === evidenceId).at(-1);
 }
 
 export function withAcceptedContract(ledger: Ledger, contractId: string, at: string): Ledger {
@@ -267,6 +505,11 @@ export function withContext(ledger: Ledger, context: BossContext): Ledger {
  *
  * Idempotent: re-importing the same contract adds nothing, so this is safe to
  * call on every render.
+ *
+ * Imported items carry the fixture's own findings and accepted status and get no
+ * entry in `reviews`: they predate the review boundary and claiming otherwise
+ * would forge an audit trail. The page shows them as existing records rather
+ * than as reviewed ones.
  */
 export function withImportedEvidence(
   ledger: Ledger,

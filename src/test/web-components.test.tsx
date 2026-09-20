@@ -5,23 +5,32 @@
  * the components with `react-dom/server` and assert on the produced markup.
  * That catches the failure modes that type checking cannot: a component that
  * throws, a branch that renders nothing, a locked state that still offers the
- * action, or a review button showing on evidence that is already decided.
+ * action, or a submit form that quietly hands the verdict back to the user.
  *
  * Effects do not run under static rendering, so these cover the initial render
- * of each component rather than the full interaction.
+ * of each component rather than the full interaction; the interaction is covered
+ * by the pure-logic suite in `failure-ledger.test.ts` and the route suite in
+ * `evidence-review-route.test.ts`.
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { AcceptanceCriterion } from "../lib/contracts";
+import { PROOF_BOUNDARY_TEXT } from "../lib/evidence-review/validation";
 import {
   EvidenceRecord,
   FailureAsset,
+  Ledger,
+  ReviewOutcome,
+  ReviewOverride,
   deriveCriterion,
+  emptyLedger,
 } from "../lib/failure-ledger";
-import { EvidenceEntry } from "../app/evidence-entry";
+import { EvidenceEntry, EvidenceSubmitForm } from "../app/evidence-entry";
+import { EvidenceReviewPanel } from "../app/evidence-review-panel";
 import { FailureLibrary } from "../app/failure-library";
+import { proofBoundaryText } from "../app/labels";
 
 function criterion(overrides: Partial<AcceptanceCriterion> = {}): AcceptanceCriterion {
   return {
@@ -58,9 +67,41 @@ function record(overrides: Partial<EvidenceRecord> = {}): EvidenceRecord {
   };
 }
 
-function renderEntry(
-  props: Partial<Parameters<typeof EvidenceEntry>[0]> = {},
-): string {
+function outcome(overrides: Partial<ReviewOutcome> = {}): ReviewOutcome {
+  return {
+    evidenceId: "EV-2",
+    decision: "ACCEPTED",
+    finding: "FAIL",
+    rationale: "提交的代码片段显示 Stage 2 拼接的是 Stage 1 的描述符，而不是 Xweak。",
+    proofBoundary: "ARTIFACT_INSPECTED",
+    suggestedNextEvidence: [
+      { sourceType: "LOG_INSPECTED", hint: "附上 Stage 2 打印实际输入张量来源的运行日志。" },
+    ],
+    reviewerKind: "AI",
+    promptVersion: "evidence-review.v1",
+    reviewedAt: "2026-09-18T10:05:00.000Z",
+    ...overrides,
+  };
+}
+
+function override(overrides: Partial<ReviewOverride> = {}): ReviewOverride {
+  return {
+    evidenceId: "EV-2",
+    fromStatus: "REJECTED",
+    fromFinding: "INCONCLUSIVE",
+    toStatus: "ACCEPTED",
+    toFinding: "FAIL",
+    reason: "审核器只看到粘贴文本，但同一段日志已在 CI 上完整跑过。",
+    at: "2026-09-18T10:30:00.000Z",
+    ...overrides,
+  };
+}
+
+function ledgerWith(patch: Partial<Ledger> = {}): Ledger {
+  return { ...emptyLedger(), ...patch };
+}
+
+function renderEntry(props: Partial<Parameters<typeof EvidenceEntry>[0]> = {}): string {
   const targetCriterion = props.criterion ?? criterion();
   const records = props.records ?? [];
   return renderToStaticMarkup(
@@ -68,12 +109,159 @@ function renderEntry(
       criterion={targetCriterion}
       derivation={deriveCriterion(targetCriterion, records)}
       records={records}
+      ledger={props.ledger ?? emptyLedger()}
       locked={props.locked ?? false}
-      onRecord={() => {}}
-      onReview={() => {}}
+      onRecord={() => "ev-test"}
+      onAdopt={() => {}}
+      onOverride={() => {}}
     />,
   );
 }
+
+function renderForm(props: Partial<Parameters<typeof EvidenceSubmitForm>[0]> = {}): string {
+  return renderToStaticMarkup(
+    <EvidenceSubmitForm
+      criterion={props.criterion ?? criterion()}
+      submitting={props.submitting ?? false}
+      onSubmit={() => {}}
+      onCancel={() => {}}
+    />,
+  );
+}
+
+function renderPanel(props: Partial<Parameters<typeof EvidenceReviewPanel>[0]> = {}): string {
+  return renderToStaticMarkup(
+    <EvidenceReviewPanel
+      record={props.record ?? record()}
+      adopted={props.adopted}
+      proposal={props.proposal}
+      override={props.override}
+      busy={props.busy ?? false}
+      error={props.error ?? ""}
+      canRetry={props.canRetry ?? false}
+      onRetry={() => {}}
+      onAdopt={() => {}}
+      onOverride={() => {}}
+    />,
+  );
+}
+
+describe("EvidenceSubmitForm", () => {
+  it("collects material and offers no way to declare a verdict", () => {
+    const html = renderForm();
+    assert.match(html, /对应证据要求/);
+    assert.match(html, /REQ-2-SOURCE/);
+    assert.match(html, /粘贴内容/);
+    assert.match(html, /提交并送审/);
+
+    // The defect this ticket closes: the submitter used to pick 通过/未通过.
+    assert.doesNotMatch(
+      html,
+      /这条证据支持什么结论/,
+      "the submitter must not be able to state a finding",
+    );
+    assert.doesNotMatch(html, /<option value="PASS"/, "no verdict select may exist in the form");
+    assert.doesNotMatch(html, /<option value="FAIL"/);
+  });
+
+  it("only offers source types the requirement accepts (§7)", () => {
+    const html = renderForm();
+    assert.match(html, /<option value="ARTIFACT_INSPECTED"/);
+    assert.doesNotMatch(html, /<option value="AUTO_VERIFIED"/, "unaccepted sources must not be offered");
+  });
+
+  it("warns that the pasted text leaves the device", () => {
+    const html = renderForm();
+    assert.match(html, /DeepSeek/, "the privacy notice is required by the scope guard");
+    assert.match(html, /不会被保存/);
+  });
+
+  it("cannot submit while empty", () => {
+    const html = renderForm();
+    assert.match(html, /disabled/, "an empty submission must not be sendable");
+  });
+
+  it("says so instead of rendering a broken form when there is no requirement", () => {
+    const html = renderForm({ criterion: criterion({ evidenceRequirements: [] }) });
+    assert.match(html, /没有定义证据要求/);
+    assert.doesNotMatch(html, /提交并送审/);
+  });
+});
+
+describe("EvidenceReviewPanel", () => {
+  it("explains that a fresh proposal has not been applied yet", () => {
+    const html = renderPanel({ proposal: outcome() });
+    assert.match(html, /还没有写入判定/);
+    assert.match(html, /采纳后才会影响/);
+    assert.match(html, /审核建议（未采纳）/);
+    assert.match(html, /采纳这个结论/);
+    assert.match(html, /我不认同，人工判定/);
+  });
+
+  it("shows the verdict, its rationale and the proof boundary", () => {
+    const html = renderPanel({ proposal: outcome() });
+    assert.match(html, /接受/);
+    assert.match(html, /判定：未通过/);
+    assert.match(html, /Stage 2 拼接的是 Stage 1 的描述符/);
+    assert.match(html, /证明边界/);
+    assert.match(html, /成果内容/, "the boundary is described in proof terms, not source terms");
+    assert.match(html, /提交时声明：已检查产物/);
+  });
+
+  it("shows what evidence is still missing", () => {
+    const html = renderPanel({ proposal: outcome() });
+    assert.match(html, /建议补充的证据/);
+    assert.match(html, /附上 Stage 2 打印实际输入张量来源的运行日志/);
+  });
+
+  it("marks an adopted review as applied and offers only a re-decision", () => {
+    const html = renderPanel({ adopted: outcome() });
+    assert.match(html, /审核结论（已采纳）/);
+    assert.match(html, /改判（人工覆盖）/);
+    assert.doesNotMatch(html, /采纳这个结论/, "an adopted review must not be adoptable twice");
+    assert.doesNotMatch(html, /还没有写入判定/);
+  });
+
+  it("never credits the AI with a verdict a human overruled", () => {
+    const adopted = renderPanel({ adopted: outcome(), override: override() });
+    assert.match(adopted, /审核建议（已被人工覆盖）/);
+    assert.doesNotMatch(adopted, /审核结论（已采纳）/);
+    assert.doesNotMatch(adopted, /^已采纳/, "the human's decision must not read as the AI's");
+
+    // The same must hold when the user overruled the advice instead of adopting
+    // it: the panel still knows the advice, but must not claim it was accepted.
+    const unadopted = renderPanel({ proposal: outcome(), override: override() });
+    assert.match(unadopted, /审核建议（已被人工覆盖）/);
+    assert.doesNotMatch(unadopted, /审核结论（已采纳）/);
+  });
+
+  it("names the reviewer, so a mock verdict is never read as an AI one", () => {
+    assert.match(renderPanel({ proposal: outcome() }), /AI 审核（DeepSeek）/);
+    assert.match(
+      renderPanel({ proposal: outcome({ reviewerKind: "MOCK" }) }),
+      /规则审核（离线）/,
+    );
+  });
+
+  it("records who overrode what, and why", () => {
+    const html = renderPanel({ adopted: outcome(), override: override() });
+    assert.match(html, /人工覆盖/);
+    assert.match(html, /已拒绝 → 已接受/);
+    assert.match(html, /同一段日志已在 CI 上完整跑过/);
+  });
+
+  it("reports an unavailable reviewer without inventing a verdict", () => {
+    const html = renderPanel({ error: "AI 审核服务当前不可用，请稍后重试。" });
+    assert.match(html, /AI 审核服务当前不可用/);
+    assert.match(html, /还没有审核结论/);
+    assert.doesNotMatch(html, /采纳这个结论/, "no verdict, nothing to adopt");
+  });
+
+  it("offers a re-review only when the page still holds the submitted text", () => {
+    assert.match(renderPanel({ canRetry: true }), /重新审核这条证据/);
+    assert.doesNotMatch(renderPanel({ canRetry: false }), /重新审核这条证据/);
+  });
+});
 
 describe("EvidenceEntry", () => {
   it("renders the criterion, its requirement and the accepted source types", () => {
@@ -90,32 +278,58 @@ describe("EvidenceEntry", () => {
     assert.match(html, /0\/1/, "the satisfied-of-required count must be shown");
   });
 
-  it("offers the record action when the contract is accepted", () => {
+  it("offers the submit action when the contract is accepted", () => {
     const html = renderEntry({ locked: false });
-    assert.match(html, /记录证据/);
+    assert.match(html, /提交证据/);
     assert.doesNotMatch(html, /接受合同后才能开始记录证据/);
   });
 
-  it("blocks recording and explains why while the contract is not accepted", () => {
+  it("blocks submission and explains why while the contract is not accepted", () => {
     const html = renderEntry({ locked: true });
     assert.match(html, /接受合同后才能开始记录证据/);
-    assert.doesNotMatch(html, /记录证据<\/button>/, "no recording action while locked");
+    assert.doesNotMatch(html, /提交证据<\/button>/, "no submission action while locked");
   });
 
-  it("renders an accepted failure with its status and no review buttons", () => {
-    const html = renderEntry({ records: [record()] });
+  it("renders a decided record without offering to self-approve it", () => {
+    const html = renderEntry({
+      records: [record()],
+      ledger: ledgerWith({ reviews: { "EV-2": outcome() } }),
+    });
     assert.match(html, /models\/waca\.py/);
     assert.match(html, /已接受/);
     assert.match(html, /未通过/);
+    assert.match(html, /已采纳/);
     assert.doesNotMatch(html, /接受<\/button>/, "decided evidence must not offer review again");
   });
 
-  it("offers accept and reject for evidence that is still pending (§8)", () => {
-    const html = renderEntry({ records: [record({ reviewStatus: "PENDING" })] });
+  it("shows a pending record as unreviewed rather than as a claim", () => {
+    const html = renderEntry({ records: [record({ reviewStatus: "PENDING", finding: "INCONCLUSIVE" })] });
     assert.match(html, /待审核/);
-    assert.match(html, /接受/);
-    assert.match(html, /拒绝/);
+    assert.match(html, /还没有审核结论/);
+    assert.doesNotMatch(html, /判定：/, "an unreviewed record asserts no finding");
     assert.match(html, /不参与判定/, "pending evidence must be excluded from the verdict");
+  });
+
+  it("flags a record that a human overruled", () => {
+    const html = renderEntry({
+      records: [record()],
+      ledger: ledgerWith({
+        reviews: { "EV-2": outcome() },
+        overrides: [override()],
+      }),
+    });
+    assert.match(html, /人工覆盖/);
+    assert.match(html, /同一段日志已在 CI 上完整跑过/);
+  });
+});
+
+describe("copy consistency", () => {
+  it("keeps the client proof-boundary table identical to the server's", () => {
+    assert.deepEqual(
+      proofBoundaryText,
+      PROOF_BOUNDARY_TEXT,
+      "the browser copy and the server copy must not drift",
+    );
   });
 });
 
