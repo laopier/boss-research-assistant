@@ -32,6 +32,7 @@ import {
   updateLedger,
 } from "@/lib/ledger-store";
 import wacaDemoFixture from "../../examples/waca-se-boss.json";
+import { DeliverableCard } from "./deliverable-card";
 import { EvidenceEntry, EvidenceSubmissionInput } from "./evidence-entry";
 import { FailureLibrary } from "./failure-library";
 import {
@@ -39,7 +40,6 @@ import {
   bossStatusText,
   criterionStatusClass,
   criterionStatusText,
-  deliverableStatusText,
 } from "./labels";
 
 /**
@@ -200,6 +200,7 @@ export default function Home() {
           contractRevision: contract.revision,
           criterionId,
           requirementId: input.requirementId,
+          deliverableId: input.deliverableId,
           sourceType: input.sourceType,
           sourceName: input.sourceName,
           summary: input.summary,
@@ -367,6 +368,16 @@ function ContractView({
   onAdopt,
   onOverride,
 }: ContractViewProps) {
+  /**
+   * A deliverable card's request to open a criterion's submission form with
+   * itself preselected: `{ criterionId, deliverableId }`. Held here because the
+   * deliverables section and the criteria cards are siblings.
+   */
+  const [submitFor, setSubmitFor] = useState<{
+    criterionId: string;
+    deliverableId: string;
+  } | null>(null);
+
   const evidenceByCriterion = new Map<string, Ledger["evidence"]>();
   for (const item of records) {
     const bucket = evidenceByCriterion.get(item.criterionId);
@@ -444,7 +455,16 @@ function ContractView({
               derivation={deriveCriterion(criterion, evidenceByCriterion.get(criterion.id) ?? [])}
               records={evidenceByCriterion.get(criterion.id) ?? []}
               ledger={ledger}
+              deliverables={contract.deliverables}
               locked={!accepted}
+              openRequest={
+                submitFor?.criterionId === criterion.id
+                  ? { deliverableId: submitFor.deliverableId }
+                  : undefined
+              }
+              onOpenConsumed={() => {
+                if (submitFor?.criterionId === criterion.id) setSubmitFor(null);
+              }}
               onRecord={(input) => onRecord(criterion.id, input)}
               onAdopt={onAdopt}
               onOverride={onOverride}
@@ -490,17 +510,23 @@ function ContractView({
 
       <section className="deliverables">
         <h3>交付物</h3>
+        <p className="muted">
+          每个交付物的状态由<strong>关联证据</strong>推导，不能手动更改：提交过材料即「进行中」，
+          关联的验收项全部通过才算「已完成」。关联关系在提交证据时声明，保存在本地账本里。
+        </p>
         <div className="deliverable-grid">
           {contract.deliverables.map((deliverable) => (
-            <article key={deliverable.id}>
-              <div className="deliverable-head">
-                <strong>{deliverable.id}</strong>
-                <span className="status status-unknown">
-                  {deliverableStatusText[deliverable.status]}
-                </span>
-              </div>
-              <p>{deliverable.description}</p>
-            </article>
+            <DeliverableCard
+              key={deliverable.id}
+              contract={contract}
+              deliverable={deliverable}
+              records={records}
+              locked={!accepted}
+              active={submitFor?.deliverableId === deliverable.id}
+              onSubmitFor={(criterionId, deliverableId) =>
+                setSubmitFor({ criterionId, deliverableId })
+              }
+            />
           ))}
         </div>
       </section>

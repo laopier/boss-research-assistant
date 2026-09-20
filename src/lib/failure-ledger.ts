@@ -55,6 +55,16 @@ export interface EvidenceRecord {
   contractRevision: number;
   criterionId: string;
   requirementId: string;
+  /**
+   * The deliverable the submitter says this material belongs to, if any.
+   *
+   * The shared contract has no link between a deliverable and a criterion, and
+   * issue #15 asks for exactly that association to live here instead: the user
+   * picks a deliverable when submitting, and `deriveDeliverable` reads the links
+   * back out of the records. Absent on records written before the field existed
+   * and on evidence imported from a fixture, which predates the association.
+   */
+  deliverableId?: string;
   sourceType: EvidenceSourceType;
   sourceName: string;
   summary: string;
@@ -199,6 +209,7 @@ function isEvidenceRecord(value: unknown): value is EvidenceRecord {
     Number.isInteger(value.contractRevision) &&
     typeof value.criterionId === "string" &&
     typeof value.requirementId === "string" &&
+    (value.deliverableId === undefined || typeof value.deliverableId === "string") &&
     SOURCE_TYPES.includes(value.sourceType as EvidenceSourceType) &&
     typeof value.sourceName === "string" &&
     typeof value.summary === "string" &&
@@ -361,6 +372,8 @@ export interface EvidenceDraft {
   contractRevision: number;
   criterionId: string;
   requirementId: string;
+  /** Optional: the deliverable this submission belongs to. Copied verbatim. */
+  deliverableId?: string;
   sourceType: EvidenceSourceType;
   sourceName: string;
   summary: string;
@@ -630,6 +643,88 @@ export function deriveCriterion(
     acceptedCount: relevant.length,
     pendingCount,
     reason: `证据要求未满足：${unmet.join("、")}${extra}。`,
+  };
+}
+
+/**
+ * The derivation issue #15 asks for on the deliverable side.
+ *
+ * The contract ships every deliverable as `NOT_STARTED` and frozen — the
+ * generator cannot know what the user will actually produce — so the live
+ * status is derived here and never written back into the contract. The link
+ * between a deliverable and its acceptance criteria is *declared by the user*
+ * when submitting (`deliverableId` on the record): the shared schema has no
+ * such field, and inventing one is a contract change this module must not make.
+ *
+ * Rules, from the issue:
+ * - no linked evidence            -> NOT_STARTED
+ * - linked evidence, but the linked
+ *   criteria are not all PASS     -> IN_PROGRESS
+ * - all linked criteria PASS      -> DONE
+ *
+ * "Linked" means any record naming this deliverable, including rejected and
+ * pending ones: IN_PROGRESS says "someone started on this", and erasing that
+ * because the first submission was rejected would contradict the journey
+ * (a failure lowers completion but must not erase history). DONE, by contrast,
+ * is only ever reached through accepted evidence, because a criterion only
+ * reaches PASS that way.
+ */
+export interface DeliverableDerivation {
+  status: "NOT_STARTED" | "IN_PROGRESS" | "DONE";
+  reason: string;
+  /** Criteria this deliverable's evidence was linked to, in first-seen order. */
+  relatedCriteria: string[];
+  /** Records naming this deliverable, whatever their review status. */
+  linkedEvidenceCount: number;
+}
+
+export function deriveDeliverable(
+  contract: BossContract,
+  deliverableId: string,
+  records: readonly EvidenceRecord[],
+): DeliverableDerivation {
+  const linked = records.filter((item) => item.deliverableId === deliverableId);
+  if (linked.length === 0) {
+    return {
+      status: "NOT_STARTED",
+      reason: "还没有为这个交付物提交过任何材料。",
+      relatedCriteria: [],
+      linkedEvidenceCount: 0,
+    };
+  }
+
+  // First-seen order, so the chips on the card follow the user's own story
+  // rather than the storage order of the ledger.
+  const relatedCriteria: string[] = [];
+  for (const item of linked) {
+    if (!relatedCriteria.includes(item.criterionId)) relatedCriteria.push(item.criterionId);
+  }
+
+  // A criterion the contract no longer knows about can never be PASS, so it
+  // keeps the deliverable honest (IN_PROGRESS) instead of silently vanishing.
+  const unpassed = relatedCriteria.filter((criterionId) => {
+    const criterion = contract.acceptanceCriteria.find((item) => item.id === criterionId);
+    if (!criterion) return true;
+    return (
+      deriveCriterion(criterion, records.filter((item) => item.criterionId === criterionId)).status !==
+      "PASS"
+    );
+  });
+
+  if (unpassed.length === 0) {
+    return {
+      status: "DONE",
+      reason: `关联的验收项（${relatedCriteria.join("、")}）已全部通过。`,
+      relatedCriteria,
+      linkedEvidenceCount: linked.length,
+    };
+  }
+
+  return {
+    status: "IN_PROGRESS",
+    reason: `已提交 ${linked.length} 条材料，关联验收项 ${unpassed.join("、")} 尚未全部通过。`,
+    relatedCriteria,
+    linkedEvidenceCount: linked.length,
   };
 }
 

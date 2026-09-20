@@ -16,7 +16,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { AcceptanceCriterion } from "../lib/contracts";
+import { AcceptanceCriterion, BossContract, Deliverable } from "../lib/contracts";
 import { PROOF_BOUNDARY_TEXT } from "../lib/evidence-review/validation";
 import {
   EvidenceRecord,
@@ -27,6 +27,7 @@ import {
   deriveCriterion,
   emptyLedger,
 } from "../lib/failure-ledger";
+import { DeliverableCard } from "../app/deliverable-card";
 import { EvidenceEntry, EvidenceSubmitForm } from "../app/evidence-entry";
 import { EvidenceReviewPanel } from "../app/evidence-review-panel";
 import { FailureLibrary } from "../app/failure-library";
@@ -110,7 +111,10 @@ function renderEntry(props: Partial<Parameters<typeof EvidenceEntry>[0]> = {}): 
       derivation={deriveCriterion(targetCriterion, records)}
       records={records}
       ledger={props.ledger ?? emptyLedger()}
+      deliverables={props.deliverables}
       locked={props.locked ?? false}
+      openRequest={props.openRequest}
+      onOpenConsumed={props.onOpenConsumed}
       onRecord={() => "ev-test"}
       onAdopt={() => {}}
       onOverride={() => {}}
@@ -122,9 +126,55 @@ function renderForm(props: Partial<Parameters<typeof EvidenceSubmitForm>[0]> = {
   return renderToStaticMarkup(
     <EvidenceSubmitForm
       criterion={props.criterion ?? criterion()}
+      deliverables={props.deliverables}
+      presetDeliverableId={props.presetDeliverableId}
       submitting={props.submitting ?? false}
       onSubmit={() => {}}
       onCancel={() => {}}
+    />,
+  );
+}
+
+const deliverables: Deliverable[] = [
+  { id: "DEL-1", description: "The WACA-SE module", status: "NOT_STARTED" },
+  { id: "DEL-2", description: "The attention-mask visualization", status: "NOT_STARTED" },
+];
+
+function fullContract(overrides: Partial<BossContract> = {}): BossContract {
+  return {
+    schemaVersion: "boss-contract.v0",
+    recordKind: "LIVE",
+    revision: 1,
+    id: "boss-1",
+    title: "Bounded first step",
+    rawGoal: "复现 WACA",
+    objective: "Implement a bounded WACA-SE module",
+    deadline: null,
+    deliverables,
+    acceptanceCriteria: [criterion()],
+    scopeGuard: { inScope: ["x"], outOfScope: [], newBossPolicy: "CREATE_NEW_BOSS" },
+    known: [],
+    unknowns: [],
+    assumptions: [],
+    estimatedMinutes: 90,
+    assistanceMode: "COACH",
+    status: "DRAFT",
+    evidenceItems: [],
+    blockers: [],
+    changeHistory: [],
+    ...overrides,
+  };
+}
+
+function renderCard(props: Partial<Parameters<typeof DeliverableCard>[0]> = {}): string {
+  return renderToStaticMarkup(
+    <DeliverableCard
+      contract={props.contract ?? fullContract()}
+      deliverable={props.deliverable ?? deliverables[0]}
+      records={props.records ?? []}
+      locked={props.locked ?? false}
+      active={props.active ?? false}
+      onSubmitFor={() => {}}
     />,
   );
 }
@@ -185,6 +235,33 @@ describe("EvidenceSubmitForm", () => {
     const html = renderForm({ criterion: criterion({ evidenceRequirements: [] }) });
     assert.match(html, /没有定义证据要求/);
     assert.doesNotMatch(html, /提交并送审/);
+  });
+
+  it("offers the deliverable link when the contract has deliverables", () => {
+    const html = renderForm({ deliverables });
+    assert.match(html, /关联交付物/);
+    assert.match(html, /<option value="DEL-1"/);
+    assert.match(html, /<option value="DEL-2"/);
+    assert.match(html, /不关联任何交付物/, "the default is no link, never a guessed one");
+  });
+
+  it("hides the deliverable link when there is nothing to link to", () => {
+    assert.doesNotMatch(renderForm(), /关联交付物/);
+  });
+
+  it("preselects the deliverable a card pointed at", () => {
+    const html = renderForm({ deliverables, presetDeliverableId: "DEL-2" });
+    assert.match(html, /<option value="DEL-2" selected=""/);
+    assert.doesNotMatch(html, /<option value="DEL-1" selected=""/);
+  });
+
+  it("ignores a preset that is not one of this contract's deliverables", () => {
+    const html = renderForm({ deliverables, presetDeliverableId: "DEL-GONE" });
+    assert.doesNotMatch(
+      html,
+      /value="DEL-[12]" selected=""/,
+      "an unknown preset falls back to no link",
+    );
   });
 });
 
@@ -320,6 +397,99 @@ describe("EvidenceEntry", () => {
     });
     assert.match(html, /人工覆盖/);
     assert.match(html, /同一段日志已在 CI 上完整跑过/);
+  });
+
+  it("opens the form on request, with the deliverable preselected", () => {
+    const html = renderEntry({
+      deliverables,
+      openRequest: { deliverableId: "DEL-1" },
+    });
+    assert.match(html, /提交并送审/, "the request must show the form without a local click");
+    assert.match(html, /关联交付物/);
+    assert.match(html, /<option value="DEL-1" selected=""/);
+    // No effect runs on close in static render; what matters is that the open
+    // state is render-derived from the request rather than copied by an effect.
+    assert.doesNotMatch(html, /提交证据<\/button>/);
+  });
+
+  it("stays closed when the request points at another criterion's card", () => {
+    const html = renderEntry({ openRequest: undefined });
+    assert.match(html, /提交证据<\/button>/);
+    assert.doesNotMatch(html, /提交并送审/);
+  });
+
+  it("keeps the form locked behind contract acceptance even on request", () => {
+    const html = renderEntry({ locked: true, openRequest: { deliverableId: "DEL-1" } });
+    assert.match(html, /接受合同后才能开始记录证据/);
+    assert.doesNotMatch(html, /提交并送审/);
+  });
+});
+
+describe("DeliverableCard", () => {
+  it("shows NOT_STARTED with an explanation when nothing is linked", () => {
+    const html = renderCard();
+    assert.match(html, /DEL-1/);
+    assert.match(html, /未开始/);
+    assert.match(html, /还没有为这个交付物提交过任何材料/);
+    assert.doesNotMatch(html, /已完成/);
+  });
+
+  it("offers a submission entry point once the contract is accepted", () => {
+    const html = renderCard();
+    assert.match(html, /为此交付物提交证据/);
+    assert.match(html, /<option value="AC-2"/);
+    assert.match(html, /去提交/);
+  });
+
+  it("blocks the entry point while the contract is not accepted", () => {
+    const html = renderCard({ locked: true });
+    assert.match(html, /接受合同后，可以为这个交付物提交材料/);
+    assert.doesNotMatch(html, /去提交/, "no submission entry while locked");
+  });
+
+  it("derives IN_PROGRESS from linked material and names the unpassed criterion", () => {
+    const html = renderCard({
+      records: [record({ deliverableId: "DEL-1" })],
+    });
+    assert.match(html, /进行中/);
+    assert.match(html, /已提交 1 条材料/);
+    assert.match(html, /AC-2 尚未全部通过/);
+    assert.match(html, /href="#criterion-AC-2"/, "the related criterion is linked");
+    // Regression: the chip used to read the contract's frozen `status` (always
+    // UNKNOWN in a fresh contract) instead of the derived one, so it said
+    // 待验证 next to a record that had already decided 未通过.
+    assert.match(html, /AC-2 · 未通过/);
+  });
+
+  it("derives DONE only from criteria that all pass", () => {
+    // One accepted record carrying REQ-2-SOURCE satisfies the fixture's single
+    // requirement, so AC-2 is PASS and the linked deliverable is DONE.
+    const html = renderCard({
+      records: [record({ deliverableId: "DEL-1", finding: "PASS" })],
+    });
+    assert.match(html, /已完成/);
+    assert.match(html, /关联的验收项（AC-2）已全部通过/);
+  });
+
+  it("replaces the entry point with a pointer while its form is open", () => {
+    const html = renderCard({ active: true });
+    assert.match(html, /提交表单已在/);
+    assert.match(html, /AC-2<\/a> 的卡片中打开/);
+    assert.doesNotMatch(html, /去提交/);
+  });
+
+  it("never renders the contract's frozen status as the live one", () => {
+    // The fixture's contract says NOT_STARTED; with a passing link the card
+    // must say DONE regardless, because the derived status is the truth.
+    const frozen = fullContract({
+      deliverables: [{ id: "DEL-1", description: "The WACA-SE module", status: "NOT_STARTED" }],
+    });
+    const html = renderCard({
+      contract: frozen,
+      records: [record({ deliverableId: "DEL-1", finding: "PASS" })],
+    });
+    assert.match(html, /已完成/);
+    assert.doesNotMatch(html, /未开始/);
   });
 });
 

@@ -86,6 +86,9 @@ h3 { margin: 0 0 16px; font-size: 15px; }
 .status-pass { color: var(--pass-ink); background: var(--pass-bg); }
 .status-fail { color: var(--fail-ink); background: var(--fail-bg); }
 .status-unknown { color: var(--unknown-ink); background: var(--unknown-bg); }
+/* "Someone has started" is neither success nor failure; it needs its own
+   colour so an IN_PROGRESS deliverable is not read as an untouched one. */
+.status-progress { color: #7a4a12; background: #f6e6c8; }
 
 .requirement-list { margin: 10px 0 0; padding: 0; list-style: none; }
 .requirement-list li { display: flex; flex-direction: column; gap: 3px; padding: 9px 0 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
@@ -193,6 +196,14 @@ h3 { margin: 0 0 16px; font-size: 15px; }
 .deliverable-grid article { padding: 16px 18px; background: #f7f7f2; border-radius: 12px; }
 .deliverable-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .deliverable-grid p { margin: 9px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+/* The derivation, not the frozen contract field, is what the card asserts. */
+.deliverable-reason { padding-top: 9px; border-top: 1px dashed var(--line); }
+.deliverable-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.deliverable-link { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-decoration: none; }
+.deliverable-submit { display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; }
+.deliverable-submit label { flex: 1; }
+.deliverable-submit select { margin-top: 4px; }
+.deliverable-open-hint { color: var(--green) !important; font-weight: 600; }
 
 .guard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 34px; padding-top: 28px; border-top: 1px solid var(--line); }
 .clue-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 34px; padding-top: 28px; border-top: 1px solid var(--line); }

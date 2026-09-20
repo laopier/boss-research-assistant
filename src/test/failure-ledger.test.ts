@@ -21,6 +21,7 @@ import {
   clampGoal,
   deriveBoss,
   deriveCriterion,
+  deriveDeliverable,
   emptyLedger,
   isAuditableOverride,
   latestOverrideFor,
@@ -277,6 +278,145 @@ describe("Boss derivation (§4)", () => {
     });
     const result = deriveBoss(blocked, [evidence()], true);
     assert.equal(result.status, "BLOCKED");
+  });
+});
+
+describe("deliverable derivation (issue #15)", () => {
+  const twoCriteria = contract({
+    deliverables: [
+      { id: "DEL-1", description: "module", status: "NOT_STARTED" },
+      { id: "DEL-2", description: "visualization", status: "NOT_STARTED" },
+    ],
+    acceptanceCriteria: [
+      criterion(),
+      criterion({ id: "AC-2", description: "The visualization renders both masks", required: false }),
+    ],
+  });
+
+  it("is NOT_STARTED when no evidence names the deliverable", () => {
+    const result = deriveDeliverable(twoCriteria, "DEL-1", []);
+    assert.equal(result.status, "NOT_STARTED");
+    assert.equal(result.linkedEvidenceCount, 0);
+    assert.deepEqual(result.relatedCriteria, []);
+  });
+
+  it("is IN_PROGRESS once material is linked, even before any review", () => {
+    // The issue's rule: 已提交或审核中 → IN_PROGRESS. A pending record is the
+    // honest floor — the fact of submitting is already history.
+    const records = [
+      evidence({ id: "EV-1", deliverableId: "DEL-1", reviewStatus: "PENDING", finding: "INCONCLUSIVE" }),
+    ];
+    const result = deriveDeliverable(twoCriteria, "DEL-1", records);
+    assert.equal(result.status, "IN_PROGRESS");
+    assert.equal(result.linkedEvidenceCount, 1);
+    assert.deepEqual(result.relatedCriteria, ["AC-1"]);
+  });
+
+  it("stays IN_PROGRESS after a rejected submission, instead of erasing the start", () => {
+    const records = [evidence({ id: "EV-1", deliverableId: "DEL-1", reviewStatus: "REJECTED" })];
+    const result = deriveDeliverable(twoCriteria, "DEL-1", records);
+    assert.equal(result.status, "IN_PROGRESS");
+  });
+
+  it("is DONE when every criterion the material was linked to is PASS", () => {
+    const records = [evidence({ id: "EV-1", deliverableId: "DEL-1", finding: "PASS" })];
+    const result = deriveDeliverable(twoCriteria, "DEL-1", records);
+    assert.equal(result.status, "DONE");
+  });
+
+  it("keeps DONE false while a linked criterion has an accepted FAIL", () => {
+    const records = [evidence({ id: "EV-1", deliverableId: "DEL-1", finding: "FAIL" })];
+    const result = deriveDeliverable(twoCriteria, "DEL-1", records);
+    assert.equal(result.status, "IN_PROGRESS");
+    assert.match(result.reason, /AC-1/);
+  });
+
+  it("requires ALL linked criteria to pass, not just one", () => {
+    const records = [
+      evidence({ id: "EV-1", deliverableId: "DEL-1", finding: "PASS" }),
+      evidence({
+        id: "EV-2",
+        criterionId: "AC-2",
+        requirementId: "REQ-1",
+        deliverableId: "DEL-1",
+        reviewStatus: "PENDING",
+        finding: "INCONCLUSIVE",
+      }),
+    ];
+    const result = deriveDeliverable(twoCriteria, "DEL-1", records);
+    assert.equal(result.status, "IN_PROGRESS");
+    assert.deepEqual(result.relatedCriteria, ["AC-1", "AC-2"]);
+  });
+
+  it("never reads another deliverable's evidence", () => {
+    const records = [
+      evidence({ id: "EV-1", deliverableId: "DEL-2", finding: "PASS" }),
+      evidence({ id: "EV-2", deliverableId: "DEL-2", criterionId: "AC-2", finding: "PASS" }),
+    ];
+    assert.equal(deriveDeliverable(twoCriteria, "DEL-2", records).status, "DONE");
+    assert.equal(deriveDeliverable(twoCriteria, "DEL-1", records).status, "NOT_STARTED");
+  });
+
+  it("counts a PASS reached by other evidence towards DONE, because DONE is about acceptance", () => {
+    // The link declares the association; it does not claim this record alone
+    // must carry the pass. An accepted pass anywhere on the criterion counts.
+    const records = [
+      evidence({ id: "EV-1", deliverableId: "DEL-1", reviewStatus: "REJECTED" }),
+      evidence({ id: "EV-2", finding: "PASS" }),
+    ];
+    const result = deriveDeliverable(twoCriteria, "DEL-1", records);
+    assert.equal(result.status, "DONE");
+  });
+
+  it("stays honest when a linked criterion is unknown to the contract", () => {
+    const records = [
+      evidence({ id: "EV-1", deliverableId: "DEL-1", criterionId: "AC-GONE", finding: "PASS" }),
+    ];
+    const result = deriveDeliverable(twoCriteria, "DEL-1", records);
+    assert.equal(result.status, "IN_PROGRESS", "a vanished criterion can never be PASS");
+  });
+
+  it("records the link on submission and reloads it from storage", () => {
+    const draft = {
+      contractId: "boss-1",
+      contractRevision: 1,
+      criterionId: "AC-1",
+      requirementId: "REQ-1",
+      deliverableId: "DEL-1",
+      sourceType: "LOG_INSPECTED" as const,
+      sourceName: "tests/test_waca.py",
+      summary: "shape and gradient tests passed",
+    };
+    const ledger = withRecordedEvidence(emptyLedger(), draft, {
+      id: "EV-9",
+      recordedAt: "2026-09-20T10:00:00.000Z",
+    });
+    assert.equal(ledger.evidence[0].deliverableId, "DEL-1");
+    assert.equal(deriveDeliverable(twoCriteria, "DEL-1", ledger.evidence).status, "IN_PROGRESS");
+
+    const storage = memoryStorage();
+    saveLedger(storage, ledger);
+    assert.equal(loadLedger(storage).evidence[0].deliverableId, "DEL-1");
+  });
+
+  it("reads records written before the deliverable link existed", () => {
+    const legacy = JSON.stringify({
+      version: 1,
+      evidence: [evidence()],
+      accepted: {},
+      contexts: {},
+      incubations: {},
+    });
+    const loaded = loadLedger(memoryStorage(legacy));
+    assert.equal(loaded.evidence[0].deliverableId, undefined, "no link is the legacy default");
+    assert.equal(deriveDeliverable(twoCriteria, "DEL-1", loaded.evidence).status, "NOT_STARTED");
+  });
+
+  it("fails closed on a non-string deliverable link", () => {
+    // Typed as EvidenceRecord via a cast because the value is deliberately not one.
+    const corrupted = { ...evidence(), deliverableId: 7 } as unknown as EvidenceRecord;
+    const malformed = JSON.stringify({ ...emptyLedger(), evidence: [corrupted] });
+    assert.deepEqual(loadLedger(memoryStorage(malformed)), emptyLedger());
   });
 });
 

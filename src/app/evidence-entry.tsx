@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AcceptanceCriterion, EvidenceSourceType } from "@/lib/contracts";
+import { AcceptanceCriterion, Deliverable, EvidenceSourceType } from "@/lib/contracts";
 import {
   buildReviewRequest,
   requestEvidenceReview,
@@ -33,6 +33,8 @@ export interface EvidenceSubmissionInput {
   sourceType: EvidenceSourceType;
   sourceName: string;
   summary: string;
+  /** The deliverable this material belongs to, when the submitter named one. */
+  deliverableId?: string;
   /**
    * The pasted material that is sent for review.
    *
@@ -48,6 +50,10 @@ type AcceptanceRequirement = AcceptanceCriterion["evidenceRequirements"][number]
 
 export interface EvidenceSubmitFormProps {
   criterion: AcceptanceCriterion;
+  /** The contract's deliverables, so the submission can be linked to one. */
+  deliverables?: Deliverable[];
+  /** A deliverable chosen elsewhere on the page, offered as the default. */
+  presetDeliverableId?: string;
   submitting: boolean;
   onSubmit: (input: EvidenceSubmissionInput) => void;
   onCancel: () => void;
@@ -67,6 +73,8 @@ export interface EvidenceSubmitFormProps {
  */
 export function EvidenceSubmitForm({
   criterion,
+  deliverables,
+  presetDeliverableId,
   submitting,
   onSubmit,
   onCancel,
@@ -81,6 +89,14 @@ export function EvidenceSubmitForm({
   const [sourceName, setSourceName] = useState("");
   const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
+  // The association issue #15 asks the user to declare. Optional on purpose:
+  // not every piece of evidence is a deliverable (a log can stand alone), and
+  // the fallback is "no link", never a guessed one.
+  const [deliverableId, setDeliverableId] = useState(
+    presetDeliverableId && deliverables?.some((item) => item.id === presetDeliverableId)
+      ? presetDeliverableId
+      : "",
+  );
 
   const canSubmit =
     !submitting &&
@@ -132,6 +148,20 @@ export function EvidenceSubmitForm({
         </label>
       </div>
       <p className="field-hint">{sourceTypeHint[sourceType]}</p>
+
+      {deliverables && deliverables.length > 0 && (
+        <label>
+          关联交付物（可选，用于推导交付物进度）
+          <select value={deliverableId} onChange={(event) => setDeliverableId(event.target.value)}>
+            <option value="">（不关联任何交付物）</option>
+            {deliverables.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.id}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label>
         来源名称
@@ -189,6 +219,7 @@ export function EvidenceSubmitForm({
                 sourceName: sourceName.trim(),
                 summary: summary.trim(),
                 content: content.trim(),
+                deliverableId: deliverableId || undefined,
               })
             }
           >
@@ -206,8 +237,19 @@ export interface EvidenceEntryProps {
   records: EvidenceRecord[];
   /** The whole ledger: reviews and the override log are read through its helpers. */
   ledger: Ledger;
+  /** The contract's deliverables, offered as an optional link in the form. */
+  deliverables?: Deliverable[];
   /** Evidence cannot be recorded before the contract is accepted (§10). */
   locked: boolean;
+  /**
+   * A request from elsewhere on the page (a deliverable card) to open this
+   * criterion's form, optionally with a deliverable preselected. Render-derived
+   * rather than effect-driven, so no state is set during render: the form is
+   * shown while the request exists, and closing it consumes the request.
+   */
+  openRequest?: { deliverableId?: string };
+  /** Called when the form opened by `openRequest` is closed or submitted. */
+  onOpenConsumed?: () => void;
   /** Writes the record and returns its id; the review is requested separately. */
   onRecord: (input: EvidenceSubmissionInput) => string;
   onAdopt: (outcome: ReviewOutcome) => void;
@@ -227,7 +269,10 @@ export function EvidenceEntry({
   derivation,
   records,
   ledger,
+  deliverables,
   locked,
+  openRequest,
+  onOpenConsumed,
   onRecord,
   onAdopt,
   onOverride,
@@ -240,6 +285,18 @@ export function EvidenceEntry({
   const [attempts, setAttempts] = useState<Record<string, EvidenceSubmissionInput>>({});
   const [failures, setFailures] = useState<Record<string, string>>({});
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  // The form is open either because this card asked for it, or because another
+  // card on the page (a deliverable) asked and pointed here. The request is not
+  // copied into state — that would need an effect — it is simply rendered
+  // until consumed, which closing or submitting does.
+  const formOpen = !locked && (open || openRequest !== undefined);
+
+  /** Closes the form from either source, so a consumed request cannot reopen it. */
+  function closeForm() {
+    setOpen(false);
+    onOpenConsumed?.();
+  }
 
   /**
    * Sends one submission for review. Never throws: a failure becomes state on
@@ -289,13 +346,13 @@ export function EvidenceEntry({
     // than silently discarding the user's work.
     const evidenceId = onRecord(input);
     setAttempts((previous) => ({ ...previous, [evidenceId]: input }));
-    setOpen(false);
+    closeForm();
     await reviewSubmission(evidenceId, input);
     setSubmitting(false);
   }
 
   return (
-    <div className="criterion">
+    <div className="criterion" id={`criterion-${criterion.id}`}>
       <span className="index">{criterion.id.replace(/^AC-?/i, "") || criterion.id}</span>
 
       <div>
@@ -378,12 +435,18 @@ export function EvidenceEntry({
         <div className="evidence-actions">
           {locked ? (
             <span className="muted">接受合同后才能开始记录证据。</span>
-          ) : open ? (
+          ) : formOpen ? (
             <EvidenceSubmitForm
+              // Remount when the request targets a different deliverable, so a
+              // preset from a deliverable card replaces (not merges with) a
+              // half-typed manual draft.
+              key={openRequest?.deliverableId ?? "manual"}
               criterion={criterion}
+              deliverables={deliverables}
+              presetDeliverableId={openRequest?.deliverableId}
               submitting={submitting}
               onSubmit={(input) => void submit(input)}
-              onCancel={() => setOpen(false)}
+              onCancel={closeForm}
             />
           ) : (
             <button type="button" className="button-secondary" onClick={() => setOpen(true)}>

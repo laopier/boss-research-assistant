@@ -46,6 +46,17 @@ export const deliverableStatusText: Record<Deliverable["status"], string> = {
 };
 
 /**
+ * Derived status chips. `IN_PROGRESS` gets its own colour rather than reusing
+ * the unknown grey: "someone has started" and "nothing has happened" are the
+ * two facts issue #15 most wants the page to stop collapsing.
+ */
+export const deliverableStatusClass: Record<Deliverable["status"], string> = {
+  NOT_STARTED: "status status-unknown",
+  IN_PROGRESS: "status status-progress",
+  DONE: "status status-pass",
+};
+
+/**
  * Evidence source copy carries the proof boundary from docs/contracts.zh-CN.md
  * §6, because the difference between "the platform ran it" and "the user says
  * they ran it" is the point of the four-way split.
