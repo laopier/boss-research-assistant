@@ -595,6 +595,26 @@ describe("ProgressPanel", () => {
     const html = renderProgress(progressFixture({ blockers: ["BL-1"] }));
     assert.match(html, /当前阻塞：BL-1/);
   });
+
+  it("never offers completion while the next action is to resolve a blocker", () => {
+    const html = renderProgress(
+      progressFixture({
+        blockers: ["BL-1"],
+        missing: [],
+        nextAction: {
+          kind: "RESOLVE_BLOCKER",
+          blocker: {
+            id: "BL-1",
+            description: "缺少数据集",
+            affectedCriteria: ["AC-1"],
+            resolution: "申请访问权限",
+          },
+        },
+      }),
+    );
+    assert.match(html, /先解除阻塞项 BL-1/);
+    assert.doesNotMatch(html, /完成 Boss，导出验收报告/);
+  });
 });
 
 describe("ResearchJourney", () => {

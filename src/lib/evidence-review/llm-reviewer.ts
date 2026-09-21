@@ -53,6 +53,7 @@ export class LLMEvidenceReviewer implements EvidenceReviewer {
     const payload = {
       criterion: request.criterion,
       requirement: request.requirement,
+      deliverable: request.deliverable,
       submission: request.submission,
     };
 

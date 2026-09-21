@@ -308,6 +308,9 @@ export function EvidenceEntry({
       (item) => item.id === input.requirementId,
     );
     if (!requirement) return;
+    const deliverable = input.deliverableId
+      ? deliverables?.find((item) => item.id === input.deliverableId)
+      : undefined;
     setReviewingId(evidenceId);
     setFailures((previous) => ({ ...previous, [evidenceId]: "" }));
     try {
@@ -316,7 +319,7 @@ export function EvidenceEntry({
           sourceType: input.sourceType,
           sourceName: input.sourceName,
           content: input.content,
-        }),
+        }, deliverable ? { id: deliverable.id, description: deliverable.description } : undefined),
       );
       setProposals((previous) => ({
         ...previous,

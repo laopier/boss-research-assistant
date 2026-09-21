@@ -218,6 +218,22 @@ describe("deriveProgress", () => {
     });
     const result = deriveProgress(blocked, ledger([]), true);
     assert.deepEqual(result.blockers, ["BL-1"]);
+    assert.equal(result.nextAction.kind, "RESOLVE_BLOCKER");
+    assert.notEqual(result.nextAction.kind, "COMPLETE_BOSS");
+  });
+
+  it("prioritizes a missing required criterion over an earlier optional one", () => {
+    const optionalFirst = contract({
+      acceptanceCriteria: [
+        criterion({ id: "AC-OPTIONAL", required: false }),
+        criterion({ id: "AC-REQUIRED", required: true }),
+      ],
+    });
+    const result = deriveProgress(optionalFirst, ledger([]), true);
+    assert.equal(result.nextAction.kind, "SUBMIT_EVIDENCE");
+    if (result.nextAction.kind === "SUBMIT_EVIDENCE") {
+      assert.equal(result.nextAction.missing.criterionId, "AC-REQUIRED");
+    }
   });
 });
 

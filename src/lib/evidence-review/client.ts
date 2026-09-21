@@ -68,6 +68,7 @@ export function buildReviewRequest(
   criterion: AcceptanceCriterion,
   requirement: AcceptanceRequirement,
   submission: ReviewSubmission,
+  deliverable?: { id: string; description: string },
 ): EvidenceReviewRequest {
   return {
     schemaVersion: REVIEW_SCHEMA_VERSION,
@@ -82,6 +83,9 @@ export function buildReviewRequest(
       acceptedSourceTypes: [...requirement.acceptedSourceTypes],
       minimumCount: requirement.minimumCount,
     },
+    ...(deliverable
+      ? { deliverable: { id: deliverable.id, description: deliverable.description } }
+      : {}),
     submission: {
       sourceType: submission.sourceType,
       sourceName: submission.sourceName,

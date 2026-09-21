@@ -54,6 +54,26 @@ function NextActionControl({
           </button>
         </div>
       );
+    case "REVISE_CONTRACT":
+      return (
+        <div className="next-action">
+          <p className="muted">当前合同没有足够的验收标准，无法诚实判定完成。</p>
+          <button type="button" className="button-secondary" disabled>
+            请先协商并补充验收标准
+          </button>
+        </div>
+      );
+    case "RESOLVE_BLOCKER":
+      return (
+        <div className="next-action">
+          <p className="muted">
+            当前无法完成：{action.blocker.description}。解除方式：{action.blocker.resolution}
+          </p>
+          <button type="button" className="button-secondary" disabled>
+            先解除阻塞项 {action.blocker.id}
+          </button>
+        </div>
+      );
     case "INCUBATE_FAILURE":
       return (
         <div className="next-action">

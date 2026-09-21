@@ -87,6 +87,20 @@ describe("buildReviewRequest", () => {
     built.requirement.acceptedSourceTypes.push("AUTO_VERIFIED");
     assert.deepEqual(source.evidenceRequirements[0].acceptedSourceTypes, ["ARTIFACT_INSPECTED"]);
   });
+
+  it("includes the selected deliverable so the reviewer judges the association", () => {
+    const source = criterion();
+    const built = buildReviewRequest(
+      source,
+      source.evidenceRequirements[0],
+      submission,
+      { id: "DEL-1", description: "可复现的 WACA 模块" },
+    );
+    assert.deepEqual(built.deliverable, {
+      id: "DEL-1",
+      description: "可复现的 WACA 模块",
+    });
+  });
 });
 
 describe("reviewErrorMessage", () => {

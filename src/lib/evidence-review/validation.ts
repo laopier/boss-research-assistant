@@ -298,6 +298,16 @@ export function validateReviewRequest(body: unknown): RequestValidation {
     return { ok: false, message: BAD_REQUEST_MESSAGE };
   }
 
+  const deliverable = body.deliverable;
+  if (
+    deliverable !== undefined &&
+    (!isRecord(deliverable) ||
+      !boundedString(deliverable.id, 1, 100) ||
+      !boundedString(deliverable.description, 1, 1000))
+  ) {
+    return { ok: false, message: BAD_REQUEST_MESSAGE };
+  }
+
   return {
     ok: true,
     request: {
@@ -313,6 +323,14 @@ export function validateReviewRequest(body: unknown): RequestValidation {
         acceptedSourceTypes: accepted as EvidenceSourceType[],
         minimumCount: requirement.minimumCount,
       },
+      ...(deliverable && isRecord(deliverable)
+        ? {
+            deliverable: {
+              id: (deliverable.id as string).trim(),
+              description: (deliverable.description as string).trim(),
+            },
+          }
+        : {}),
       submission: {
         sourceType: submission.sourceType,
         sourceName: submission.sourceName.trim(),

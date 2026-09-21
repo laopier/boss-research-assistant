@@ -679,14 +679,15 @@ export function deriveCriterion(
  * - no linked evidence            -> NOT_STARTED
  * - linked evidence, but the linked
  *   criteria are not all PASS     -> IN_PROGRESS
- * - all linked criteria PASS      -> DONE
+ * - every linked criterion has linked PASS evidence -> DONE
  *
  * "Linked" means any record naming this deliverable, including rejected and
  * pending ones: IN_PROGRESS says "someone started on this", and erasing that
  * because the first submission was rejected would contradict the journey
  * (a failure lowers completion but must not erase history). DONE, by contrast,
- * is only ever reached through accepted evidence, because a criterion only
- * reaches PASS that way.
+ * is only ever reached through accepted PASS evidence that names this exact
+ * deliverable. A pass from unrelated evidence may complete a criterion, but it
+ * cannot silently complete a deliverable the reviewer never inspected.
  */
 export interface DeliverableDerivation {
   status: "NOT_STARTED" | "IN_PROGRESS" | "DONE";
@@ -719,14 +720,16 @@ export function deriveDeliverable(
     if (!relatedCriteria.includes(item.criterionId)) relatedCriteria.push(item.criterionId);
   }
 
-  // A criterion the contract no longer knows about can never be PASS, so it
-  // keeps the deliverable honest (IN_PROGRESS) instead of silently vanishing.
+  // A criterion the contract no longer knows about can never be PASS, and a
+  // PASS from evidence that did not name this deliverable cannot complete it.
   const unpassed = relatedCriteria.filter((criterionId) => {
     const criterion = contract.acceptanceCriteria.find((item) => item.id === criterionId);
     if (!criterion) return true;
     return (
-      deriveCriterion(criterion, records.filter((item) => item.criterionId === criterionId)).status !==
-      "PASS"
+      deriveCriterion(
+        criterion,
+        linked.filter((item) => item.criterionId === criterionId),
+      ).status !== "PASS"
     );
   });
 

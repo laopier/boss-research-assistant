@@ -1,4 +1,4 @@
-import { AcceptanceCriterion, BossContract, EvidenceSourceType } from "./contracts";
+import { AcceptanceCriterion, Blocker, BossContract, EvidenceSourceType } from "./contracts";
 import {
   EvidenceRecord,
   FailureAsset,
@@ -34,6 +34,8 @@ export interface MissingRequirement {
 export type NextAction =
   | { kind: "ACCEPT_CONTRACT" }
   | { kind: "COMPLETE_BOSS" }
+  | { kind: "REVISE_CONTRACT" }
+  | { kind: "RESOLVE_BLOCKER"; blocker: Blocker }
   | { kind: "INCUBATE_FAILURE"; failure: FailureAsset }
   | { kind: "SUBMIT_EVIDENCE"; missing: MissingRequirement };
 
@@ -128,17 +130,22 @@ export function deriveProgress(
   let nextAction: NextAction;
   if (!accepted) {
     nextAction = { kind: "ACCEPT_CONTRACT" };
+  } else if (boss.status === "BLOCKED" && contract.blockers[0]) {
+    nextAction = { kind: "RESOLVE_BLOCKER", blocker: contract.blockers[0] };
   } else if (boss.status === "CLEAR") {
     nextAction = { kind: "COMPLETE_BOSS" };
   } else if (unresolved.length > 0) {
     nextAction = { kind: "INCUBATE_FAILURE", failure: unresolved[0] };
   } else if (missing.length > 0) {
-    nextAction = { kind: "SUBMIT_EVIDENCE", missing: missing[0] };
+    nextAction = {
+      kind: "SUBMIT_EVIDENCE",
+      missing: missing.find((item) => item.criterionRequired) ?? missing[0],
+    };
   } else {
-    // No failures, no missing evidence, yet not CLEAR: this is a blocked Boss
-    // (or an empty contract). There is no evidence to point at, so completing
-    // is the only honest remaining action; the blockers are listed above it.
-    nextAction = { kind: "COMPLETE_BOSS" };
+    // An accepted empty contract cannot be completed: there is no acceptance
+    // criterion that could justify CLEAR. Keep the page honest and direct the
+    // user back to contract negotiation instead of exporting a false report.
+    nextAction = { kind: "REVISE_CONTRACT" };
   }
 
   return {

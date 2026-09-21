@@ -405,15 +405,23 @@ describe("deliverable derivation (issue #15)", () => {
     assert.equal(deriveDeliverable(twoCriteria, "DEL-1", records).status, "NOT_STARTED");
   });
 
-  it("counts a PASS reached by other evidence towards DONE, because DONE is about acceptance", () => {
-    // The link declares the association; it does not claim this record alone
-    // must carry the pass. An accepted pass anywhere on the criterion counts.
+  it("does not let unrelated PASS evidence complete a linked deliverable", () => {
+    // EV-2 passes the criterion, but it was never reviewed as evidence for
+    // DEL-1. A rejected association must not complete the deliverable.
     const records = [
       evidence({ id: "EV-1", deliverableId: "DEL-1", reviewStatus: "REJECTED" }),
       evidence({ id: "EV-2", finding: "PASS" }),
     ];
     const result = deriveDeliverable(twoCriteria, "DEL-1", records);
-    assert.equal(result.status, "DONE");
+    assert.equal(result.status, "IN_PROGRESS");
+  });
+
+  it("counts only PASS evidence that names the deliverable", () => {
+    const records = [
+      evidence({ id: "EV-1", deliverableId: "DEL-1", finding: "PASS" }),
+      evidence({ id: "EV-2", finding: "PASS" }),
+    ];
+    assert.equal(deriveDeliverable(twoCriteria, "DEL-1", records).status, "DONE");
   });
 
   it("stays honest when a linked criterion is unknown to the contract", () => {

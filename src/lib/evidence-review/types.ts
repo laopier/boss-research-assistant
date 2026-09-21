@@ -20,6 +20,7 @@ export const REVIEW_SCHEMA_VERSION = "evidence-review.v0" as const;
 export const CONTENT_MIN_LENGTH = 1;
 export const CONTENT_MAX_LENGTH = 4000;
 export const SOURCE_NAME_MAX_LENGTH = 200;
+export const DELIVERABLE_DESCRIPTION_MAX_LENGTH = 1000;
 export const RATIONALE_MAX_LENGTH = 2000;
 export const HINT_MAX_LENGTH = 200;
 export const MAX_SUGGESTED_EVIDENCE = 3;
@@ -56,10 +57,17 @@ export interface ReviewSubmission {
   content: string;
 }
 
+/** Optional hand-over context selected by the user for this evidence. */
+export interface ReviewDeliverableContext {
+  id: string;
+  description: string;
+}
+
 export interface EvidenceReviewRequest {
   schemaVersion: typeof REVIEW_SCHEMA_VERSION;
   criterion: ReviewCriterionContext;
   requirement: ReviewRequirementContext;
+  deliverable?: ReviewDeliverableContext;
   submission: ReviewSubmission;
 }
 

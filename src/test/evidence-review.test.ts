@@ -46,6 +46,7 @@ function makeRequest(overrides: {
   acceptedSourceTypes?: EvidenceSourceType[];
   criterionDescription?: string;
   requirementDescription?: string;
+  deliverable?: { id: string; description: string };
 } = {}): EvidenceReviewRequest {
   return {
     schemaVersion: "evidence-review.v0",
@@ -64,6 +65,7 @@ function makeRequest(overrides: {
       acceptedSourceTypes: overrides.acceptedSourceTypes ?? ["LOG_INSPECTED", "AUTO_VERIFIED"],
       minimumCount: 1,
     },
+    ...(overrides.deliverable ? { deliverable: overrides.deliverable } : {}),
     submission: {
       sourceType: overrides.sourceType ?? "LOG_INSPECTED",
       sourceName: overrides.sourceName ?? "waca_debug.py 运行输出",
@@ -127,6 +129,24 @@ describe("validateReviewRequest", () => {
   it("accepts a well-formed request", () => {
     const result = validateReviewRequest(makeRequest());
     assert.equal(result.ok, true);
+  });
+
+  it("accepts and trims optional deliverable context", () => {
+    const result = validateReviewRequest(
+      makeRequest({ deliverable: { id: " DEL-1 ", description: " WACA module " } }),
+    );
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.deepEqual(result.request.deliverable, {
+        id: "DEL-1",
+        description: "WACA module",
+      });
+    }
+  });
+
+  it("rejects malformed deliverable context", () => {
+    const request = makeRequest();
+    assert.equal(validateReviewRequest({ ...request, deliverable: { id: "DEL-1" } }).ok, false);
   });
 
   for (const [label, payload] of [
@@ -588,11 +608,16 @@ describe("LLMEvidenceReviewer", () => {
     const prompt = buildEvidenceReviewUserPrompt({
       criterion: { id: "AC-1", description: "desc", required: true },
       requirement: { id: "REQ-1", description: "desc", acceptedSourceTypes: ["LOG_INSPECTED"], minimumCount: 1 },
+      deliverable: { id: "DEL-1", description: "WACA module" },
       submission: { sourceType: "LOG_INSPECTED", sourceName: "demo.log", content: "content" },
     });
     assert.doesNotMatch(prompt, /`/);
-    const parsed = JSON.parse(prompt) as { submission: { content: string } };
+    const parsed = JSON.parse(prompt) as {
+      deliverable: { id: string; description: string };
+      submission: { content: string };
+    };
     assert.equal(parsed.submission.content, "content");
+    assert.equal(parsed.deliverable.id, "DEL-1");
   });
 });
 
