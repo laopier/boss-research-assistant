@@ -121,6 +121,12 @@ describe("criterion derivation (§3, §7, §8)", () => {
     assert.equal(result.acceptedCount, 1);
   });
 
+  it("does not treat accepted but INCONCLUSIVE evidence as proof", () => {
+    const result = deriveCriterion(criterion(), [evidence({ finding: "INCONCLUSIVE" })]);
+    assert.equal(result.status, "UNKNOWN");
+    assert.equal(result.acceptedCount, 1, "the record remains accepted and auditable");
+  });
+
   it("ignores PENDING evidence (§8)", () => {
     const result = deriveCriterion(criterion(), [evidence({ reviewStatus: "PENDING" })]);
     assert.equal(result.status, "UNKNOWN", "pending evidence must not count");
@@ -154,6 +160,34 @@ describe("criterion derivation (§3, §7, §8)", () => {
   it("does not accept a source type the requirement rejects (§7)", () => {
     const result = deriveCriterion(criterion(), [evidence({ sourceType: "USER_REPORTED" })]);
     assert.equal(result.status, "UNKNOWN", "USER_REPORTED is not in acceptedSourceTypes");
+  });
+
+  it("uses the reviewed proof boundary instead of the submitter-declared source type", () => {
+    const result = deriveCriterion(criterion(), [
+      evidence({ sourceType: "LOG_INSPECTED", proofBoundary: "USER_REPORTED" }),
+    ]);
+    assert.equal(
+      result.status,
+      "UNKNOWN",
+      "a user report must not satisfy a requirement that accepts only inspected logs",
+    );
+  });
+
+  it("accepts a reviewed lower boundary when the requirement explicitly allows it", () => {
+    const acceptsReports = criterion({
+      evidenceRequirements: [
+        {
+          id: "REQ-1",
+          description: "a report is sufficient for this criterion",
+          acceptedSourceTypes: ["USER_REPORTED"],
+          minimumCount: 1,
+        },
+      ],
+    });
+    const result = deriveCriterion(acceptsReports, [
+      evidence({ sourceType: "LOG_INSPECTED", proofBoundary: "USER_REPORTED" }),
+    ]);
+    assert.equal(result.status, "PASS");
   });
 
   it("does not let a rejected source type force a FAIL verdict (§7)", () => {
@@ -252,6 +286,12 @@ describe("Boss derivation (§4)", () => {
     assert.equal(result.requiredPassed, 0);
   });
 
+  it("does not become CLEAR from accepted but INCONCLUSIVE evidence", () => {
+    const result = deriveBoss(contract(), [evidence({ finding: "INCONCLUSIVE" })], true);
+    assert.equal(result.status, "ACTIVE");
+    assert.equal(result.requiredPassed, 0);
+  });
+
   it("lets an optional failure coexist with CLEAR (§5)", () => {
     const mixed = contract({
       acceptanceCriteria: [
@@ -322,6 +362,14 @@ describe("deliverable derivation (issue #15)", () => {
     const records = [evidence({ id: "EV-1", deliverableId: "DEL-1", finding: "PASS" })];
     const result = deriveDeliverable(twoCriteria, "DEL-1", records);
     assert.equal(result.status, "DONE");
+  });
+
+  it("stays IN_PROGRESS with accepted but INCONCLUSIVE evidence", () => {
+    const records = [
+      evidence({ id: "EV-1", deliverableId: "DEL-1", finding: "INCONCLUSIVE" }),
+    ];
+    const result = deriveDeliverable(twoCriteria, "DEL-1", records);
+    assert.equal(result.status, "IN_PROGRESS");
   });
 
   it("keeps DONE false while a linked criterion has an accepted FAIL", () => {
@@ -563,7 +611,23 @@ describe("recording and review", () => {
       recorded,
       outcome({ evidenceId: "EV-1", decision: "ACCEPTED", finding: "PASS" }),
     );
+    assert.equal(adopted.evidence[0].proofBoundary, "LOG_INSPECTED");
     assert.equal(deriveCriterion(criterion(), adopted.evidence).status, "PASS");
+  });
+
+  it("persists a downgraded review boundary and uses it during derivation", () => {
+    const adopted = withReviewOutcome(
+      recorded(),
+      outcome({
+        decision: "ACCEPTED",
+        finding: "PASS",
+        proofBoundary: "USER_REPORTED",
+        rationale: "文本只说明用户声称运行过，没有可核查日志。",
+      }),
+    );
+    assert.equal(adopted.evidence[0].sourceType, "LOG_INSPECTED", "preserve the user's claim");
+    assert.equal(adopted.evidence[0].proofBoundary, "USER_REPORTED");
+    assert.equal(deriveCriterion(criterion(), adopted.evidence).status, "UNKNOWN");
   });
 
   it("leaves other evidence untouched when reviewing one item", () => {

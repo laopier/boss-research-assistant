@@ -24,9 +24,10 @@ import type { ReviewDecision, ReviewFinding, SuggestedEvidence } from "./evidenc
  * - §4  Boss precedence is `BLOCKED` > `CLEAR` > `PARTIAL` > `ACTIVE`, and
  *       `PARTIAL` specifically requires at least one required criterion to pass
  *       — it is not a blanket "not finished yet".
- * - §7  A requirement is satisfied by accepted evidence of an accepted source
- *       type, at least `minimumCount` times. Evidence must map to a specific
- *       criterion and requirement; unrelated evidence cannot be used to pad.
+ * - §7  A requirement is satisfied by accepted PASS evidence of an accepted
+ *       source type, at least `minimumCount` times. Evidence must map to a
+ *       specific criterion and requirement; unrelated or inconclusive evidence
+ *       cannot be used to pad.
  * - §8  Only `reviewStatus: "ACCEPTED"` evidence participates in the
  *       computation, and being accepted does not imply a `PASS` finding.
  * - §11 An out-of-scope need becomes a new Boss instead of widening this one.
@@ -65,6 +66,15 @@ export interface EvidenceRecord {
    * and on evidence imported from a fixture, which predates the association.
    */
   deliverableId?: string;
+  /**
+   * The strongest source boundary the adopted review says the submitted
+   * content actually proves. `sourceType` above remains the submitter's claim;
+   * this field is the effective boundary used by derivation after review.
+   *
+   * Optional for records written before evidence review existed. Those legacy
+   * records fall back to `sourceType` so an upgrade does not erase old work.
+   */
+  proofBoundary?: EvidenceSourceType;
   sourceType: EvidenceSourceType;
   sourceName: string;
   summary: string;
@@ -210,6 +220,8 @@ function isEvidenceRecord(value: unknown): value is EvidenceRecord {
     typeof value.criterionId === "string" &&
     typeof value.requirementId === "string" &&
     (value.deliverableId === undefined || typeof value.deliverableId === "string") &&
+    (value.proofBoundary === undefined ||
+      SOURCE_TYPES.includes(value.proofBoundary as EvidenceSourceType)) &&
     SOURCE_TYPES.includes(value.sourceType as EvidenceSourceType) &&
     typeof value.sourceName === "string" &&
     typeof value.summary === "string" &&
@@ -432,6 +444,7 @@ export function withReviewOutcome(ledger: Ledger, outcome: ReviewOutcome): Ledge
             ...item,
             reviewStatus: reviewStatusForDecision(outcome.decision),
             finding: outcome.finding,
+            proofBoundary: outcome.proofBoundary,
           }
         : item,
     ),
@@ -596,11 +609,14 @@ export function deriveCriterion(
 
   // §8: only accepted evidence counts.
   const accepted = records.filter((item) => item.reviewStatus === "ACCEPTED");
-  // §7: evidence must map to a requirement of this criterion, so unrelated
-  // evidence cannot be used to pad a count.
+  const effectiveSourceType = (item: EvidenceRecord) => item.proofBoundary ?? item.sourceType;
+
+  // §7: evidence must map to a requirement of this criterion and its reviewed
+  // proof boundary must be accepted, so neither unrelated evidence nor a weak
+  // user report submitted as a log can pad a count.
   const relevant = accepted.filter((item) => {
     const requirement = requirements.get(item.requirementId);
-    return requirement?.acceptedSourceTypes.includes(item.sourceType) ?? false;
+    return requirement?.acceptedSourceTypes.includes(effectiveSourceType(item)) ?? false;
   });
   const pendingCount = records.filter((item) => item.reviewStatus !== "ACCEPTED").length;
 
@@ -615,13 +631,16 @@ export function deriveCriterion(
     };
   }
 
-  // §3 + §7: PASS requires every requirement to be satisfied.
+  // §3 + §7: PASS requires every requirement to be satisfied by accepted
+  // evidence whose finding is actually PASS. ACCEPTED means admissible, not
+  // conclusive; an INCONCLUSIVE finding remains visible but proves no criterion.
+  const passing = relevant.filter((item) => item.finding === "PASS");
   const unmet: string[] = [];
   for (const requirement of criterion.evidenceRequirements) {
-    const count = relevant.filter(
+    const count = passing.filter(
       (item) =>
         item.requirementId === requirement.id &&
-        requirement.acceptedSourceTypes.includes(item.sourceType),
+        requirement.acceptedSourceTypes.includes(effectiveSourceType(item)),
     ).length;
     if (count < requirement.minimumCount) {
       unmet.push(`${requirement.id} ${count}/${requirement.minimumCount}`);
