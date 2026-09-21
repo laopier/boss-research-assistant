@@ -16,7 +16,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { AcceptanceCriterion, BossContract, Deliverable } from "../lib/contracts";
+import { AcceptanceCriterion, BossContract, Deliverable, EvidenceSourceType } from "../lib/contracts";
 import { PROOF_BOUNDARY_TEXT } from "../lib/evidence-review/validation";
 import {
   EvidenceRecord,
@@ -31,7 +31,10 @@ import { DeliverableCard } from "../app/deliverable-card";
 import { EvidenceEntry, EvidenceSubmitForm } from "../app/evidence-entry";
 import { EvidenceReviewPanel } from "../app/evidence-review-panel";
 import { FailureLibrary } from "../app/failure-library";
+import { ResearchJourney } from "../app/journey-panel";
+import { ProgressPanel } from "../app/progress-panel";
 import { proofBoundaryText } from "../app/labels";
+import { ProgressDerivation } from "../lib/progress";
 
 function criterion(overrides: Partial<AcceptanceCriterion> = {}): AcceptanceCriterion {
   return {
@@ -500,6 +503,131 @@ describe("copy consistency", () => {
       PROOF_BOUNDARY_TEXT,
       "the browser copy and the server copy must not drift",
     );
+  });
+});
+
+const missingFixture = {
+  criterionId: "AC-2",
+  criterionRequired: true,
+  requirementId: "REQ-2-SOURCE",
+  description: "Source inspection",
+  have: 0,
+  need: 1,
+  acceptedSourceTypes: ["ARTIFACT_INSPECTED"] as EvidenceSourceType[],
+};
+
+function progressFixture(overrides: Partial<ProgressDerivation> = {}): ProgressDerivation {
+  return {
+    deliverablesDone: 1,
+    deliverablesTotal: 2,
+    requiredPassed: 1,
+    requiredTotal: 2,
+    optionalPassed: 0,
+    optionalTotal: 1,
+    missing: [missingFixture],
+    blockers: [],
+    unresolvedFailures: 0,
+    nextAction: { kind: "SUBMIT_EVIDENCE", missing: missingFixture },
+    ...overrides,
+  };
+}
+
+function renderProgress(progress: ProgressDerivation): string {
+  return renderToStaticMarkup(
+    <ProgressPanel
+      progress={progress}
+      onAccept={() => {}}
+      onIncubate={() => {}}
+      onSubmitEvidence={() => {}}
+      onCompleteBoss={() => {}}
+    />,
+  );
+}
+
+describe("ProgressPanel", () => {
+  it("shows both derived progress bars, never an editable percentage", () => {
+    const html = renderProgress(progressFixture());
+    assert.match(html, /产出进度/);
+    assert.match(html, /1\/2 交付物/);
+    assert.match(html, /通关进度/);
+    assert.match(html, /1\/2 必需验收项/);
+    assert.doesNotMatch(html, /<input/, "there is no input for a user to type a percentage");
+  });
+
+  it("names the requirement still missing and the source types it accepts", () => {
+    const html = renderProgress(progressFixture());
+    assert.match(html, /REQ-2-SOURCE 还缺 1 条/);
+    assert.match(html, /已检查产物/);
+  });
+
+  it("renders the submit-evidence action with the criterion it targets", () => {
+    const html = renderProgress(progressFixture());
+    assert.match(html, /去 AC-2 提交证据/);
+  });
+
+  it("offers to accept the contract first when that has not happened", () => {
+    const html = renderProgress(
+      progressFixture({ nextAction: { kind: "ACCEPT_CONTRACT" }, missing: [] }),
+    );
+    assert.match(html, /接受合同，开始记录证据/);
+  });
+
+  it("offers incubation for an unresolved failure", () => {
+    const html = renderProgress(
+      progressFixture({
+        nextAction: { kind: "INCUBATE_FAILURE", failure: failure() },
+        missing: [],
+        unresolvedFailures: 1,
+      }),
+    );
+    assert.match(html, /有一条未解决的失败记录/);
+    assert.match(html, /孵化成下一个 Boss/);
+  });
+
+  it("offers to complete the Boss once it is clear", () => {
+    const html = renderProgress(
+      progressFixture({ nextAction: { kind: "COMPLETE_BOSS" }, missing: [] }),
+    );
+    assert.match(html, /完成 Boss，导出验收报告/);
+  });
+
+  it("lists blockers separately from missing evidence", () => {
+    const html = renderProgress(progressFixture({ blockers: ["BL-1"] }));
+    assert.match(html, /当前阻塞：BL-1/);
+  });
+});
+
+describe("ResearchJourney", () => {
+  it("explains the empty state", () => {
+    const html = renderToStaticMarkup(<ResearchJourney events={[]} />);
+    assert.match(html, /科研历程/);
+    assert.match(html, /还没有任何动作/);
+  });
+
+  it("renders each event kind in order", () => {
+    const events = [
+      { kind: "CONTRACT_ACCEPTED" as const, at: "2026-09-20T09:00:00.000Z", text: "接受 Boss Contract，验收语义生效。" },
+      { kind: "FAILURE_RECORDED" as const, at: "2026-09-20T10:00:00.000Z", text: "发现未通过的证据：失败" },
+      { kind: "CRITERION_PASSED" as const, at: "2026-09-20T11:00:00.000Z", text: "验收项 AC-1 通过。" },
+    ];
+    const html = renderToStaticMarkup(<ResearchJourney events={events} />);
+    assert.match(html, /接受合同/);
+    assert.match(html, /发现失败/);
+    assert.match(html, /验收通过/);
+    assert.match(html, /失败/);
+    const accept = html.indexOf("接受合同");
+    const fail = html.indexOf("发现失败");
+    assert.ok(accept < fail, "events must render in chronological order");
+  });
+
+  it("keeps a failure visible even when a pass follows it", () => {
+    const events = [
+      { kind: "FAILURE_RECORDED" as const, at: "2026-09-20T10:00:00.000Z", text: "发现未通过的证据：失败" },
+      { kind: "CRITERION_PASSED" as const, at: "2026-09-20T11:00:00.000Z", text: "验收项 AC-1 通过。" },
+    ];
+    const html = renderToStaticMarkup(<ResearchJourney events={events} />);
+    assert.match(html, /发现失败/);
+    assert.match(html, /验收通过/);
   });
 });
 

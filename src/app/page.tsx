@@ -35,12 +35,15 @@ import wacaDemoFixture from "../../examples/waca-se-boss.json";
 import { DeliverableCard } from "./deliverable-card";
 import { EvidenceEntry, EvidenceSubmissionInput } from "./evidence-entry";
 import { FailureLibrary } from "./failure-library";
+import { ResearchJourney } from "./journey-panel";
+import { ProgressPanel } from "./progress-panel";
 import {
   assistanceModeText,
   bossStatusText,
   criterionStatusClass,
   criterionStatusText,
 } from "./labels";
+import { deriveProgress, listJourneyEvents } from "@/lib/progress";
 
 /**
  * The frozen MVP-0 demonstration case.
@@ -111,6 +114,51 @@ export default function Home() {
   );
 
   const failures = useMemo(() => listFailures(ledger), [ledger]);
+
+  const progress = useMemo(
+    () => (contract ? deriveProgress(contract, ledger, accepted) : null),
+    [contract, ledger, accepted],
+  );
+
+  const journeyEvents = useMemo(
+    () => (contract ? listJourneyEvents(contract, ledger) : []),
+    [contract, ledger],
+  );
+
+  /**
+   * The "complete the Boss" action: exports an acceptance report and resets to
+   * the empty state so the user can start the next Boss. No schema, no server —
+   * the report is derived from the same ledger the page already renders.
+   */
+  function exportReport() {
+    if (!contract || !progress) return;
+    const report = {
+      exportedAt: new Date().toISOString(),
+      contract: {
+        id: contract.id,
+        title: contract.title,
+        objective: contract.objective,
+        revision: contract.revision,
+      },
+      status: boss?.status ?? "UNKNOWN",
+      progress: {
+        requiredPassed: progress.requiredPassed,
+        requiredTotal: progress.requiredTotal,
+        optionalPassed: progress.optionalPassed,
+        optionalTotal: progress.optionalTotal,
+        deliverablesDone: progress.deliverablesDone,
+        deliverablesTotal: progress.deliverablesTotal,
+      },
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${contract.id}-acceptance-report.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setNotice("验收报告已导出。你可以回到上方开始下一个 Boss。");
+  }
 
   async function requestContract(goalText: string): Promise<GenerateBossContractResponse> {
     const response = await fetch("/api/contracts/generate", {
@@ -318,7 +366,7 @@ export default function Home() {
         </section>
       )}
 
-      {result && contract && boss && (
+      {result && contract && boss && progress && (
         <ContractView
           data={result}
           contract={contract}
@@ -327,10 +375,14 @@ export default function Home() {
           lineage={lineage}
           records={contractRecords}
           ledger={ledger}
+          progress={progress}
+          journeyEvents={journeyEvents}
           onAccept={acceptContract}
           onRecord={recordEvidence}
           onAdopt={adoptReview}
           onOverride={overrideEvidence}
+          onIncubate={incubate}
+          onCompleteBoss={exportReport}
         />
       )}
 
@@ -349,10 +401,14 @@ interface ContractViewProps {
   lineage: Ledger["incubations"][string] | undefined;
   records: Ledger["evidence"];
   ledger: Ledger;
+  progress: ReturnType<typeof deriveProgress>;
+  journeyEvents: ReturnType<typeof listJourneyEvents>;
   onAccept: () => void;
   onRecord: (criterionId: string, input: EvidenceSubmissionInput) => string;
   onAdopt: (outcome: ReviewOutcome) => void;
   onOverride: (draft: OverrideDraft, outcome: ReviewOutcome | undefined) => void;
+  onIncubate: (failure: FailureAsset) => void;
+  onCompleteBoss: () => void;
 }
 
 function ContractView({
@@ -363,19 +419,25 @@ function ContractView({
   lineage,
   records,
   ledger,
+  progress,
+  journeyEvents,
   onAccept,
   onRecord,
   onAdopt,
   onOverride,
+  onIncubate,
+  onCompleteBoss,
 }: ContractViewProps) {
   /**
-   * A deliverable card's request to open a criterion's submission form with
-   * itself preselected: `{ criterionId, deliverableId }`. Held here because the
-   * deliverables section and the criteria cards are siblings.
+   * A request to open a criterion's submission form, either from a deliverable
+   * card (with a deliverable preselected) or from the progress panel's
+   * "submit evidence" action (no deliverable). Held here because the
+   * deliverables section, the progress panel and the criteria cards are
+   * siblings.
    */
   const [submitFor, setSubmitFor] = useState<{
     criterionId: string;
-    deliverableId: string;
+    deliverableId?: string;
   } | null>(null);
 
   const evidenceByCriterion = new Map<string, Ledger["evidence"]>();
@@ -435,15 +497,13 @@ function ContractView({
         )}
       </div>
 
-      <p className="progress-note">
-        <span className={criterionStatusClass[boss.status === "CLEAR" ? "PASS" : "UNKNOWN"]}>
-          {bossStatusText[boss.status]}
-        </span>
-        <span>{boss.reason}</span>
-        <span className="muted">
-          必需 {boss.requiredPassed}/{boss.requiredTotal} 通过；可选 {boss.optionalPassed}/{boss.optionalTotal} 通过
-        </span>
-      </p>
+      <ProgressPanel
+        progress={progress}
+        onAccept={onAccept}
+        onIncubate={onIncubate}
+        onSubmitEvidence={(criterionId) => setSubmitFor({ criterionId })}
+        onCompleteBoss={onCompleteBoss}
+      />
 
       <div className="content-grid">
         <article className="criteria-card">
@@ -530,6 +590,8 @@ function ContractView({
           ))}
         </div>
       </section>
+
+      <ResearchJourney events={journeyEvents} />
 
       <div className="guard-grid">
         <article>
