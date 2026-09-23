@@ -39,6 +39,14 @@ export const bossStatusText: Record<BossStatus, string> = {
   BLOCKED: "受阻",
 };
 
+export const bossStatusClass: Record<BossStatus, string> = {
+  DRAFT: "status status-unknown",
+  ACTIVE: "status status-progress",
+  PARTIAL: "status status-progress",
+  CLEAR: "status status-pass",
+  BLOCKED: "status status-fail",
+};
+
 export const deliverableStatusText: Record<Deliverable["status"], string> = {
   NOT_STARTED: "未开始",
   IN_PROGRESS: "进行中",

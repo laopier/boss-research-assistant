@@ -17,9 +17,13 @@ import {
   deriveCriterion,
   listFailures,
   withAcceptedContract,
+  withBossInProject,
   withContext,
+  withContract,
+  withCurrentBoss,
   withImportedEvidence,
   withIncubation,
+  withNewProject,
   withOverride,
   withRecordedEvidence,
   withReviewOutcome,
@@ -31,12 +35,16 @@ import {
   subscribeLedger,
   updateLedger,
 } from "@/lib/ledger-store";
+import { deriveRoadmap } from "@/lib/roadmap";
+import datasetInvestigationFixture from "../../examples/ai/dataset-investigation.json";
+import literatureReadingFixture from "../../examples/ai/literature-reading.json";
 import wacaDemoFixture from "../../examples/waca-se-boss.json";
 import { DeliverableCard } from "./deliverable-card";
 import { EvidenceEntry, EvidenceSubmissionInput } from "./evidence-entry";
 import { FailureLibrary } from "./failure-library";
 import { ResearchJourney } from "./journey-panel";
 import { ProgressPanel } from "./progress-panel";
+import { Workbench } from "./workbench";
 import {
   assistanceModeText,
   bossStatusText,
@@ -65,6 +73,8 @@ import { deriveProgress, listJourneyEvents } from "@/lib/progress";
  * fixture against schemas/boss-contract.v0.schema.json, so drift fails the suite.
  */
 const WACA_DEMO_FIXTURE = wacaDemoFixture as unknown as BossContract;
+const LITERATURE_DEMO_FIXTURE = literatureReadingFixture as unknown as BossContract;
+const DATASET_DEMO_FIXTURE = datasetInvestigationFixture as unknown as BossContract;
 
 function formatDeadline(value: string): string {
   const date = new Date(value);
@@ -80,7 +90,7 @@ function formatDeadline(value: string): string {
 
 export default function Home() {
   const [goal, setGoal] = useState("我想复现 WACA 论文，但不知道从哪里开始");
-  const [result, setResult] = useState<GenerateBossContractResponse | null>(null);
+  const [view, setView] = useState<"workbench" | "boss" | "new">("workbench");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [incubating, setIncubating] = useState(false);
@@ -99,7 +109,13 @@ export default function Home() {
     hydrateLedger();
   }, []);
 
-  const contract = result?.contract ?? null;
+  // The open Boss comes from the roadmap, not from component state, so a
+  // refresh restores it. The effective view falls back to "new" while no
+  // roadmap exists — a derived fallback rather than an effect-set state.
+  const roadmap = useMemo(() => deriveRoadmap(ledger), [ledger]);
+  const contract = roadmap?.currentBossId ? ledger.contracts[roadmap.currentBossId] ?? null : null;
+  const effectiveView = ledger.project === undefined ? "new" : view;
+
   const accepted = contract ? Boolean(ledger.accepted[contract.id]) : false;
   const lineage = contract ? ledger.incubations[contract.id] : undefined;
 
@@ -173,15 +189,31 @@ export default function Home() {
     return body;
   }
 
-  /** Registers a new contract in the ledger: import its evidence, remember its goal. */
-  const registerContract = useCallback((next: BossContract, at: string, seed: Ledger) => {
-    const imported = withImportedEvidence(seed, next, at);
-    return withContext(imported, {
-      contractId: next.id,
-      objective: next.objective,
-      rawGoal: next.rawGoal,
-    });
-  }, []);
+  /**
+   * Registers a contract end-to-end: import its evidence, remember its goal,
+   * persist the full contract for the workbench, and place it on the roadmap —
+   * creating the project when this is the first Boss, otherwise appending it
+   * to the first milestone that still has open work.
+   */
+  const registerContract = useCallback(
+    (next: BossContract, at: string, goalText: string, seed: Ledger, generation: "MOCK" | "AI") => {
+      let registered = withImportedEvidence(seed, next, at);
+      registered = withContext(registered, {
+        contractId: next.id,
+        objective: next.objective,
+        rawGoal: next.rawGoal,
+        generation,
+      });
+      registered = withContract(registered, next);
+      if (!registered.project) {
+        registered = withNewProject(registered, goalText, next.id, at);
+      } else {
+        registered = withBossInProject(registered, next.id, undefined, at);
+      }
+      return registered;
+    },
+    [],
+  );
 
   async function submitGoal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -190,8 +222,11 @@ export default function Home() {
     setLoading(true);
     try {
       const body = await requestContract(goal);
-      setResult(body);
-      updateLedger((current) => registerContract(body.contract, new Date().toISOString(), current));
+      updateLedger((current) =>
+        registerContract(body.contract, new Date().toISOString(), goal, current, body.generation),
+      );
+      setView("boss");
+      setNotice("新 Boss 已生成并加入项目路线图。");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "生成失败，请稍后重试。");
     } finally {
@@ -200,23 +235,50 @@ export default function Home() {
   }
 
   /**
-   * Loads the frozen demonstration case instead of calling the API. Kept
-   * separate from submitGoal so the generated path stays the default.
+   * Loads the frozen demonstration project instead of calling the API: one
+   * research goal, two milestones, three Bosses built from the repository's
+   * fixtures. The WACA Boss carries the failure story; the other two start
+   * empty so the workbench shows pending milestones as well.
    *
-   * The fixture supplies the acceptance truth; the field supplies `rawGoal`, so
-   * the page shows the goal the presenter actually typed. This mirrors the
-   * original MVP-0 mock, which also replaced only `rawGoal`.
+   * Offered only while no roadmap exists, so it can never overwrite a project
+   * the user has already started.
    */
-  function loadDemoCase() {
+  function loadDemoProject() {
     setError("");
     setNotice("");
-    const submitted = goal.trim();
-    const next: BossContract = {
-      ...WACA_DEMO_FIXTURE,
-      rawGoal: submitted || WACA_DEMO_FIXTURE.rawGoal,
-    };
-    setResult({ generation: "MOCK", contract: next });
-    updateLedger((current) => registerContract(next, new Date().toISOString(), current));
+    const at = new Date().toISOString();
+    updateLedger((current) => {
+      let next = current;
+      for (const fixture of [LITERATURE_DEMO_FIXTURE, DATASET_DEMO_FIXTURE, WACA_DEMO_FIXTURE]) {
+        next = withImportedEvidence(next, fixture, at);
+        next = withContext(next, {
+          contractId: fixture.id,
+          objective: fixture.objective,
+          rawGoal: fixture.rawGoal,
+        });
+        next = withContract(next, fixture);
+      }
+      next = {
+        ...next,
+        project: {
+          goal: "复现 WACA 论文",
+          milestones: [
+            {
+              id: "M-1",
+              title: "读懂论文与数据",
+              bossIds: [LITERATURE_DEMO_FIXTURE.id, DATASET_DEMO_FIXTURE.id],
+            },
+            { id: "M-2", title: "构建并验证模型", bossIds: [WACA_DEMO_FIXTURE.id] },
+          ],
+          currentBossId: WACA_DEMO_FIXTURE.id,
+          revision: 1,
+          updatedAt: at,
+        },
+      };
+      return next;
+    });
+    setView("workbench");
+    setNotice("已载入演示项目：2 个里程碑、3 个 Boss。");
   }
 
   function acceptContract() {
@@ -290,9 +352,14 @@ export default function Home() {
       const body = await requestContract(goalText);
       const at = new Date().toISOString();
       setGoal(goalText);
-      setResult(body);
       updateLedger((current) => {
-        const registered = registerContract(body.contract, at, current);
+        const registered = registerContract(
+          body.contract,
+          at,
+          goalText,
+          current,
+          body.generation,
+        );
         return withIncubation(registered, body.contract.id, {
           fromEvidenceId: failure.evidence.id,
           fromContractId: failure.evidence.contractId,
@@ -300,7 +367,8 @@ export default function Home() {
           summary: failure.evidence.summary,
         });
       });
-      setNotice("已从该失败记录孵化出一个新的 Boss。");
+      setView("boss");
+      setNotice("已从该失败记录孵化出一个新的 Boss，并加入当前里程碑。");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "孵化失败，请稍后重试。");
     } finally {
@@ -320,81 +388,128 @@ export default function Home() {
         </p>
       </header>
 
-      <section className="input-panel" aria-labelledby="goal-heading">
-        <form onSubmit={submitGoal}>
-          <label id="goal-heading" htmlFor="goal">你的科研目标</label>
-          <textarea
-            id="goal"
-            value={goal}
-            onChange={(event) => setGoal(event.target.value)}
-            maxLength={500}
-            placeholder="例如：我想复现一篇注意力机制论文，但不知道第一步做什么"
-          />
-          <div className="form-footer">
-            <span>{goal.length} / 500</span>
-            <button disabled={loading || incubating || !goal.trim()} type="submit">
-              {loading ? "正在生成…" : "生成 Boss Contract"}
-            </button>
-          </div>
-          {error && <p className="error" role="alert">{error}</p>}
-        </form>
-
-        <div className="demo-entry">
-          <p className="muted">
-            也可以直接载入固定的 WACA 演示案例：那份合同已经跑过一次验收，其中一项因为阶段间
-            复用了错误输入而被判定为<strong>未通过</strong>，所以它停在「部分完成」而非「已完成」。
-          </p>
-          <button
-            type="button"
-            className="button-secondary"
-            onClick={loadDemoCase}
-            disabled={loading || incubating}
-          >
-            载入 WACA 演示案例
-          </button>
-        </div>
-      </section>
-
       {notice && <p className="notice" role="status">{notice}</p>}
 
-      {!result && (
-        <section className="empty-state">
-          <div className="step">01 <strong>描述意图</strong></div>
-          <div className="step">02 <strong>收敛目标</strong></div>
-          <div className="step">03 <strong>证据判定</strong></div>
-          <div className="step">04 <strong>失败沉淀</strong></div>
-        </section>
-      )}
-
-      {result && contract && boss && progress && (
-        <ContractView
-          data={result}
-          contract={contract}
-          accepted={accepted}
-          boss={boss}
-          lineage={lineage}
-          records={contractRecords}
+      {effectiveView === "workbench" && roadmap && ledger.project && (
+        <Workbench
+          project={ledger.project}
+          roadmap={roadmap}
           ledger={ledger}
-          progress={progress}
-          journeyEvents={journeyEvents}
-          onAccept={acceptContract}
-          onRecord={recordEvidence}
-          onAdopt={adoptReview}
-          onOverride={overrideEvidence}
-          onIncubate={incubate}
-          onCompleteBoss={exportReport}
+          onOpenBoss={(contractId) => {
+            updateLedger((current) => withCurrentBoss(current, contractId));
+            setView("boss");
+            setNotice("");
+          }}
+          onNewBoss={() => {
+            setError("");
+            setView("new");
+          }}
         />
       )}
 
-      {result && (
-        <FailureLibrary failures={failures} busy={incubating} onIncubate={incubate} />
+      {effectiveView === "new" && (
+        <>
+          <section className="input-panel" aria-labelledby="goal-heading">
+            <form onSubmit={submitGoal}>
+              <label id="goal-heading" htmlFor="goal">
+                {ledger.project ? "新 Boss 的目标" : "你的科研目标"}
+              </label>
+              <textarea
+                id="goal"
+                value={goal}
+                onChange={(event) => setGoal(event.target.value)}
+                maxLength={500}
+                placeholder="例如：我想复现一篇注意力机制论文，但不知道第一步做什么"
+              />
+              <div className="form-footer">
+                <span>{goal.length} / 500</span>
+                <span className="actions">
+                  {ledger.project && (
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      onClick={() => setView("workbench")}
+                    >
+                      返回工作台
+                    </button>
+                  )}
+                  <button disabled={loading || incubating || !goal.trim()} type="submit">
+                    {loading ? "正在生成…" : "生成 Boss Contract"}
+                  </button>
+                </span>
+              </div>
+              {error && <p className="error" role="alert">{error}</p>}
+            </form>
+
+            {!ledger.project && (
+              <div className="demo-entry">
+                <p className="muted">
+                  也可以直接载入固定的 WACA 演示项目：1 个研究目标、2 个里程碑、3 个 Boss。
+                  其中「构建并验证模型」已经跑过一次验收，一项因为阶段间复用了错误输入而被判定为
+                  <strong>未通过</strong>，所以整个项目停在途中而非完成。
+                </p>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={loadDemoProject}
+                  disabled={loading || incubating}
+                >
+                  载入 WACA 演示项目
+                </button>
+              </div>
+            )}
+          </section>
+
+          {!ledger.project && (
+            <section className="empty-state">
+              <div className="step">01 <strong>描述意图</strong></div>
+              <div className="step">02 <strong>收敛目标</strong></div>
+              <div className="step">03 <strong>证据判定</strong></div>
+              <div className="step">04 <strong>失败沉淀</strong></div>
+            </section>
+          )}
+        </>
+      )}
+
+      {effectiveView === "boss" && contract && boss && progress && (
+        <>
+          {roadmap && (
+            <button
+              type="button"
+              className="button-secondary back-to-workbench"
+              onClick={() => setView("workbench")}
+            >
+              ← 返回工作台
+            </button>
+          )}
+          <ContractView
+            contract={contract}
+            generation={contract ? ledger.contexts[contract.id]?.generation : undefined}
+            accepted={accepted}
+            boss={boss}
+            lineage={lineage}
+            records={contractRecords}
+            ledger={ledger}
+            progress={progress}
+            journeyEvents={journeyEvents}
+            onAccept={acceptContract}
+            onRecord={recordEvidence}
+            onAdopt={adoptReview}
+            onOverride={overrideEvidence}
+            onIncubate={incubate}
+            onCompleteBoss={exportReport}
+          />
+
+          <FailureLibrary failures={failures} busy={incubating} onIncubate={incubate} />
+        </>
       )}
     </main>
   );
 }
 
 interface ContractViewProps {
-  data: GenerateBossContractResponse;
+  /** How this contract was produced, so the badge survives a refresh. */
+  generation: "MOCK" | "AI" | undefined;
   contract: BossContract;
   accepted: boolean;
   boss: ReturnType<typeof deriveBoss>;
@@ -412,7 +527,7 @@ interface ContractViewProps {
 }
 
 function ContractView({
-  data,
+  generation,
   contract,
   accepted,
   boss,
@@ -465,11 +580,13 @@ function ContractView({
             </p>
           )}
         </div>
-        {data.generation === "AI" ? (
+        {generation === "AI" ? (
           <span className="ai-badge">AI 生成</span>
-        ) : (
+        ) : generation === "MOCK" ? (
           <span className="mock-badge">模拟数据</span>
-        )}
+        ) : contract.recordKind === "DEMO_FIXTURE" ? (
+          <span className="mock-badge">演示数据</span>
+        ) : null}
       </div>
 
       <div className="meta-grid">

@@ -33,8 +33,14 @@ import { EvidenceReviewPanel } from "../app/evidence-review-panel";
 import { FailureLibrary } from "../app/failure-library";
 import { ResearchJourney } from "../app/journey-panel";
 import { ProgressPanel } from "../app/progress-panel";
+import { Workbench } from "../app/workbench";
 import { proofBoundaryText } from "../app/labels";
 import { ProgressDerivation } from "../lib/progress";
+import { deriveRoadmap } from "../lib/roadmap";
+import {
+  withAcceptedContract,
+  withContract,
+} from "../lib/failure-ledger";
 
 function criterion(overrides: Partial<AcceptanceCriterion> = {}): AcceptanceCriterion {
   return {
@@ -701,5 +707,99 @@ describe("FailureLibrary", () => {
   it("disables the incubation action while a request is in flight", () => {
     const html = renderLibrary([failure()], true);
     assert.match(html, /正在孵化…/);
+  });
+});
+
+function workbenchLedger(): Ledger {
+  let ledger = emptyLedger();
+  ledger = withContract(ledger, fullContract());
+  ledger = withContract(
+    ledger,
+    fullContract({ id: "boss-2", objective: "Audit the dataset before any training" }),
+  );
+  ledger = withAcceptedContract(ledger, "boss-1", "2026-09-23T10:00:00.000Z");
+  // boss-1 must be genuinely CLEAR for the 50% assertion: an accepted PASS
+  // record that satisfies its single requirement.
+  ledger = {
+    ...ledger,
+    evidence: [
+      ...ledger.evidence,
+      {
+        id: "EV-WB",
+        contractId: "boss-1",
+        contractRevision: 1,
+        criterionId: "AC-2",
+        requirementId: "REQ-2-SOURCE",
+        sourceType: "ARTIFACT_INSPECTED",
+        sourceName: "models/waca.py",
+        summary: "Stage 2 receives Xweak",
+        finding: "PASS",
+        reviewStatus: "ACCEPTED",
+        recordedAt: "2026-09-23T10:01:00.000Z",
+      },
+    ],
+  };
+  return {
+    ...ledger,
+    project: {
+      goal: "复现 WACA 论文",
+      milestones: [
+        { id: "M-1", title: "读懂论文与数据", bossIds: ["boss-2"] },
+        { id: "M-2", title: "构建并验证模型", bossIds: ["boss-1"] },
+      ],
+      currentBossId: "boss-1",
+      revision: 1,
+      updatedAt: "2026-09-23T10:00:00.000Z",
+    },
+  };
+}
+
+function renderWorkbench(): string {
+  const ledger = workbenchLedger();
+  const roadmap = deriveRoadmap(ledger);
+  assert.ok(roadmap && ledger.project);
+  return renderToStaticMarkup(
+    <Workbench
+      project={ledger.project}
+      roadmap={roadmap}
+      ledger={ledger}
+      onOpenBoss={() => {}}
+      onNewBoss={() => {}}
+    />,
+  );
+}
+
+describe("Workbench", () => {
+  it("shows the project goal, the global progress and the composition", () => {
+    const html = renderWorkbench();
+    assert.match(html, /复现 WACA 论文/);
+    assert.match(html, /项目总进度/);
+    assert.match(html, /50%/);
+    assert.match(html, /1\/2 个 Boss/);
+    assert.match(
+      html,
+      /由各里程碑下的 Boss 按必需验收项状态推导/,
+      "the number must be explainable, not an opaque average",
+    );
+  });
+
+  it("renders every milestone with its state and its Bosses", () => {
+    const html = renderWorkbench();
+    assert.match(html, /读懂论文与数据/);
+    assert.match(html, /构建并验证模型/);
+    assert.match(html, /Audit the dataset before any training/);
+    assert.match(html, /Implement a bounded WACA-SE module/);
+  });
+
+  it("marks the open Boss and names each Boss's next action", () => {
+    const html = renderWorkbench();
+    assert.match(html, /当前/, "the open Boss must be visible on the workbench");
+    assert.match(html, /继续这个 Boss/);
+    assert.match(html, /下一步：/);
+    assert.match(html, /接受合同，开始记录证据/, "boss-2 is untouched, so accept first");
+  });
+
+  it("offers the new-Boss flow", () => {
+    assert.match(renderWorkbench(), /新建 Boss/);
   });
 });

@@ -88,6 +88,11 @@ export interface BossContext {
   contractId: string;
   objective: string;
   rawGoal: string;
+  /**
+   * How the contract was produced, kept so the workbench can still badge a
+   * Boss after a refresh. Absent on contexts written before this existed.
+   */
+  generation?: "MOCK" | "AI";
 }
 
 /** Where a Boss came from, when it was incubated out of a recorded failure. */
@@ -173,6 +178,42 @@ export interface Ledger {
   contexts: Record<string, BossContext>;
   /** newContractId -> the failure it was incubated from. */
   incubations: Record<string, Incubation>;
+  /**
+   * contractId -> the full contract, so the workbench can restore every Boss
+   * after a refresh. Written when a contract is generated or loaded; never
+   * edited in place afterwards (a Negotiation revision will add a new entry).
+   */
+  contracts: Record<string, BossContract>;
+  /**
+   * The research roadmap: one project, its milestones, and which Boss is open.
+   * Absent on ledgers written before the workbench existed; `undefined` means
+   * "no roadmap yet", which the page treats as the first-run state.
+   */
+  project?: ResearchProject;
+}
+
+/** One milestone of the research roadmap (#18): a titled group of Bosses. */
+export interface RoadmapMilestone {
+  id: string;
+  title: string;
+  bossIds: string[];
+}
+
+/**
+ * The project-level roadmap.
+ *
+ * Deliberately local and Web-owned: the shared contract schema describes ONE
+ * Boss, and #18's Project/Milestone layer lives above it, so it is stored here
+ * rather than invented into the shared schema. Bosses are referenced by
+ * contractId; the contracts themselves live in `Ledger.contracts`.
+ */
+export interface ResearchProject {
+  goal: string;
+  milestones: RoadmapMilestone[];
+  /** The Boss the workbench currently has open. */
+  currentBossId?: string;
+  revision: number;
+  updatedAt: string;
 }
 
 export const LEDGER_STORAGE_KEY = "boss-research-assistant.failure-ledger.v1";
@@ -192,6 +233,7 @@ export function emptyLedger(): Ledger {
     accepted: {},
     contexts: {},
     incubations: {},
+    contracts: {},
   };
 }
 
@@ -236,7 +278,8 @@ function isBossContext(value: unknown): value is BossContext {
     isRecord(value) &&
     typeof value.contractId === "string" &&
     typeof value.objective === "string" &&
-    typeof value.rawGoal === "string"
+    typeof value.rawGoal === "string" &&
+    (value.generation === undefined || value.generation === "MOCK" || value.generation === "AI")
   );
 }
 
@@ -308,6 +351,51 @@ function isValueMap<T>(
 }
 
 /**
+ * Key-field check for a stored contract.
+ *
+ * The full schema is validated where contracts enter the system (the API
+ * response path and the fixture tests). Here we only need to know that the
+ * stored value is a contract-shaped object the page can render and derive
+ * from; re-running full schema validation on every load would be a cost with
+ * no benefit, since we wrote this value ourselves.
+ */
+function isBossContract(value: unknown): value is BossContract {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.objective === "string" &&
+    typeof value.revision === "number" &&
+    Array.isArray(value.acceptanceCriteria) &&
+    Array.isArray(value.deliverables) &&
+    value.acceptanceCriteria.every(
+      (item: unknown) => isRecord(item) && typeof (item as { id?: unknown }).id === "string",
+    )
+  );
+}
+
+function isRoadmapMilestone(value: unknown): value is RoadmapMilestone {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.title === "string" &&
+    Array.isArray(value.bossIds) &&
+    value.bossIds.every((item: unknown) => typeof item === "string")
+  );
+}
+
+function isResearchProject(value: unknown): value is ResearchProject {
+  return (
+    isRecord(value) &&
+    typeof value.goal === "string" &&
+    Array.isArray(value.milestones) &&
+    value.milestones.every(isRoadmapMilestone) &&
+    (value.currentBossId === undefined || typeof value.currentBossId === "string") &&
+    typeof value.revision === "number" &&
+    typeof value.updatedAt === "string"
+  );
+}
+
+/**
  * Reads the ledger, degrading to an empty one on anything unexpected.
  *
  * Storage is treated as untrusted: a corrupt payload, a quota error, or a
@@ -315,10 +403,11 @@ function isValueMap<T>(
  * recoverable; a blank app is not.
  *
  * `reviews` and `overrides` were added after the first published build, so a
- * payload written by that build simply does not have them. A missing key is
- * filled in with its empty value and the ledger loads; a *present but malformed*
- * key is corruption like any other and fails closed, consistently with the rest
- * of this function.
+ * payload written by that build simply does not have them. The same applies to
+ * `contracts` and `project` (the workbench). A missing key is filled in with
+ * its empty value and the ledger loads; a *present but malformed* key is
+ * corruption like any other and fails closed, consistently with the rest of
+ * this function.
  */
 export function loadLedger(storage: LedgerStorage | null): Ledger {
   if (!storage) return emptyLedger();
@@ -328,6 +417,7 @@ export function loadLedger(storage: LedgerStorage | null): Ledger {
     const parsed = JSON.parse(raw) as Partial<Ledger>;
     const reviews = parsed.reviews === undefined ? {} : parsed.reviews;
     const overrides = parsed.overrides === undefined ? [] : parsed.overrides;
+    const contracts = parsed.contracts === undefined ? {} : parsed.contracts;
     if (
       parsed.version !== 1 ||
       !Array.isArray(parsed.evidence) ||
@@ -337,7 +427,9 @@ export function loadLedger(storage: LedgerStorage | null): Ledger {
       !overrides.every(isReviewOverride) ||
       !isStringMap(parsed.accepted) ||
       !isValueMap(parsed.contexts, isBossContext) ||
-      !isValueMap(parsed.incubations, isIncubation)
+      !isValueMap(parsed.incubations, isIncubation) ||
+      !isValueMap(contracts, isBossContract) ||
+      (parsed.project !== undefined && !isResearchProject(parsed.project))
     ) {
       return emptyLedger();
     }
@@ -349,6 +441,8 @@ export function loadLedger(storage: LedgerStorage | null): Ledger {
       accepted: parsed.accepted,
       contexts: parsed.contexts,
       incubations: parsed.incubations,
+      contracts,
+      ...(parsed.project !== undefined ? { project: parsed.project } : {}),
     };
   } catch {
     return emptyLedger();
@@ -518,6 +612,92 @@ export function withAcceptedContract(ledger: Ledger, contractId: string, at: str
 
 export function withContext(ledger: Ledger, context: BossContext): Ledger {
   return { ...ledger, contexts: { ...ledger.contexts, [context.contractId]: context } };
+}
+
+/**
+ * Persists a full contract so the workbench can restore it after a refresh.
+ *
+ * Written when a contract is generated, loaded from a fixture, or created by a
+ * negotiation. Never edited in place: a revision produces a new contract with
+ * a new revision number, and the roadmap decides which one is current.
+ */
+export function withContract(ledger: Ledger, contract: BossContract): Ledger {
+  return { ...ledger, contracts: { ...ledger.contracts, [contract.id]: contract } };
+}
+
+/**
+ * Creates the project roadmap when the first Boss arrives.
+ *
+ * MVP keeps one project with one milestone so the workbench has somewhere to
+ * put a freshly generated Boss; negotiation (#18) is what will grow it into
+ * multiple milestones.
+ */
+export function withNewProject(ledger: Ledger, goal: string, contractId: string, at: string): Ledger {
+  if (ledger.project) return ledger;
+  return {
+    ...ledger,
+    project: {
+      goal: goal.trim() || contractId,
+      milestones: [{ id: "M-1", title: "第一阶段", bossIds: [contractId] }],
+      currentBossId: contractId,
+      revision: 1,
+      updatedAt: at,
+    },
+  };
+}
+
+/**
+ * Adds a Boss to the roadmap. Without a target milestone it joins the first
+ * non-completed one (a new Boss is work that is about to start, so it belongs
+ * where work is still open), falling back to the last milestone.
+ */
+export function withBossInProject(
+  ledger: Ledger,
+  contractId: string,
+  milestoneId?: string,
+  at: string = new Date().toISOString(),
+): Ledger {
+  const project = ledger.project;
+  if (!project) return ledger;
+  if (project.milestones.some((milestone) => milestone.bossIds.includes(contractId))) {
+    return ledger;
+  }
+
+  const target =
+    project.milestones.find((milestone) => milestone.id === milestoneId) ??
+    project.milestones.find(
+      (milestone) => !milestone.bossIds.some((id) => isBossClear(ledger, id)),
+    ) ??
+    project.milestones.at(-1);
+  if (!target) return ledger;
+
+  return {
+    ...ledger,
+    project: {
+      ...project,
+      revision: project.revision + 1,
+      updatedAt: at,
+      currentBossId: contractId,
+      milestones: project.milestones.map((milestone) =>
+        milestone.id === target.id
+          ? { ...milestone, bossIds: [...milestone.bossIds, contractId] }
+          : milestone,
+      ),
+    },
+  };
+}
+
+/** Opens a Boss in the workbench without touching the roadmap structure. */
+export function withCurrentBoss(ledger: Ledger, contractId: string): Ledger {
+  const project = ledger.project;
+  if (!project) return ledger;
+  return { ...ledger, project: { ...project, currentBossId: contractId } };
+}
+
+function isBossClear(ledger: Ledger, contractId: string): boolean {
+  const contract = ledger.contracts[contractId];
+  if (!contract) return false;
+  return deriveBoss(contract, ledger.evidence, Boolean(ledger.accepted[contractId])).status === "CLEAR";
 }
 
 /**
