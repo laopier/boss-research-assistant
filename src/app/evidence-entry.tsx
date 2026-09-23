@@ -8,6 +8,8 @@ import {
   reviewErrorMessage,
 } from "@/lib/evidence-review/client";
 import { CONTENT_MAX_LENGTH, SOURCE_NAME_MAX_LENGTH } from "@/lib/evidence-review/types";
+import { artifactSourceName, combineArtifactContents } from "@/lib/artifact-reader";
+import { ArtifactPanel } from "./artifact-panel";
 import {
   CriterionDerivation,
   EvidenceRecord,
@@ -97,6 +99,9 @@ export function EvidenceSubmitForm({
       ? presetDeliverableId
       : "",
   );
+  // The local artifact reader (#19), shown in place of the manual fields when
+  // the user prefers to hand over real files instead of pasting text.
+  const [usingArtifact, setUsingArtifact] = useState(false);
 
   const canSubmit =
     !submitting &&
@@ -108,6 +113,26 @@ export function EvidenceSubmitForm({
   if (!requirement) {
     return (
       <p className="muted">这个验收项没有定义证据要求，因此无法提交证据。</p>
+    );
+  }
+
+  // The reader hands back real files; fold them into the submission exactly as
+  // a manual paste would be, with sourceType forced to ARTIFACT_INSPECTED (the
+  // ceiling the review boundary already enforces) and the file list as name.
+  function acceptArtifacts(files: { relativePath: string; content: string }[]) {
+    setContent(combineArtifactContents(files).slice(0, CONTENT_MAX_LENGTH));
+    setSourceName(artifactSourceName(files, SOURCE_NAME_MAX_LENGTH));
+    if (requirement?.acceptedSourceTypes.includes("ARTIFACT_INSPECTED")) {
+      setSourceType("ARTIFACT_INSPECTED");
+    }
+    setUsingArtifact(false);
+  }
+
+  if (usingArtifact) {
+    return (
+      <div className="evidence-form">
+        <ArtifactPanel onUse={acceptArtifacts} onCancel={() => setUsingArtifact(false)} />
+      </div>
     );
   }
 
@@ -192,6 +217,14 @@ export function EvidenceSubmitForm({
           placeholder={"例如：\n$ python tests/test_waca.py\nAssertionError: Stage 2 expected Xweak, got descriptor"}
         />
       </label>
+
+      <button
+        type="button"
+        className="button-secondary"
+        onClick={() => setUsingArtifact(true)}
+      >
+        从本地项目读取文件…
+      </button>
 
       <p className="privacy-note">
         提交内容会发送到本应用的审核服务做判定；当服务端配置为 AI 模式（

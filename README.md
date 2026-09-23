@@ -276,3 +276,14 @@ pnpm build
 ```
 
 The machine-readable source of truth remains `schemas/boss-contract.v0.schema.json`; `src/lib/contracts.ts` mirrors it for Web type checking.
+
+## Local artifact reader (privacy & scope)
+
+The evidence form can read real files from a project you choose, instead of pasting text. It is deliberately narrow:
+
+- **Permission**: you click "连接本地项目目录" and pick a folder in the browser's own picker (`showDirectoryPicker`, Chromium/Edge only). Nothing is read before that explicit choice; cancelling reads nothing.
+- **Scope**: only small, plain-text files are offered — `.py .ts .tsx .js .jsx .json .md .txt .log`. Everything else is excluded and the UI says why.
+- **Always excluded**: `.env` and other secret-looking names, `.git/`, `node_modules/`, virtual environments, build/cache directories, binaries, and files over 200 KB.
+- **Privacy**: the flow is read-only and never writes to your project. Only the files you tick are read, their text goes straight to the review request, and raw content is never persisted — the page keeps only the verdict, rationale, source name and proof boundary.
+- **Proof boundary**: files handed over this way are reviewed as `ARTIFACT_INSPECTED` (the reviewer saw the content). They are never `AUTO_VERIFIED` — the platform has not executed anything.
+- **Revoke**: the browser can forget the folder permission at any time via the site settings (the padlock / permissions icon in the address bar). Refusing or revoking permission shows an explanatory message, never a crash.

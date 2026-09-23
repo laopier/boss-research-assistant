@@ -34,6 +34,7 @@ import { FailureLibrary } from "../app/failure-library";
 import { ResearchJourney } from "../app/journey-panel";
 import { ProgressPanel } from "../app/progress-panel";
 import { Workbench } from "../app/workbench";
+import { ArtifactPanel } from "../app/artifact-panel";
 import { proofBoundaryText } from "../app/labels";
 import { ProgressDerivation } from "../lib/progress";
 import { deriveRoadmap } from "../lib/roadmap";
@@ -765,6 +766,7 @@ function renderWorkbench(): string {
       ledger={ledger}
       onOpenBoss={() => {}}
       onNewBoss={() => {}}
+      onApplyProposal={() => {}}
     />,
   );
 }
@@ -801,5 +803,33 @@ describe("Workbench", () => {
 
   it("offers the new-Boss flow", () => {
     assert.match(renderWorkbench(), /新建 Boss/);
+  });
+});
+
+
+function renderArtifactPanel(): string {
+  return renderToStaticMarkup(<ArtifactPanel onUse={() => {}} onCancel={() => {}} />);
+}
+
+describe("ArtifactPanel", () => {
+  it("offers the explicit permission flow and a cancel path", () => {
+    const html = renderArtifactPanel();
+    assert.match(html, /连接本地项目目录/);
+    assert.match(html, /取消/);
+  });
+
+  it("states the privacy boundary up front", () => {
+    const html = renderArtifactPanel();
+    assert.match(html, /只读、不修改本地文件/);
+    assert.match(html, /勾选/);
+    assert.match(html, /已检查产物/, "the ceiling is ARTIFACT_INSPECTED");
+    assert.match(html, /平台自动验证/, "and AUTO_VERIFIED is explicitly ruled out");
+  });
+});
+
+describe("EvidenceSubmitForm artifact entry", () => {
+  it("offers reading from the local project as an alternative to pasting", () => {
+    const html = renderForm();
+    assert.match(html, /从本地项目读取文件/);
   });
 });
