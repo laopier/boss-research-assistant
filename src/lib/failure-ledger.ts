@@ -200,6 +200,23 @@ export interface RoadmapMilestone {
 }
 
 /**
+ * One accepted negotiation, kept so the page can answer "为什么总进度变了".
+ *
+ * Written only after the user explicitly accepts a proposal; the proposal
+ * itself never touches storage (the evidence-review trust shape).
+ */
+export interface PlanRevision {
+  revision: number;
+  at: string;
+  /** The user's own words for why the plan changed. */
+  reason: string;
+  /** Structured diff: every change this revision applied. */
+  changes: Array<{ kind: string; summary: string }>;
+  progressBefore: number;
+  progressAfter: number;
+}
+
+/**
  * The project-level roadmap.
  *
  * Deliberately local and Web-owned: the shared contract schema describes ONE
@@ -214,6 +231,11 @@ export interface ResearchProject {
   currentBossId?: string;
   revision: number;
   updatedAt: string;
+  /**
+   * Accepted plan revisions, newest first. Absent until the first
+   * negotiation is accepted.
+   */
+  history?: PlanRevision[];
 }
 
 export const LEDGER_STORAGE_KEY = "boss-research-assistant.failure-ledger.v1";
@@ -383,6 +405,24 @@ function isRoadmapMilestone(value: unknown): value is RoadmapMilestone {
   );
 }
 
+function isPlanRevision(value: unknown): value is PlanRevision {
+  return (
+    isRecord(value) &&
+    typeof value.revision === "number" &&
+    typeof value.at === "string" &&
+    typeof value.reason === "string" &&
+    typeof value.progressBefore === "number" &&
+    typeof value.progressAfter === "number" &&
+    Array.isArray(value.changes) &&
+    value.changes.every(
+      (item: unknown) =>
+        isRecord(item) &&
+        typeof (item as { kind?: unknown }).kind === "string" &&
+        typeof (item as { summary?: unknown }).summary === "string",
+    )
+  );
+}
+
 function isResearchProject(value: unknown): value is ResearchProject {
   return (
     isRecord(value) &&
@@ -391,7 +431,9 @@ function isResearchProject(value: unknown): value is ResearchProject {
     value.milestones.every(isRoadmapMilestone) &&
     (value.currentBossId === undefined || typeof value.currentBossId === "string") &&
     typeof value.revision === "number" &&
-    typeof value.updatedAt === "string"
+    typeof value.updatedAt === "string" &&
+    (value.history === undefined ||
+      (Array.isArray(value.history) && value.history.every(isPlanRevision)))
   );
 }
 

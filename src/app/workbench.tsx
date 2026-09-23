@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import {
   Ledger,
   ResearchProject,
   deriveBoss,
 } from "@/lib/failure-ledger";
+import { NegotiationProposal, ProposalInput } from "@/lib/negotiation";
 import { MilestoneDerivation, RoadmapDerivation, nextActionSummary } from "@/lib/roadmap";
+import { NegotiationPanel } from "./negotiation-panel";
 import { bossStatusClass, bossStatusText } from "./labels";
 
 export interface WorkbenchProps {
@@ -16,6 +19,8 @@ export interface WorkbenchProps {
   onOpenBoss: (contractId: string) => void;
   /** Starts the new-Boss flow. */
   onNewBoss: () => void;
+  /** Applies an ACCEPTED negotiation proposal (the only roadmap-write path). */
+  onApplyProposal: (proposal: NegotiationProposal, input: ProposalInput) => void;
 }
 
 function percent(part: number): string {
@@ -42,21 +47,53 @@ const milestoneStateClass = {
  * each Boss card naming its next action. The open Boss is marked, and the
  * numbers are all derived — nothing here is editable.
  */
-export function Workbench({ project, roadmap, ledger, onOpenBoss, onNewBoss }: WorkbenchProps) {
+export function Workbench({
+  project,
+  roadmap,
+  ledger,
+  onOpenBoss,
+  onNewBoss,
+  onApplyProposal,
+}: WorkbenchProps) {
+  // The panel is presentation state; the proposal itself lives inside it and
+  // only reaches the ledger through onApplyProposal (an explicit accept).
+  const [negotiating, setNegotiating] = useState(false);
+
   return (
     <section className="workbench" aria-label="Boss 工作台">
       <div className="workbench-head">
         <div>
-          <p className="eyebrow">科研项目 · Revision {roadmap.revision}</p>
+          <p className="eyebrow">科研项目 · 计划版本 Revision {roadmap.revision}</p>
           <h2>{roadmap.goal}</h2>
           <p className="muted">
             已完成 {roadmap.bossesDone}/{roadmap.bossesTotal} 个 Boss；当前打开的 Boss 始终标有「当前」。
           </p>
         </div>
-        <button type="button" className="button-secondary" onClick={onNewBoss}>
-          新建 Boss
-        </button>
+        <span className="actions">
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={() => setNegotiating((open) => !open)}
+          >
+            {negotiating ? "收起协商" : "协商调整路线"}
+          </button>
+          <button type="button" className="button-secondary" onClick={onNewBoss}>
+            新建 Boss
+          </button>
+        </span>
       </div>
+
+      {negotiating && (
+        <NegotiationPanel
+          ledger={ledger}
+          roadmap={roadmap}
+          onApply={(proposal, input) => {
+            onApplyProposal(proposal, input);
+            setNegotiating(false);
+          }}
+          onClose={() => setNegotiating(false)}
+        />
+      )}
 
       <div className="workbench-progress">
         <div className="progress-bar-head">
@@ -92,6 +129,22 @@ export function Workbench({ project, roadmap, ledger, onOpenBoss, onNewBoss }: W
         <p className="muted">
           当前 Boss：{ledger.contracts[project.currentBossId].objective}
         </p>
+      )}
+
+      {project.history && project.history.length > 0 && (
+        <div className="plan-history">
+          <strong>计划修订历史</strong>
+          <ul>
+            {project.history.slice(0, 5).map((item) => (
+              <li key={item.revision}>
+                <code>Revision {item.revision}</code>
+                <span>
+                  {item.reason}（总进度 {item.progressBefore}% → {item.progressAfter}%）
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

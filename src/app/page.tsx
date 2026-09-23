@@ -36,6 +36,7 @@ import {
   updateLedger,
 } from "@/lib/ledger-store";
 import { deriveRoadmap } from "@/lib/roadmap";
+import { applyProposalWith } from "@/lib/negotiation";
 import datasetInvestigationFixture from "../../examples/ai/dataset-investigation.json";
 import literatureReadingFixture from "../../examples/ai/literature-reading.json";
 import wacaDemoFixture from "../../examples/waca-se-boss.json";
@@ -403,6 +404,14 @@ export default function Home() {
           onNewBoss={() => {
             setError("");
             setView("new");
+          }}
+          onApplyProposal={(proposal, input) => {
+            updateLedger((current) =>
+              applyProposalWith(current, proposal, input, new Date().toISOString()),
+            );
+            setNotice(
+              `已接受协商修改，计划版本更新到 Revision ${(ledger.project?.revision ?? 0) + 1}，变更原因已保存。`,
+            );
           }}
         />
       )}
