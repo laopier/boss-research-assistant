@@ -8,7 +8,7 @@ import {
   reviewErrorMessage,
 } from "@/lib/evidence-review/client";
 import { CONTENT_MAX_LENGTH, SOURCE_NAME_MAX_LENGTH } from "@/lib/evidence-review/types";
-import { artifactSourceName, combineArtifactContents } from "@/lib/artifact-reader";
+import { artifactSourceName, combineArtifactContentsBounded } from "@/lib/artifact-reader";
 import { ArtifactPanel } from "./artifact-panel";
 import {
   CriterionDerivation,
@@ -102,6 +102,7 @@ export function EvidenceSubmitForm({
   // The local artifact reader (#19), shown in place of the manual fields when
   // the user prefers to hand over real files instead of pasting text.
   const [usingArtifact, setUsingArtifact] = useState(false);
+  const [artifactNotice, setArtifactNotice] = useState("");
 
   const canSubmit =
     !submitting &&
@@ -120,11 +121,25 @@ export function EvidenceSubmitForm({
   // a manual paste would be, with sourceType forced to ARTIFACT_INSPECTED (the
   // ceiling the review boundary already enforces) and the file list as name.
   function acceptArtifacts(files: { relativePath: string; content: string }[]) {
-    setContent(combineArtifactContents(files).slice(0, CONTENT_MAX_LENGTH));
-    setSourceName(artifactSourceName(files, SOURCE_NAME_MAX_LENGTH));
-    if (requirement?.acceptedSourceTypes.includes("ARTIFACT_INSPECTED")) {
-      setSourceType("ARTIFACT_INSPECTED");
-    }
+    const bundle = combineArtifactContentsBounded(files, CONTENT_MAX_LENGTH);
+    const included = bundle.includedFiles;
+    setContent(bundle.content);
+    setSourceName(
+      included.length > 0 ? artifactSourceName(included, SOURCE_NAME_MAX_LENGTH) : "",
+    );
+    setSummary(
+      included.length > 0
+        ? `已读取本地项目中的 ${included.length} 个文件用于静态产物检查`
+        : "",
+    );
+    setSourceType("ARTIFACT_INSPECTED");
+    setArtifactNotice(
+      bundle.truncated || bundle.omittedCount > 0
+        ? `受单条证据 ${CONTENT_MAX_LENGTH} 字限制，本次实际送审 ${included.length}/${files.length} 个文件${
+            bundle.truncated ? "，最后一个文件仅送审可容纳的前半部分" : ""
+          }。如需完整审核，请分批提交。`
+        : `本次将送审 ${included.length} 个文件。`,
+    );
     setUsingArtifact(false);
   }
 
@@ -149,6 +164,10 @@ export function EvidenceSubmitForm({
               );
               setRequirementId(event.target.value);
               if (next) setSourceType(next.acceptedSourceTypes[0]);
+              setSourceName("");
+              setSummary("");
+              setContent("");
+              setArtifactNotice("");
             }}
           >
             {criterion.evidenceRequirements.map((item) => (
@@ -218,13 +237,29 @@ export function EvidenceSubmitForm({
         />
       </label>
 
-      <button
-        type="button"
-        className="button-secondary"
-        onClick={() => setUsingArtifact(true)}
-      >
-        从本地项目读取文件…
-      </button>
+      {requirement.acceptedSourceTypes.includes("ARTIFACT_INSPECTED") ? (
+        <>
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={() => {
+              setArtifactNotice("");
+              setUsingArtifact(true);
+            }}
+          >
+            从本地项目读取文件…
+          </button>
+          {artifactNotice && (
+            <p className="field-hint" role="status">
+              {artifactNotice}
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="field-hint">
+          当前证据要求不接受本地文件静态检查，请按上方允许的来源类型提交。
+        </p>
+      )}
 
       <p className="privacy-note">
         提交内容会发送到本应用的审核服务做判定；当服务端配置为 AI 模式（

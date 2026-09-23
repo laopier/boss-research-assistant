@@ -259,6 +259,11 @@ export default function Home() {
         });
         next = withContract(next, fixture);
       }
+      // The copy above promises that the WACA Boss has already gone through
+      // one real acceptance pass and contains an accepted failure.  Mark only
+      // that contract accepted so its live card says PARTIAL instead of DRAFT;
+      // the two preparation Bosses intentionally remain fresh drafts.
+      next = withAcceptedContract(next, WACA_DEMO_FIXTURE.id, at);
       next = {
         ...next,
         project: {

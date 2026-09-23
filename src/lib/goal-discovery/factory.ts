@@ -24,8 +24,15 @@ export const DEFAULT_MODEL = "deepseek-chat";
 export interface GeneratorEnv {
   BOSS_GENERATOR?: string;
   BOSS_API_KEY?: string;
+  /** Provider-specific alias accepted for simpler DeepSeek deployments. */
+  DEEPSEEK_API_KEY?: string;
   BOSS_API_BASE?: string;
   BOSS_MODEL?: string;
+}
+
+/** Keeps the generic variable canonical while accepting the common DeepSeek alias. */
+export function apiKeyFromEnv(env: GeneratorEnv): string {
+  return env.BOSS_API_KEY?.trim() || env.DEEPSEEK_API_KEY?.trim() || "";
 }
 
 /**
@@ -96,11 +103,11 @@ export function getGenerator(env: GeneratorEnv = process.env as unknown as Gener
     return new MockContractGenerator();
   }
   if (mode === "llm") {
-    const apiKey = (env.BOSS_API_KEY ?? "").trim();
+    const apiKey = apiKeyFromEnv(env);
     if (!apiKey) {
       throw new GenerationError(
         "CONFIG_ERROR",
-        "BOSS_GENERATOR=llm requires BOSS_API_KEY to be set in the server environment",
+        "BOSS_GENERATOR=llm requires BOSS_API_KEY or DEEPSEEK_API_KEY in the server environment",
       );
     }
     const transport = new OpenAICompatibleTransport({

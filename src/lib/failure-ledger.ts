@@ -708,7 +708,9 @@ export function withBossInProject(
   const target =
     project.milestones.find((milestone) => milestone.id === milestoneId) ??
     project.milestones.find(
-      (milestone) => !milestone.bossIds.some((id) => isBossClear(ledger, id)),
+      (milestone) =>
+        milestone.bossIds.length === 0 ||
+        milestone.bossIds.some((id) => !isBossClear(ledger, id)),
     ) ??
     project.milestones.at(-1);
   if (!target) return ledger;
@@ -739,7 +741,8 @@ export function withCurrentBoss(ledger: Ledger, contractId: string): Ledger {
 function isBossClear(ledger: Ledger, contractId: string): boolean {
   const contract = ledger.contracts[contractId];
   if (!contract) return false;
-  return deriveBoss(contract, ledger.evidence, Boolean(ledger.accepted[contractId])).status === "CLEAR";
+  const records = ledger.evidence.filter((item) => item.contractId === contractId);
+  return deriveBoss(contract, records, Boolean(ledger.accepted[contractId])).status === "CLEAR";
 }
 
 /**

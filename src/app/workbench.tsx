@@ -191,7 +191,18 @@ function MilestoneCard({
               </article>
             );
           }
-          const boss = deriveBoss(contract, ledger.evidence, Boolean(ledger.accepted[contractId]));
+          // A Boss may reuse criterion / requirement ids such as AC-1 and
+          // REQ-1.  Passing the whole ledger would therefore let evidence from
+          // another Boss pad this card's status.  Every derivation must stay
+          // inside the contract boundary.
+          const contractEvidence = ledger.evidence.filter(
+            (item) => item.contractId === contractId,
+          );
+          const boss = deriveBoss(
+            contract,
+            contractEvidence,
+            Boolean(ledger.accepted[contractId]),
+          );
           const isCurrent = currentBossId === contractId;
           return (
             <article className={isCurrent ? "boss-card boss-card-current" : "boss-card"} key={contractId}>

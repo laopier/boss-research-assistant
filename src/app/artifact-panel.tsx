@@ -76,9 +76,22 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
     const chosen = items.filter((item) => selected.has(item.candidate.relativePath));
     if (chosen.length === 0) return;
     setStatus("reading");
+    setMessage("");
     setReading({ done: 0, total: chosen.length });
-    const read = await readArtifactFiles(chosen, (done, total) => setReading({ done, total }));
-    onUse(read);
+    try {
+      const read = await readArtifactFiles(chosen, (done, total) => setReading({ done, total }));
+      if (read.length === 0) {
+        setStatus("ready");
+        setReading(null);
+        setMessage("没有读取到可送审的文本内容，请重新选择文件。");
+        return;
+      }
+      onUse(read);
+    } catch (caught) {
+      setStatus("ready");
+      setReading(null);
+      setMessage(caught instanceof Error ? caught.message : "读取文件时出错，请重试。");
+    }
   }
 
   return (
@@ -109,6 +122,11 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
 
       {status === "ready" && (
         <>
+          {message && (
+            <p className="error" role="alert">
+              {message}
+            </p>
+          )}
           <p className="muted">
             找到 {items.length} 个可送审文件
             {excluded.length > 0 && `，另有 ${excluded.length} 个被排除`}。勾选你这次要交给 AI 审核的文件。
@@ -152,7 +170,7 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
               </div>
             </>
           )}
-          {items.length === 0 && <p className="error">{message || "没有可送审的文件。"}</p>}
+          {items.length === 0 && !message && <p className="error">没有可送审的文件。</p>}
           {excluded.length > 0 && (
             <details className="artifact-excluded">
               <summary>被排除的 {excluded.length} 个文件</summary>

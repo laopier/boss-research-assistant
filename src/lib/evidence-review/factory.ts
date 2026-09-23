@@ -10,6 +10,7 @@ import {
   DEFAULT_API_BASE,
   DEFAULT_MODEL,
   GeneratorEnv,
+  apiKeyFromEnv,
 } from "../goal-discovery/factory";
 import { OpenAICompatibleTransport } from "../goal-discovery/llm-generator";
 import { LLMEvidenceReviewer } from "./llm-reviewer";
@@ -37,11 +38,11 @@ export function getEvidenceReviewer(
     return new MockEvidenceReviewer();
   }
 
-  const apiKey = (env.BOSS_API_KEY ?? "").trim();
+  const apiKey = apiKeyFromEnv(env);
   if (!apiKey) {
     throw new ReviewError(
       "CONFIG_ERROR",
-      "BOSS_GENERATOR=llm requires BOSS_API_KEY to be set in the server environment",
+      "BOSS_GENERATOR=llm requires BOSS_API_KEY or DEEPSEEK_API_KEY in the server environment",
     );
   }
 

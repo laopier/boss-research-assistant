@@ -9,7 +9,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { classifyArtifact, summarizeScan } from "../lib/artifact-scan";
+import {
+  classifyArtifact,
+  isBlockedArtifactPath,
+  summarizeScan,
+} from "../lib/artifact-scan";
+import { combineArtifactContentsBounded } from "../lib/artifact-reader";
 
 describe("classifyArtifact", () => {
   it("allows whitelisted source and text files", () => {
@@ -108,5 +113,41 @@ describe("summarizeScan", () => {
 
   it("is empty for an empty directory", () => {
     assert.deepEqual(summarizeScan([]), { total: 0, allowed: 0, excluded: [] });
+  });
+});
+
+describe("blocked-directory pruning", () => {
+  it("recognizes a blocked directory before the scanner descends into it", () => {
+    assert.equal(isBlockedArtifactPath("node_modules/"), true);
+    assert.equal(isBlockedArtifactPath("packages/app/.git/"), true);
+    assert.equal(isBlockedArtifactPath("src/components/"), false);
+  });
+});
+
+describe("combineArtifactContentsBounded", () => {
+  it("reports exactly which selected files fit into the review payload", () => {
+    const files = [
+      { relativePath: "src/a.py", content: "a".repeat(80) },
+      { relativePath: "src/b.py", content: "b".repeat(80) },
+    ];
+    const bundle = combineArtifactContentsBounded(files, 70);
+
+    assert.equal(bundle.content.length, 70);
+    assert.deepEqual(bundle.includedFiles.map((item) => item.relativePath), ["src/a.py"]);
+    assert.equal(bundle.omittedCount, 1);
+    assert.equal(bundle.truncated, true);
+    assert.match(bundle.content, /file: src\/a\.py/);
+    assert.doesNotMatch(bundle.content, /src\/b\.py/);
+  });
+
+  it("does not claim any selected file was included when the limit is zero", () => {
+    const bundle = combineArtifactContentsBounded(
+      [{ relativePath: "README.md", content: "hello" }],
+      0,
+    );
+    assert.equal(bundle.content, "");
+    assert.deepEqual(bundle.includedFiles, []);
+    assert.equal(bundle.omittedCount, 1);
+    assert.equal(bundle.truncated, false);
   });
 });

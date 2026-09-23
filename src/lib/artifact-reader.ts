@@ -2,6 +2,7 @@ import {
   ArtifactCandidate,
   ArtifactExclusionReason,
   classifyArtifact,
+  isBlockedArtifactPath,
 } from "./artifact-scan";
 import type { FileSystemDirectoryHandle, FileSystemFileHandle } from "../types/file-system-access";
 
@@ -100,7 +101,14 @@ async function walk(
 ): Promise<void> {
   for await (const handle of dir.values()) {
     if (handle.kind === "directory") {
-      await walk(handle, `${prefix}${handle.name}/`, out, excluded);
+      const nextPrefix = `${prefix}${handle.name}/`;
+      if (isBlockedArtifactPath(nextPrefix)) {
+        // Record one explainable row for the whole subtree instead of walking
+        // every file in .git, node_modules, build outputs or virtual envs.
+        excluded.push({ relativePath: nextPrefix, reason: "BLOCKED_PATH" });
+        continue;
+      }
+      await walk(handle, nextPrefix, out, excluded);
       continue;
     }
     const file = await handle.getFile().catch(() => null);
@@ -128,6 +136,16 @@ export interface ReadArtifact {
   content: string;
 }
 
+export interface ArtifactBundle {
+  content: string;
+  /** Files whose marker/content is actually present in `content`. */
+  includedFiles: ReadArtifact[];
+  /** Selected files that did not fit inside the review request. */
+  omittedCount: number;
+  /** True when the final included file had to be cut to fit. */
+  truncated: boolean;
+}
+
 /**
  * Joins the selected files into one reviewable text, with a marker line per
  * file so the reviewer can attribute content. This is the only thing that
@@ -137,6 +155,48 @@ export function combineArtifactContents(files: ReadArtifact[]): string {
   return files
     .map((file) => `--- file: ${file.relativePath} ---\n${file.content}`)
     .join("\n\n");
+}
+
+/**
+ * Builds the exact payload that will be reviewed without silently claiming
+ * that every selected file was included.  The caller can show `omittedCount`
+ * and `truncated`, and must derive the source name from `includedFiles`.
+ */
+export function combineArtifactContentsBounded(
+  files: ReadArtifact[],
+  maxLength: number,
+): ArtifactBundle {
+  if (maxLength <= 0) {
+    return { content: "", includedFiles: [], omittedCount: files.length, truncated: false };
+  }
+
+  let content = "";
+  const includedFiles: ReadArtifact[] = [];
+  let truncated = false;
+
+  for (const file of files) {
+    const separator = content ? "\n\n" : "";
+    const header = `--- file: ${file.relativePath} ---\n`;
+    const fixed = `${separator}${header}`;
+    const remaining = maxLength - content.length;
+    if (fixed.length >= remaining) break;
+
+    const availableForBody = remaining - fixed.length;
+    const body = file.content.slice(0, availableForBody);
+    content += `${fixed}${body}`;
+    includedFiles.push(file);
+    if (body.length < file.content.length) {
+      truncated = true;
+      break;
+    }
+  }
+
+  return {
+    content,
+    includedFiles,
+    omittedCount: Math.max(0, files.length - includedFiles.length),
+    truncated,
+  };
 }
 
 /** A source name for the review request, bounded to the wire limit. */
@@ -158,9 +218,21 @@ export async function readArtifactFiles(
   for (const item of items) {
     index += 1;
     onProgress?.(index, items.length);
-    const file = await item.handle.getFile().catch(() => null);
-    if (!file) continue;
-    const content = await file.text().catch(() => "");
+    let file: File;
+    try {
+      file = await item.handle.getFile();
+    } catch {
+      throw new Error(`无法读取 ${item.candidate.relativePath}，请检查文件权限后重试。`);
+    }
+    let content: string;
+    try {
+      content = await file.text();
+    } catch {
+      throw new Error(`无法将 ${item.candidate.relativePath} 作为文本读取。`);
+    }
+    if (content.includes("\u0000")) {
+      throw new Error(`${item.candidate.relativePath} 看起来是二进制文件，已停止送审。`);
+    }
     out.push({ relativePath: item.candidate.relativePath, content });
   }
   return out;

@@ -29,6 +29,13 @@ test("llm with a key selects the LLM generator", () => {
   );
 });
 
+test("llm accepts the provider-specific DeepSeek key alias", () => {
+  assert.ok(
+    getGenerator({ BOSS_GENERATOR: "llm", DEEPSEEK_API_KEY: "k" }) instanceof
+      LLMContractGenerator,
+  );
+});
+
 test("BOSS_GENERATOR is case-insensitive and trimmed", () => {
   assert.ok(
     getGenerator({ BOSS_GENERATOR: "  LLM  ", BOSS_API_KEY: "k" }) instanceof LLMContractGenerator,

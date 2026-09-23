@@ -90,6 +90,18 @@ function pathHasAny(relativePath: string, segments: readonly string[]): boolean 
 }
 
 /**
+ * Whether an entire directory subtree must be skipped before enumeration.
+ *
+ * This is intentionally exported for the browser walker.  Classifying every
+ * file under node_modules or .git would eventually exclude them, but only
+ * after doing thousands of needless filesystem calls and retaining thousands
+ * of exclusion rows in React state.
+ */
+export function isBlockedArtifactPath(relativePath: string): boolean {
+  return pathHasAny(relativePath, BLOCKED_SEGMENTS);
+}
+
+/**
  * The single decision: may this file be offered for review?
  *
  * Order is the safety-and-clarity contract, most specific first: a name that
@@ -106,7 +118,7 @@ export function classifyArtifact(relativePath: string, size: number): ArtifactVe
   if (SENSITIVE_PATTERNS.some((pattern) => name.toLowerCase().includes(pattern))) {
     return { ok: false, reason: "SENSITIVE" };
   }
-  if (pathHasAny(relativePath, BLOCKED_SEGMENTS)) {
+  if (isBlockedArtifactPath(relativePath)) {
     return { ok: false, reason: "BLOCKED_PATH" };
   }
   if (!ARTIFACT_WHITELIST.includes(extension as (typeof ARTIFACT_WHITELIST)[number])) {

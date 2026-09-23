@@ -804,6 +804,29 @@ describe("Workbench", () => {
   it("offers the new-Boss flow", () => {
     assert.match(renderWorkbench(), /新建 Boss/);
   });
+
+  it("does not show one Boss as complete because another Boss has matching evidence ids", () => {
+    let ledger = workbenchLedger();
+    ledger = withAcceptedContract(ledger, "boss-2", "2026-09-23T10:02:00.000Z");
+    const roadmap = deriveRoadmap(ledger);
+    assert.ok(roadmap && ledger.project);
+    const html = renderToStaticMarkup(
+      <Workbench
+        project={ledger.project}
+        roadmap={roadmap}
+        ledger={ledger}
+        onOpenBoss={() => {}}
+        onNewBoss={() => {}}
+        onApplyProposal={() => {}}
+      />,
+    );
+
+    assert.equal(
+      (html.match(/class="status status-pass">已完成<\/span>/g) ?? []).length,
+      2,
+      "one marker belongs to the completed milestone and only one belongs to boss-1",
+    );
+  });
 });
 
 
@@ -831,5 +854,22 @@ describe("EvidenceSubmitForm artifact entry", () => {
   it("offers reading from the local project as an alternative to pasting", () => {
     const html = renderForm();
     assert.match(html, /从本地项目读取文件/);
+  });
+
+  it("does not offer artifact reading when the requirement disallows that source", () => {
+    const html = renderForm({
+      criterion: criterion({
+        evidenceRequirements: [
+          {
+            id: "REQ-LOG",
+            description: "A runtime log",
+            acceptedSourceTypes: ["LOG_INSPECTED"],
+            minimumCount: 1,
+          },
+        ],
+      }),
+    });
+    assert.doesNotMatch(html, />从本地项目读取文件…<\/button>/);
+    assert.match(html, /当前证据要求不接受本地文件静态检查/);
   });
 });

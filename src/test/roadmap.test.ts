@@ -285,6 +285,79 @@ describe("roadmap updates", () => {
     assert.equal(updated.project?.currentBossId, "boss-2b", "a newly added Boss opens");
   });
 
+  it("keeps using a milestone that has one clear Boss and one open Boss", () => {
+    let ledger = ledgerWith(
+      [
+        contract({ id: "boss-1" }),
+        contract({ id: "boss-1b" }),
+        contract({ id: "boss-2" }),
+      ],
+      {
+        project: project({
+          milestones: [
+            { id: "M-1", title: "partly done", bossIds: ["boss-1", "boss-1b"] },
+            { id: "M-2", title: "later", bossIds: ["boss-2"] },
+          ],
+        }),
+      },
+    );
+    ledger = withAcceptedContract(ledger, "boss-1", "2026-09-23T10:00:00.000Z");
+    ledger = {
+      ...ledger,
+      evidence: [
+        {
+          id: "EV-1",
+          contractId: "boss-1",
+          contractRevision: 1,
+          criterionId: "AC-1",
+          requirementId: "REQ-1",
+          sourceType: "LOG_INSPECTED",
+          sourceName: "a.log",
+          summary: "passed",
+          finding: "PASS",
+          reviewStatus: "ACCEPTED",
+          recordedAt: "2026-09-23T10:01:00.000Z",
+        },
+      ],
+    };
+
+    const updated = withBossInProject(ledger, "boss-new", undefined, "2026-09-23T10:05:00.000Z");
+    assert.ok(updated.project?.milestones[0].bossIds.includes("boss-new"));
+    assert.ok(!updated.project?.milestones[1].bossIds.includes("boss-new"));
+  });
+
+  it("does not let another contract's matching evidence make a Boss clear", () => {
+    let ledger = ledgerWith([contract({ id: "boss-1" }), contract({ id: "boss-2" })], {
+      project: project(),
+    });
+    ledger = withAcceptedContract(ledger, "boss-1", "2026-09-23T10:00:00.000Z");
+    ledger = withAcceptedContract(ledger, "boss-2", "2026-09-23T10:00:00.000Z");
+    ledger = {
+      ...ledger,
+      evidence: [
+        {
+          id: "EV-2",
+          contractId: "boss-2",
+          contractRevision: 1,
+          criterionId: "AC-1",
+          requirementId: "REQ-1",
+          sourceType: "LOG_INSPECTED",
+          sourceName: "boss-2.log",
+          summary: "only boss-2 passed",
+          finding: "PASS",
+          reviewStatus: "ACCEPTED",
+          recordedAt: "2026-09-23T10:01:00.000Z",
+        },
+      ],
+    };
+
+    const updated = withBossInProject(ledger, "boss-new", undefined, "2026-09-23T10:05:00.000Z");
+    assert.ok(
+      updated.project?.milestones[0].bossIds.includes("boss-new"),
+      "boss-1 is still open, so its milestone remains the target",
+    );
+  });
+
   it("ignores a Boss that is already on the roadmap", () => {
     const seeded = ledgerWith([contract()], { project: project() });
     const updated = withBossInProject(seeded, "boss-1", "M-2", "2026-09-23T10:05:00.000Z");

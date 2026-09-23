@@ -9,7 +9,7 @@
  *              fallback, no silently weakened criteria.
  */
 import { BossContractJson } from "./contract-types";
-import { assertGoalValid, ContractGenerator, GenerationError, GenerateOptions } from "./generator";
+import { assertGoalValid, ContractGenerator, GenerationError } from "./generator";
 import { buildGoalDiscoveryUserPrompt, GOAL_DISCOVERY_SYSTEM_PROMPT, PROMPT_VERSION } from "./prompt";
 import {
   formatDiagnostics,
@@ -168,7 +168,7 @@ export interface LLMContractGeneratorOptions {
 export class LLMContractGenerator implements ContractGenerator {
   constructor(private readonly options: LLMContractGeneratorOptions) {}
 
-  async generate(goal: string, _options?: GenerateOptions): Promise<BossContractJson> {
+  async generate(goal: string): Promise<BossContractJson> {
     const trimmed = assertGoalValid(goal);
     let lastDiagnostics: string[] = [];
 
