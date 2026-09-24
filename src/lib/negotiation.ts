@@ -15,12 +15,10 @@ import { deriveRoadmap } from "./roadmap";
  * proposal therefore cannot move the roadmap, and neither can anything that
  * is not an accepted proposal.
  *
- * `draftProposal` is deliberately a deterministic rule-based starter — the
- * same philosophy as the mock reviewer. It composes the proposal from a
- * structured choice the user makes (what to change, to what, and why), which
- * is honest about what a rule can decide; replacing the form with free-text
- * understanding is the AI owner's slot, and `generator` marks which one
- * produced a given proposal.
+ * `draftProposal` remains deterministic after the negotiation chat has turned
+ * free-form intent into a validated structured input. The chat can ask
+ * clarifying questions, but only this exact input plus explicit user
+ * acceptance can reach `applyProposalWith`.
  */
 
 export type NegotiationKind =
