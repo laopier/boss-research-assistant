@@ -92,7 +92,7 @@ describe("draftProposal", () => {
     assert.equal(proposal.changes.length, 1);
     assert.match(proposal.changes[0].summary, /移到最后一个里程碑/);
     assert.match(proposal.note, /总进度会先下降/);
-    assert.equal(proposal.generator, "rule-based.v1");
+    assert.equal(proposal.generator, "rule-based.v2");
     assert.equal(proposal.request, REASON);
   });
 
@@ -126,6 +126,29 @@ describe("draftProposal", () => {
       AT,
     );
     assert.ok("error" in noOp);
+  });
+
+  it("previews a duplicate replacement as two explicit atomic changes", () => {
+    const ledger = ledgerWith([contract()]);
+    const milestoneId = ledger.project?.milestones[0].id;
+    const proposal = draftProposal(
+      {
+        kind: "REPLACE_BOSS",
+        contractId: "boss-1",
+        milestoneId,
+        nextGoal: "跑通数据加载、模型前向和一次训练迭代",
+      },
+      "取消一个重复，新增最小可运行示例吧",
+      ledger,
+      "np-replace",
+      AT,
+    );
+    assert.ok(!("error" in proposal));
+    if ("error" in proposal) return;
+    assert.equal(proposal.changes.length, 2);
+    assert.match(proposal.changes[0].summary, /暂停重复/);
+    assert.match(proposal.changes[1].summary, /生成一个新的 Boss/);
+    assert.match(proposal.note, /生成失败时原计划不会改变/);
   });
 });
 
@@ -241,6 +264,37 @@ describe("applyProposalWith", () => {
     assert.equal(onRoadmap, false, "boss-1 is off the roadmap");
     assert.ok(applied.contracts["boss-1"], "but its contract is kept in the ledger");
     assert.notEqual(applied.project?.currentBossId, "boss-1", "the open Boss moves off a dropped one");
+  });
+
+  it("atomically replaces a duplicate with an already generated Boss in one revision", () => {
+    let ledger = ledgerWith([contract()]);
+    ledger = withContract(
+      ledger,
+      contract({ id: "boss-minimal-run", objective: "跑通最小可运行示例" }),
+    );
+    const milestoneId = ledger.project?.milestones[0].id;
+    const input = {
+      kind: "REPLACE_BOSS" as const,
+      contractId: "boss-1",
+      milestoneId,
+      nextGoal: "跑通数据加载、模型前向和一次训练迭代",
+    };
+    const proposal = draftProposal(input, "取消一个重复，新增最小可运行示例吧", ledger, "np-3", AT);
+    assert.ok(!("error" in proposal));
+    if ("error" in proposal) return;
+
+    const applied = applyProposalWith(
+      ledger,
+      proposal,
+      { ...input, replacementContractId: "boss-minimal-run" },
+      AT,
+    );
+    const bossIds = applied.project?.milestones[0].bossIds ?? [];
+    assert.deepEqual(bossIds, ["boss-minimal-run"]);
+    assert.equal(applied.project?.currentBossId, "boss-minimal-run");
+    assert.equal(applied.project?.revision, (ledger.project?.revision ?? 0) + 1);
+    assert.equal(applied.project?.history?.[0].changes.length, 2);
+    assert.ok(applied.contracts["boss-1"], "paused contract is preserved");
   });
 
   it("does nothing without a project", () => {

@@ -5,6 +5,7 @@ import { POST } from "../app/api/negotiation/chat/route";
 import {
   NEGOTIATION_CHAT_VERSION,
   NegotiationChatContext,
+  buildNegotiationPrompt,
   parseNegotiationModelReply,
   parseNegotiationRequest,
 } from "../lib/negotiation-chat";
@@ -60,6 +61,7 @@ describe("negotiation chat validation", () => {
           contractId: "boss-1",
           milestoneId: "M-2",
           title: undefined,
+          nextGoal: undefined,
         },
       },
     );
@@ -81,6 +83,52 @@ describe("negotiation chat validation", () => {
       parseNegotiationModelReply({ reply: "你具体想推迟哪个任务？", state: "DISCUSSING" }, context),
       { reply: "你具体想推迟哪个任务？", state: "DISCUSSING" },
     );
+  });
+
+  it("accepts a duplicate replacement only with a known Boss, milestone, and bounded next goal", () => {
+    const replacement = {
+      reply: "我会保留一个环境准备 Boss，暂停重复项，并生成最小可运行示例。",
+      state: "PROPOSAL",
+      proposalInput: {
+        kind: "REPLACE_BOSS",
+        contractId: "boss-1",
+        milestoneId: "M-2",
+        nextGoal: "跑通数据加载、模型前向与一次训练迭代的最小可运行示例",
+      },
+    };
+    assert.deepEqual(parseNegotiationModelReply(replacement, context), {
+      reply: replacement.reply,
+      state: "PROPOSAL",
+      proposalInput: {
+        kind: "REPLACE_BOSS",
+        contractId: "boss-1",
+        milestoneId: "M-2",
+        title: undefined,
+        nextGoal: replacement.proposalInput.nextGoal,
+      },
+    });
+    assert.equal(
+      parseNegotiationModelReply(
+        { ...replacement, proposalInput: { ...replacement.proposalInput, nextGoal: undefined } },
+        context,
+      ),
+      null,
+    );
+  });
+
+  it("tells the model to resolve a user's short confirmation from conversation context", () => {
+    const prompt = buildNegotiationPrompt({
+      ...request("取消一个重复，新增最小可运行示例吧"),
+      history: [
+        {
+          role: "assistant",
+          content: "保留环境方案，取消另一个重复 Boss，并新增最小可运行示例，可以吗？",
+        },
+      ],
+    });
+    assert.match(prompt, /REPLACE_BOSS/);
+    assert.match(prompt, /do not ask again/);
+    assert.match(prompt, /取消一个重复/);
   });
 });
 
@@ -123,4 +171,3 @@ describe("POST /api/negotiation/chat", () => {
     assert.deepEqual(body.proposalInput, { kind: "DEFER_BOSS", contractId: "boss-1" });
   });
 });
-

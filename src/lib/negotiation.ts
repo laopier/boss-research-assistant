@@ -31,7 +31,9 @@ export type NegotiationKind =
   /** 删除里程碑：其中的 Boss 不会丢失，会并入相邻里程碑。 */
   | "REMOVE_MILESTONE"
   /** 把 Boss 移出路线图（暂停）；合同与证据保留在账本中。 */
-  | "DROP_BOSS";
+  | "DROP_BOSS"
+  /** 暂停一个重复 Boss，并用 AI 生成的下一步 Boss 在指定阶段替换它。 */
+  | "REPLACE_BOSS";
 
 export interface ProposalChange {
   kind: NegotiationKind;
@@ -45,7 +47,7 @@ export interface NegotiationProposal {
   request: string;
   createdAt: string;
   changes: ProposalChange[];
-  /** Which composer produced this: "rule-based.v1" today, the AI later. */
+  /** Which deterministic proposal composer produced this preview. */
   generator: string;
   /** One-paragraph explanation of what the change means for the plan. */
   note: string;
@@ -59,6 +61,13 @@ export interface ProposalInput {
   milestoneId?: string;
   /** For ADD_MILESTONE. */
   title?: string;
+  /** For REPLACE_BOSS: the bounded goal used to generate the replacement. */
+  nextGoal?: string;
+  /**
+   * Filled by the client only after generation succeeds. The negotiation model
+   * is never allowed to provide or invent this id.
+   */
+  replacementContractId?: string;
 }
 
 export interface ProposalImpact {
@@ -84,8 +93,8 @@ export function draftProposal(
     id,
     request: request.trim(),
     createdAt: at,
-    changes: [change.change],
-    generator: "rule-based.v1",
+    changes: [change.change, ...(change.extraChange ? [change.extraChange] : [])],
+    generator: "rule-based.v2",
     note: change.note,
   };
 }
@@ -93,7 +102,7 @@ export function draftProposal(
 function buildChange(
   input: ProposalInput,
   ledger: Ledger,
-): { change: ProposalChange; note: string } | { error: string } {
+): { change: ProposalChange; extraChange?: ProposalChange; note: string } | { error: string } {
   const projectName = ledger.project;
   if (!projectName) return { error: "还没有项目路线图，无法协商变更。" };
 
@@ -172,6 +181,27 @@ function buildChange(
         note: "总进度会重新计算（分母变小），已完成的 Boss 和所有证据记录都不会被删除。",
       };
     }
+    case "REPLACE_BOSS": {
+      const contractId = input.contractId;
+      const milestoneId = input.milestoneId;
+      const nextGoal = input.nextGoal?.trim();
+      const from = contractId ? findMilestoneOf(projectName, contractId) : undefined;
+      const target = projectName.milestones.find((item) => item.id === milestoneId);
+      if (!contractId || !from) return { error: "请先选择要暂停的重复 Boss。" };
+      if (!milestoneId || !target) return { error: "请选择新 Boss 所在的里程碑。" };
+      if (!nextGoal) return { error: "请说明下一步 Boss 要完成什么。" };
+      return {
+        change: {
+          kind: "REPLACE_BOSS",
+          summary: `暂停重复的「${bossTitle(ledger, contractId)}」，保留其合同与证据。`,
+        },
+        extraChange: {
+          kind: "REPLACE_BOSS",
+          summary: `根据“${nextGoal}”生成一个新的 Boss，并放入「${target.title}」。`,
+        },
+        note: "接受后会先生成新 Boss；只有生成成功，替换才会作为一个计划版本整体生效。生成失败时原计划不会改变。",
+      };
+    }
   }
 }
 
@@ -220,6 +250,17 @@ export function applyProposalWith(
       if (input.contractId) {
         removeEverywhere(input.contractId);
         milestones.at(-1)?.bossIds.push(input.contractId);
+      }
+      break;
+    }
+    case "REPLACE_BOSS": {
+      if (input.contractId) removeEverywhere(input.contractId);
+      if (input.replacementContractId && input.milestoneId) {
+        const target = milestones.find((item) => item.id === input.milestoneId);
+        if (target && !target.bossIds.includes(input.replacementContractId)) {
+          target.bossIds.push(input.replacementContractId);
+          currentBossId = input.replacementContractId;
+        }
       }
       break;
     }
@@ -291,6 +332,18 @@ export function previewImpact(
   input: ProposalInput,
 ): ProposalImpact | null {
   if (!ledger.project) return null;
+  if (input.kind === "REPLACE_BOSS" && !input.replacementContractId) {
+    const target = ledger.project.milestones.find((item) => item.id === input.milestoneId);
+    const progress = deriveRoadmap(ledger)?.progressPercent ?? 0;
+    return {
+      progressBefore: progress,
+      progressAfter: progress,
+      milestoneNotes: target
+        ? [`「${target.title}」会在新 Boss 生成后重新计算进度。`]
+        : [],
+      evidenceNote: "被暂停 Boss 的合同与证据都会保留；新 Boss 生成失败时，原路线不会发生变化。",
+    };
+  }
   const before = deriveRoadmap(ledger);
   const hypothetical = applyProposalWith(ledger, proposal, input, "1970-01-01T00:00:00.000Z");
   const after = deriveRoadmap(hypothetical);

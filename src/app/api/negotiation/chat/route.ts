@@ -78,18 +78,26 @@ export async function POST(request: Request) {
       baseUrl: process.env.BOSS_API_BASE ?? DEFAULT_API_BASE,
       model: (process.env.BOSS_MODEL ?? DEFAULT_MODEL).trim(),
     });
-    const response = await transport.complete({
-      systemPrompt: NEGOTIATION_SYSTEM_PROMPT,
-      userPrompt: buildNegotiationPrompt(parsed),
-      temperature: 0.2,
-    });
-    const doc = response.content ? extractJson(response.content) : null;
-    const reply = parseNegotiationModelReply(doc, parsed.context);
-    if (!reply) throw new Error("模型回复不符合协商协议");
-    return NextResponse.json({ ...reply, generator: "AI" as const });
+    const prompt = buildNegotiationPrompt(parsed);
+    let invalidOutput = "";
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const response = await transport.complete({
+        systemPrompt: NEGOTIATION_SYSTEM_PROMPT,
+        userPrompt:
+          attempt === 0
+            ? prompt
+            : `${prompt}\n\nThe previous answer was invalid JSON or violated the executable schema. Repair it. Return exactly one valid JSON object. Previous answer: ${invalidOutput.slice(0, 1600)}`,
+        temperature: attempt === 0 ? 0.2 : 0,
+      });
+      invalidOutput = response.content ?? "";
+      const doc = response.content ? extractJson(response.content) : null;
+      const reply = parseNegotiationModelReply(doc, parsed.context);
+      if (reply) return NextResponse.json({ ...reply, generator: "AI" as const });
+    }
+    throw new Error("模型回复不符合协商协议");
   } catch {
     return NextResponse.json(
-      { error: { code: "NEGOTIATION_FAILED", message: "Boss 暂时没有回复，请稍后再试。计划没有发生变化。" } },
+      { error: { code: "NEGOTIATION_FAILED", message: "Boss 暂时没有回复，请稍后再试。" } },
       { status: 502 },
     );
   }

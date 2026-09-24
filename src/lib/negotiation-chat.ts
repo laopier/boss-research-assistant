@@ -1,6 +1,6 @@
 import { NegotiationKind, ProposalInput } from "./negotiation";
 
-export const NEGOTIATION_CHAT_VERSION = "negotiation-chat.v1" as const;
+export const NEGOTIATION_CHAT_VERSION = "negotiation-chat.v2" as const;
 export const MAX_NEGOTIATION_MESSAGE_LENGTH = 800;
 export const MAX_NEGOTIATION_HISTORY = 12;
 
@@ -40,6 +40,7 @@ const NEGOTIATION_KINDS = new Set<NegotiationKind>([
   "ADD_MILESTONE",
   "REMOVE_MILESTONE",
   "DROP_BOSS",
+  "REPLACE_BOSS",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -121,6 +122,7 @@ export function parseNegotiationModelReply(
   const contractId = cleanText(value.proposalInput.contractId, 120) ?? undefined;
   const milestoneId = cleanText(value.proposalInput.milestoneId, 120) ?? undefined;
   const title = cleanText(value.proposalInput.title, 40) ?? undefined;
+  const nextGoal = cleanText(value.proposalInput.nextGoal, 500) ?? undefined;
 
   if ((kind === "DEFER_BOSS" || kind === "DROP_BOSS") && (!contractId || !knownBosses.has(contractId))) {
     return null;
@@ -135,11 +137,21 @@ export function parseNegotiationModelReply(
     return null;
   }
   if (kind === "ADD_MILESTONE" && !title) return null;
+  if (
+    kind === "REPLACE_BOSS" &&
+    (!contractId ||
+      !knownBosses.has(contractId) ||
+      !milestoneId ||
+      !knownMilestones.has(milestoneId) ||
+      !nextGoal)
+  ) {
+    return null;
+  }
 
   return {
     reply,
     state: "PROPOSAL",
-    proposalInput: { kind, contractId, milestoneId, title },
+    proposalInput: { kind, contractId, milestoneId, title, nextGoal },
   };
 }
 
@@ -154,13 +166,15 @@ export function buildNegotiationPrompt(request: NegotiationChatRequest): string 
       ADD_MILESTONE: "Add a new empty milestone.",
       REMOVE_MILESTONE: "Remove a milestone while preserving and re-homing every Boss.",
       DROP_BOSS: "Pause a Boss by removing it from the roadmap while preserving its contract and evidence.",
+      REPLACE_BOSS:
+        "Pause one existing duplicate Boss, generate one bounded next-step Boss from nextGoal, and place it in one existing milestone. Use this for requests such as 'cancel one duplicate and add the minimal runnable example'.",
     },
     instruction:
-      "Reply in the user's language. The user may discuss any desired adjustment; do not force them to choose from a menu. Ask one concise clarifying question when intent, target, or tradeoff is unclear. If the desired change is outside the executable set, discuss it honestly and help reformulate it as a safe next step instead of pretending it was applied. When one supported change is unambiguous, return state PROPOSAL with proposalInput. Otherwise return DISCUSSING without proposalInput. Return one JSON object only.",
+      "Reply in the user's language. The user may discuss any desired adjustment; do not force them to choose from a menu. Resolve short confirmations from the immediately preceding assistant question and the full conversation; do not ask again after the user has selected one of your stated options. Ask one concise clarifying question only when intent, target, or tradeoff is genuinely unclear. If the desired change is outside the executable set, discuss it honestly and help reformulate it as a safe next step instead of pretending it was applied. When one supported change is unambiguous, return state PROPOSAL with proposalInput. For REPLACE_BOSS, contractId is the existing Boss to pause, milestoneId is where the generated replacement belongs, and nextGoal is a concrete bounded instruction for generating that new Boss; never invent a replacement id. Otherwise return DISCUSSING without proposalInput. Return one JSON object only.",
     outputShape: {
       reply: "string",
       state: "DISCUSSING or PROPOSAL",
-      proposalInput: "omit while DISCUSSING; otherwise {kind, contractId?, milestoneId?, title?}",
+      proposalInput: "omit while DISCUSSING; otherwise {kind, contractId?, milestoneId?, title?, nextGoal?}",
     },
   });
 }
@@ -173,4 +187,3 @@ export const NEGOTIATION_SYSTEM_PROMPT = [
   "Never invent Boss ids or milestone ids; use only ids in currentPlan.",
   "Return one JSON object and no prose outside it.",
 ].join("\n");
-

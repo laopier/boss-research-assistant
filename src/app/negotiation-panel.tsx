@@ -18,7 +18,7 @@ import { RoadmapDerivation } from "@/lib/roadmap";
 export interface NegotiationPanelProps {
   ledger: Ledger;
   roadmap: RoadmapDerivation;
-  onApply: (proposal: NegotiationProposal, input: ProposalInput) => void;
+  onApply: (proposal: NegotiationProposal, input: ProposalInput) => void | Promise<void>;
   onClose: () => void;
 }
 interface DisplayMessage extends NegotiationChatMessage {
@@ -41,6 +41,7 @@ export function NegotiationPanel({ ledger, roadmap, onApply, onClose }: Negotiat
   const [messages, setMessages] = useState<DisplayMessage[]>([WELCOME]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [draft, setDraft] = useState<{ proposal: NegotiationProposal; input: ProposalInput } | null>(
     null,
   );
@@ -122,8 +123,17 @@ export function NegotiationPanel({ ledger, roadmap, onApply, onClose }: Negotiat
     }
   }
 
-  function accept() {
-    if (draft) onApply(draft.proposal, draft.input);
+  async function accept() {
+    if (!draft || applying) return;
+    setError("");
+    setApplying(true);
+    try {
+      await onApply(draft.proposal, draft.input);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "生成下一步 Boss 失败，请稍后再试。");
+    } finally {
+      setApplying(false);
+    }
   }
 
   const impact = draft ? previewImpact(ledger, draft.proposal, draft.input) : null;
@@ -209,10 +219,12 @@ export function NegotiationPanel({ ledger, roadmap, onApply, onClose }: Negotiat
           </div>
 
           <div className="negotiation-actions">
-            <button type="button" onClick={accept}>
-              接受提案，生成计划版本 {roadmap.revision + 1}
+            <button type="button" onClick={() => void accept()} disabled={applying}>
+              {applying
+                ? "正在生成下一步 Boss…"
+                : `接受提案，生成计划版本 ${roadmap.revision + 1}`}
             </button>
-            <button type="button" className="button-secondary" onClick={() => setDraft(null)}>
+            <button type="button" className="button-secondary" disabled={applying} onClick={() => setDraft(null)}>
               先不接受，继续聊
             </button>
           </div>

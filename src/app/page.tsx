@@ -518,10 +518,56 @@ export default function Home() {
             setView("new");
           }}
           onStartOver={startOver}
-          onApplyProposal={(proposal, input) => {
-            updateLedger((current) =>
-              applyProposalWith(current, proposal, input, new Date().toISOString()),
-            );
+          onApplyProposal={async (proposal, input) => {
+            const at = new Date().toISOString();
+            if (input.kind === "REPLACE_BOSS") {
+              const nextGoal = input.nextGoal?.trim();
+              if (!nextGoal || !input.contractId || !input.milestoneId) {
+                throw new Error("替换提案缺少旧 Boss、目标阶段或下一步目标。");
+              }
+              const body = await requestContract(clampGoal(nextGoal), {
+                sourceName: "Boss 协商产生的当前项目上下文",
+                fileNames: ["boss-negotiation-context.json"],
+                content: JSON.stringify(
+                  {
+                    projectGoal: ledger.project?.goal,
+                    replacementReason: proposal.request,
+                    pausedBoss: ledger.contracts[input.contractId]?.objective,
+                    targetMilestone: ledger.project?.milestones.find(
+                      (item) => item.id === input.milestoneId,
+                    )?.title,
+                    nextGoal,
+                  },
+                  null,
+                  2,
+                ),
+              });
+              updateLedger((current) => {
+                if (current.contracts[body.contract.id]) {
+                  throw new Error("生成的新 Boss 与已有 Boss 标识重复，请重试。");
+                }
+                let registered = withImportedEvidence(current, body.contract, at);
+                registered = withContext(registered, {
+                  contractId: body.contract.id,
+                  objective: body.contract.objective,
+                  rawGoal: body.contract.rawGoal,
+                  generation: body.generation,
+                });
+                registered = withContract(registered, body.contract);
+                return applyProposalWith(
+                  registered,
+                  proposal,
+                  { ...input, replacementContractId: body.contract.id },
+                  at,
+                );
+              });
+              setNotice(
+                `已暂停重复 Boss，并生成下一步 Boss；计划版本更新到 Revision ${(ledger.project?.revision ?? 0) + 1}。`,
+              );
+              return;
+            }
+
+            updateLedger((current) => applyProposalWith(current, proposal, input, at));
             setNotice(
               `已接受协商修改，计划版本更新到 Revision ${(ledger.project?.revision ?? 0) + 1}，变更原因已保存。`,
             );

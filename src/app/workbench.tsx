@@ -22,7 +22,7 @@ export interface WorkbenchProps {
   /** Clears the current local project after the parent confirms the action. */
   onStartOver: () => void;
   /** Applies an ACCEPTED negotiation proposal (the only roadmap-write path). */
-  onApplyProposal: (proposal: NegotiationProposal, input: ProposalInput) => void;
+  onApplyProposal: (proposal: NegotiationProposal, input: ProposalInput) => void | Promise<void>;
 }
 
 function percent(part: number): string {
@@ -93,8 +93,8 @@ export function Workbench({
         <NegotiationPanel
           ledger={ledger}
           roadmap={roadmap}
-          onApply={(proposal, input) => {
-            onApplyProposal(proposal, input);
+          onApply={async (proposal, input) => {
+            await onApplyProposal(proposal, input);
             setNegotiating(false);
           }}
           onClose={() => setNegotiating(false)}
