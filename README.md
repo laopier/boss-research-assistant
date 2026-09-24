@@ -1,289 +1,239 @@
 # Boss Research Assistant
 
-[English](#english) | [中文](#中文)
+> 把模糊的科研目标变成一条可调整、可验收、可持续推进的路线，而不是只生成一份看起来完整的计划。
 
-Boss is an evidence-driven research training assistant for novice researchers.
-It turns vague research intentions into bounded, verifiable tasks while keeping
-project completion separate from genuine capability growth.
+[在线体验](https://boss-research-assistant.vercel.app/) · [产品说明](docs/product-brief.md) · [中文合同规则](docs/contracts.zh-CN.md) · [协作规范](docs/collaboration.md)
 
-## English
+Boss 是一个面向科研初学者的 AI 工作台。用户可以输入一个尚不清晰的科研目标，并选择本地资料作为上下文；系统会生成完整的项目路线图、当前阶段的具体 Boss Contract，以及与验收标准一一对应的证据要求。任务是否完成由证据推导，而不是由“程序能跑”或用户自行勾选决定。
 
-### Why Boss
+当前仓库是一套可在线体验的比赛 MVP，默认支持 DeepSeek，也保留了无需 API Key 的离线 mock 模式。
 
-Research beginners often know what paper or direction they want to explore, but
-cannot yet define the next executable goal, suitable acceptance criteria, or
-the evidence needed to prove completion. AI can accelerate implementation, but
-successful execution or a correct tensor shape does not necessarily mean that
-the artifact is semantically correct or that the user understands it.
+## 当前已经能做什么
 
-Boss addresses this gap by combining bounded task planning, evidence-aware
-review, explicit AI-assistance records, and delayed understanding checks.
-
-### Core Workflow
-
-1. **Goal Discovery** turns a vague intention and supplied materials into one
-   bounded objective.
-2. **Boss Contract** records deliverables, acceptance criteria, scope guards,
-   unknowns, assumptions, and an estimate.
-3. **Evidence Map** links each criterion to evidence with explicit provenance.
-4. **Assistance Mode** records the highest level of AI help used: `AI_OFF`,
-   `COACH`, `COLLABORATE`, or `AGENT`.
-5. **Criterion Review** distinguishes `UNKNOWN`, `PASS`, and `FAIL` instead of
-   treating a successful run as sufficient proof.
-6. **Understanding Check** revisits important capabilities after 24–72 hours,
-   separately from project progress.
-
-### Boss Contract v0
-
-The first shared Web/AI interface is now frozen:
-
-- [Machine-readable JSON Schema](schemas/boss-contract.v0.schema.json): the
-  canonical field and enum definition used by both workstreams.
-- [Fixed WACA-SE demo fixture](examples/waca-se-boss.json): integration data
-  for rendering and AI-output comparison. It intentionally contains a failed
-  Stage 2 semantic criterion and is marked `DEMO_FIXTURE`.
-- [English contract rules](docs/contracts.md): human-readable status,
-  provenance, scope, blocking, and revision semantics.
-- [中文合同规则](docs/contracts.zh-CN.md): the complete Chinese explanation for
-  team review and implementation.
-
-Evidence sources are deliberately separated:
-
-- `USER_REPORTED`: the user states a result.
-- `ARTIFACT_INSPECTED`: the system reads source code or another artifact.
-- `LOG_INSPECTED`: the system reads a supplied execution log.
-- `AUTO_VERIFIED`: the platform performs isolated verification itself.
-
-Boss-level status is separate from criterion status. A Boss becomes `CLEAR`
-only when every required criterion passes; optional failures do not block it.
-External dependencies may instead place the Boss in `BLOCKED` while affected
-criteria remain `UNKNOWN`.
-
-### Demonstration Scenario
-
-A beginner asks to reproduce WACA without knowing where to start. Goal
-Discovery narrows this into a WACA-SE implementation Boss. The submitted module
-runs and preserves tensor shape, but incorrectly reuses Stage 1 information in
-Stage 2. Boss maps inspected source and a semantic test to the relevant
-criterion, marks it as failed, and offers Coach-level direction. Project
-completion does not automatically imply that the related capability is owned;
-a delayed transfer question evaluates that separately.
-
-### MVP Scope
-
-- Online Web demo and one active Boss workspace.
-- Adaptive vague-goal intake and structured Boss Contract generation.
-- Evidence Map with criterion-level status and provenance.
-- Read-only Local Evidence Bridge with explicit user authorization and a
-  folder-upload fallback.
-- Assistance-mode selection and provenance recording.
-- Persistent Understanding Check scheduling.
-- Separate project-progress and capability-progress views.
-- Fixed WACA-SE failure demonstration.
-
-### Repository Structure
+完整流程如下：
 
 ```text
-boss-research-assistant/
-├── schemas/                 # Machine-readable shared contracts
-├── examples/                # Fixed integration and demonstration fixtures
-├── docs/
-│   ├── product-brief.md     # User problem, product promise, and MVP boundary
-│   ├── contracts.md         # English Contract v0 semantics
-│   ├── contracts.zh-CN.md   # 中文 Contract v0 规则
-│   └── collaboration.md     # Ownership and Git workflow
-├── README.md
-└── LICENSE
+模糊科研目标 + 可选本地文件
+          ↓
+AI 生成完整项目路线图 + 第一个详细 Boss Contract
+          ↓
+用户接受合同并提交一个或多个交付物/证据
+          ↓
+AI 按验收项审核证据，用户采纳结论
+          ↓
+验收状态、交付物状态和全局进度自动更新
+          ↓
+当前 Boss 通关后，按照路线图生成下一项详细 Boss
+          ↓
+新信息出现时，通过协商修改路线并保留修订记录
 ```
 
-### Team Collaboration
+目前已实现：
 
-- **Team lead:** product decisions, shared contracts, integration acceptance,
-  demonstration fixture, presentation, and final submission.
-- **Web owner:** product interface, Local Evidence Bridge, persistence,
-  compatibility fallback, and deployment.
-- **AI workflow owner:** Goal Discovery, structured generation, evidence review,
-  assistance policy, Understanding Check, and evaluation fixtures.
+- **Goal Discovery**：把模糊目标收敛为有范围边界的 Boss Contract。
+- **全局路线图**：首次创建项目时生成 2–6 个里程碑和 4–12 个规划步骤；尚未展开的步骤也会计入总进度。
+- **渐进式展开**：只为当前步骤生成详细合同，避免一次展示大量细节造成认知负担。
+- **加权项目进度**：依据各步骤预计投入和必需验收项状态计算，不允许手动修改百分比。
+- **Boss Negotiation**：用户可以自由描述调整意图，预览提案后再接受；支持移动、暂停、替换 Boss，以及新增或删除未来步骤。
+- **Evidence Review**：证据先进入待审核状态，AI 给出 `PASS`、`FAIL` 或 `INCONCLUSIVE` 及其证明边界，用户采纳后才影响验收。
+- **批量交付物提交**：一份文件可以同时支持多个验收项，不必把同一份报告拆成多次重复提交。
+- **本地文件上下文**：经用户授权读取选中的小型文本文件，用于生成 Boss 或审核证据；原文不写入本地账本。
+- **失败沉淀与孵化**：失败验收项可保留为失败资产，并进一步收敛成新的 Boss。
+- **本地持久化**：项目、合同、证据结论和路线修订保存在当前浏览器的 `localStorage` 中。
+- **验收报告导出**：Boss 完成后可导出结构化结果。
 
-`main` must remain demonstrable. Feature work should use short branches and
-pull requests, with at least one teammate reviewing each integration.
+## 先试用线上版本
 
-### Project Status
+打开 [https://boss-research-assistant.vercel.app/](https://boss-research-assistant.vercel.app/)。
 
-Completed foundations:
+推荐测试路径：
 
-- Product brief and collaboration workflow.
-- Boss Contract v0 JSON Schema and bilingual semantic documentation.
-- Fixed WACA-SE `PARTIAL` demo fixture.
+1. 点击“重新开始”，避免旧版浏览器数据影响体验。
+2. 输入一个包含多阶段工作的目标，例如“复现一篇论文并完成最小实验”。
+3. 观察系统是否立即显示完整路线图，而不是只显示当前任务。
+4. 进入当前 Boss，接受合同并提交一份交付物。
+5. 采纳 AI 审核结论，观察验收项和全局进度变化。
+6. 在“协商调整路线”中要求新增、删除或替换一个未来步骤。
 
-In progress:
+首次创建项目会先生成当前 Boss，再生成全局路线图，因此真实 AI 模式下通常比后续操作慢。
 
-- Web product shell and Local Evidence Bridge probe.
-- AI Goal Discovery and evidence-review workflow.
-- Runtime stack selection and end-to-end integration.
+## 本地启动
 
-Planned next:
+### 环境要求
 
-- Separate Understanding Check contract and persistence.
-- End-to-end WACA-SE competition demo and evaluation cases.
+- Node.js 22 或更高版本
+- pnpm 11（仓库声明版本为 `11.19.0`）
 
-Competition positioning:
-
-- Track: AI + Academic Research Assistant.
-- Focus: Failure Experience Accumulation and Incubation Assistant.
-- Initial submission deadline: 2026-09-26 23:59 (Asia/Shanghai).
-
-## 中文
-
-### Boss 要解决什么问题
-
-科研新手往往知道自己想阅读哪篇论文或进入哪个方向，却很难独立提出下一个可执行目标、
-可验收标准以及证明任务完成所需的证据。AI 能加快实现，但“程序成功运行”或“张量
-shape 正确”并不等于语义实现正确，更不等于用户真正掌握了相关能力。
-
-Boss 通过有边界的任务规划、基于证据的验收、AI 协助程度记录和延迟理解检查，降低
-科研新手开始和坚持一个研究任务的成本。
-
-### 核心工作流
-
-1. **目标发现（Goal Discovery）**：根据模糊意图和用户提供的材料，生成一个有边界的
-   下一步目标。
-2. **Boss Contract**：记录交付物、验收项、范围限制、未知信息、假设和预计耗时。
-3. **Evidence Map**：把每个验收项映射到具有明确来源的证据。
-4. **协助模式**：记录本任务使用过的最高 AI 协助等级：`AI_OFF`、`COACH`、
-   `COLLABORATE` 或 `AGENT`。
-5. **逐项验收**：区分 `UNKNOWN`、`PASS` 和 `FAIL`，不把“成功运行”直接等同于
-   “任务正确”。
-6. **Understanding Check**：在 24–72 小时后脱离即时记忆再次检查能力，并与项目进度
-   分开记录。
-
-### Boss Contract v0
-
-Web 与 AI 工作流共同使用的第一版接口已经冻结：
-
-- [机器可读 JSON Schema](schemas/boss-contract.v0.schema.json)：两条工作流共同遵守的
-  字段与枚举标准。
-- [固定 WACA-SE 演示案例](examples/waca-se-boss.json)：供页面渲染、前后端联调和
-  AI 输出比对使用。它故意保留 Stage 2 语义错误，并标记为 `DEMO_FIXTURE`。
-- [英文规则说明](docs/contracts.md)：解释状态、证据来源、范围、阻塞和修订规则。
-- [中文规则说明](docs/contracts.zh-CN.md)：供团队评审和实现时使用的完整中文版。
-
-Evidence 被分为四类：
-
-- `USER_REPORTED`：用户陈述某个结果。
-- `ARTIFACT_INSPECTED`：系统实际读取了代码或其他产物。
-- `LOG_INSPECTED`：系统读取了用户提供的执行日志。
-- `AUTO_VERIFIED`：平台亲自执行了隔离验证。
-
-Boss 总状态与单个 criterion 状态相互独立。只有全部必需验收项通过，Boss 才能
-`CLEAR`；可选项失败不会阻止通关。若缺少数据集或权限等外部依赖，Boss 可以进入
-`BLOCKED`，受影响的 criterion 则保持 `UNKNOWN`。
-
-### 固定演示场景
-
-一名科研新手提出“我想复现 WACA，但不知道从哪里开始”。Goal Discovery 将它收缩为
-一个 WACA-SE 实现 Boss。用户提交的模块能够运行且 shape 正确，但 Stage 2 错误复用
-了 Stage 1 信息。Boss 将静态代码与语义测试映射到对应验收项，判定该项失败，并在
-Coach 模式下指出正确方向。项目完成后，系统不会自动认定用户已经掌握能力，而是在
-延迟的迁移问题中单独检查。
-
-### MVP 范围
-
-- 在线 Web Demo 和一个活动 Boss 工作区。
-- 自适应模糊目标输入与结构化 Boss Contract 生成。
-- 带验收项状态和证据来源的 Evidence Map。
-- 经用户明确授权的只读 Local Evidence Bridge，并提供文件夹上传回退方案。
-- AI 协助模式选择与来源记录。
-- 可持久化的 Understanding Check 定时安排。
-- 分离的项目进度和能力进度视图。
-- 固定 WACA-SE 失败案例演示。
-
-### 仓库结构
-
-```text
-boss-research-assistant/
-├── schemas/                 # 机器可读的共享数据合同
-├── examples/                # 固定联调与比赛演示数据
-├── docs/
-│   ├── product-brief.md     # 用户痛点、产品承诺和 MVP 边界
-│   ├── contracts.md         # Contract v0 英文语义规则
-│   ├── contracts.zh-CN.md   # Contract v0 中文语义规则
-│   └── collaboration.md     # 团队分工与 Git 工作流
-├── README.md
-└── LICENSE
-```
-
-### 团队分工
-
-- **队长**：产品决策、共享接口、集成验收、演示案例、答辩和最终提交。
-- **Web 负责人**：产品界面、Local Evidence Bridge、状态持久化、兼容性回退和部署。
-- **AI 工作流负责人**：Goal Discovery、结构化生成、证据审核、协助策略、
-  Understanding Check 和评估案例。
-
-`main` 分支必须始终保持可演示。功能开发使用短分支和 Pull Request，每次合并至少由
-一名队友审核。
-
-### 当前进度
-
-已经完成：
-
-- 产品说明和团队协作流程。
-- Boss Contract v0 JSON Schema 与中英文语义文档。
-- 固定 WACA-SE `PARTIAL` 演示案例。
-
-正在推进：
-
-- Web 产品骨架与 Local Evidence Bridge 技术探针。
-- AI Goal Discovery 与 Evidence Review 工作流。
-- Runtime 技术栈选择和端到端集成。
-
-下一步计划：
-
-- 独立的 Understanding Check 合同与持久化。
-- WACA-SE 端到端比赛演示和评估用例。
-
-参赛定位：
-
-- 赛道：AI + 学术科研助手。
-- 细分方向：失败经验积累与孵化助手。
-- 初赛作品提交截止：2026-09-26 23:59（Asia/Shanghai）。
-
-## License
-
-MIT
-
-## Web MVP-0 Local Run
-
-The first runnable vertical slice is available on the `web/mvp0-goal-contract` branch. It sends a vague research goal to a mock Route Handler and renders the canonical WACA-SE Boss Contract.
-
-Requirements:
-
-- Node.js 20 or later
-- pnpm 11
+### 安装
 
 ```bash
+git clone https://github.com/laopier/boss-research-assistant.git
+cd boss-research-assistant
 corepack enable
 corepack prepare pnpm@11.19.0 --activate
 pnpm install --frozen-lockfile
+```
+
+### 配置
+
+复制 `.env.example` 为 `.env.local`。不要把真实 Key 写入 `.env.example` 或提交到 Git。
+
+离线 mock 模式：
+
+```dotenv
+BOSS_GENERATOR=mock
+```
+
+DeepSeek 模式：
+
+```dotenv
+BOSS_GENERATOR=llm
+BOSS_API_KEY=your_deepseek_api_key
+BOSS_API_BASE=https://api.deepseek.com
+BOSS_MODEL=deepseek-chat
+```
+
+也可以使用 `DEEPSEEK_API_KEY` 代替 `BOSS_API_KEY`。Key 只在服务端读取，不会下发到浏览器。
+
+### 运行与检查
+
+```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Before opening a pull request, run:
+打开 [http://localhost:3000](http://localhost:3000)。提交改动前运行：
 
 ```bash
+pnpm test
 pnpm lint
 pnpm build
 ```
 
-The machine-readable source of truth remains `schemas/boss-contract.v0.schema.json`; `src/lib/contracts.ts` mirrors it for Web type checking.
+当前基线包含 404 项自动化测试。
 
-## Local artifact reader (privacy & scope)
+## 系统结构
 
-The evidence form can read real files from a project you choose, instead of pasting text. It is deliberately narrow:
+这是一个 Next.js 16 单体应用：页面与三个服务端 Route Handler 放在同一仓库，AI Key 始终留在服务端。
 
-- **Permission**: you click "连接本地项目目录" and pick a folder in the browser's own picker (`showDirectoryPicker`, Chromium/Edge only). Nothing is read before that explicit choice; cancelling reads nothing.
-- **Scope**: only small, plain-text files are offered — `.py .ts .tsx .js .jsx .json .md .txt .log`. Everything else is excluded and the UI says why.
-- **Always excluded**: `.env` and other secret-looking names, `.git/`, `node_modules/`, virtual environments, build/cache directories, binaries, and files over 200 KB.
-- **Privacy**: the flow is read-only and never writes to your project. Only the files you tick are read, their text goes straight to the review request, and raw content is never persisted — the page keeps only the verdict, rationale, source name and proof boundary.
-- **Proof boundary**: files handed over this way are reviewed as `ARTIFACT_INSPECTED` (the reviewer saw the content). They are never `AUTO_VERIFIED` — the platform has not executed anything.
-- **Revoke**: the browser can forget the folder permission at any time via the site settings (the padlock / permissions icon in the address bar). Refusing or revoking permission shows an explanatory message, never a crash.
+```text
+Browser / React UI
+  ├─ project & evidence ledger ── localStorage
+  ├─ authorized folder picker ── selected text only
+  ├─ POST /api/contracts/generate
+  ├─ POST /api/evidence/review
+  └─ POST /api/negotiation/chat
+                         ↓
+             mock adapter or DeepSeek
+```
+
+### 接手代码时建议按这个顺序阅读
+
+| 文件 | 作用 |
+| --- | --- |
+| `src/app/page.tsx` | 页面总编排：创建项目、推进 Boss、提交证据、应用协商提案 |
+| `src/lib/contracts.ts` | Boss Contract、项目路线图和 API 的 TypeScript 边界 |
+| `src/lib/failure-ledger.ts` | 本地账本、路线图存储结构与不可变更新函数 |
+| `src/lib/roadmap.ts` | 全局进度、里程碑状态和下一规划步骤的推导 |
+| `src/lib/project-plan.ts` | 初始全局路线图的 mock/LLM 生成与严格校验 |
+| `src/lib/goal-discovery/` | 从目标生成 Boss Contract 的 Prompt、生成器和校验 |
+| `src/lib/evidence-review/` | 证据审核请求、模型 Prompt、响应校验和 mock reviewer |
+| `src/lib/negotiation-chat.ts` | 自由协商对话协议与模型输出校验 |
+| `src/lib/negotiation.ts` | 协商提案的预览、影响计算和原子应用 |
+| `src/app/workbench.tsx` | 项目路线图与全局进度界面 |
+| `src/app/artifact-panel.tsx` | 本地目录授权、筛选和文件选择界面 |
+| `src/test/` | 生成、审核、路线、协商和组件回归测试 |
+
+共享的机器可读合同位于：
+
+- `schemas/boss-contract.v0.schema.json`
+- `schemas/evidence-review.v0.schema.json`
+
+## 状态模型中最重要的约束
+
+- `USER_REPORTED` 只能证明用户做出了陈述，不能代替产物检查。
+- `ARTIFACT_INSPECTED` 表示审核服务读取了内容，但没有执行代码。
+- `LOG_INSPECTED` 表示读取了运行日志。
+- `AUTO_VERIFIED` 才表示平台亲自完成了隔离验证。
+- 证据“被接受”不等于验收“通过”；结论仍可能是 `FAIL` 或 `INCONCLUSIVE`。
+- 只有全部必需 criterion 通过，Boss 才能进入 `CLEAR`。
+- 项目进度由路线图、预计投入和验收状态推导，不能手动填写。
+- 协商先生成可预览提案，用户确认后才修改计划；修订原因必须保留。
+
+详细语义见 [docs/contracts.zh-CN.md](docs/contracts.zh-CN.md)。
+
+## 本地文件与隐私边界
+
+- 网页不能静默读取任意磁盘路径；必须由用户通过浏览器目录选择器授权。
+- 只支持白名单中的小型文本文件，例如 `.py`、`.ts`、`.json`、`.md`、`.txt` 和 `.log`。
+- `.env`、`.git/`、`node_modules/`、虚拟环境、缓存、二进制文件和过大文件会被排除。
+- 选择的原始文件内容仅进入当次生成或审核请求，不保存在浏览器账本中。
+- 当前平台不会在用户电脑上执行代码，因此本地文件证据最多属于 `ARTIFACT_INSPECTED`，不能标为 `AUTO_VERIFIED`。
+
+## 当前限制
+
+这是比赛 MVP，不要把以下能力当作已经完成：
+
+- 没有账号系统、云数据库或多设备同步；清除浏览器数据会失去本地项目。
+- 没有自动执行用户仓库代码的沙箱。
+- 旧版本创建的项目不会自动补齐新的全局路线图；测试新功能请重新开始。
+- 初始 Boss 与全局路线图目前是两次独立模型调用，仍可继续优化延迟和一致性。
+- 协商仅能执行协议明确支持的安全变更，不能任意改写账本。
+- 延迟 24–72 小时的 Understanding Check 仍属于后续工作。
+- 尚缺完整的浏览器端 E2E 测试、账号级限流和生产监控。
+
+## 部署
+
+线上版本部署在 Vercel。其他平台必须支持 Node.js 服务端运行时，因为三个 `/api/*` 路由不能在纯静态托管中运行。
+
+Vercel 至少需要配置：
+
+```dotenv
+BOSS_GENERATOR=llm
+BOSS_API_KEY=...
+BOSS_API_BASE=https://api.deepseek.com
+BOSS_MODEL=deepseek-chat
+```
+
+完整部署与安全说明见 [docs/deployment.zh-CN.md](docs/deployment.zh-CN.md)。
+
+## 协作与交接
+
+1. 从最新 `main` 创建短生命周期分支。
+2. 一个分支只解决一个清晰问题，并补齐相应测试。
+3. 提交前运行 `pnpm test && pnpm lint && pnpm build`。
+4. 通过 Pull Request 合并，说明用户问题、实现边界、验证结果和仍未解决的风险。
+5. `main` 必须始终保持可演示和可部署。
+
+当前接手者建议优先确认：
+
+1. 从新建目标到下一 Boss 的线上主链路是否稳定。
+2. 全局路线图与协商后的进度分母是否符合产品预期。
+3. 是否要把“两次 AI 调用”合并为一次结构化响应。
+4. 下一阶段优先做账号/云端持久化，还是先补 E2E 与错误监控。
+
+更多背景：
+
+- [队友上手指南](docs/teammate-onboarding.md)
+- [API 边界](docs/api-contract.md)
+- [AI Goal Discovery](docs/ai/goal-discovery.md)
+- [团队协作规范](docs/collaboration.md)
+
+## English summary
+
+Boss Research Assistant turns a vague research intention into an adaptive, evidence-driven project route for novice researchers. On first creation it generates a coarse global roadmap and one detailed Boss Contract. Future steps remain visible in the project denominator but are expanded just in time. Users can submit artifacts for AI review, adopt criterion-level findings, preserve failures, and negotiate roadmap changes before applying them.
+
+The current MVP is a Next.js 16 application with three server-side endpoints for contract generation, evidence review, and roadmap negotiation. It supports an offline deterministic mock mode and a DeepSeek-backed live mode. Project state is currently stored in browser `localStorage`; there is no authentication, cloud database, local code execution, or cross-device synchronization yet.
+
+Quick start:
+
+```bash
+pnpm install --frozen-lockfile
+cp .env.example .env.local
+pnpm dev
+```
+
+Before opening a pull request, run `pnpm test`, `pnpm lint`, and `pnpm build`.
+
+## License
+
+MIT
