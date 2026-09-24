@@ -36,6 +36,7 @@ import { EvidenceSourceType } from "@/lib/contracts";
 
 import {
   DECISIONS,
+  CONTENT_MAX_LENGTH,
   EvidenceReview,
   EvidenceReviewRequest,
   FINDINGS,
@@ -294,7 +295,7 @@ export function validateReviewRequest(body: unknown): RequestValidation {
   if (!boundedString(submission.sourceName, 1, 200)) {
     return { ok: false, message: BAD_REQUEST_MESSAGE };
   }
-  if (!boundedString(submission.content, 1, 4000)) {
+  if (!boundedString(submission.content, 1, CONTENT_MAX_LENGTH)) {
     return { ok: false, message: BAD_REQUEST_MESSAGE };
   }
 

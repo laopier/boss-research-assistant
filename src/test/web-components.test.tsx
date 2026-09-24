@@ -35,6 +35,7 @@ import { ResearchJourney } from "../app/journey-panel";
 import { ProgressPanel } from "../app/progress-panel";
 import { Workbench } from "../app/workbench";
 import { ArtifactPanel } from "../app/artifact-panel";
+import { BatchEvidencePanel } from "../app/batch-evidence-panel";
 import { proofBoundaryText } from "../app/labels";
 import { ProgressDerivation } from "../lib/progress";
 import { deriveRoadmap } from "../lib/roadmap";
@@ -128,6 +129,7 @@ function renderEntry(props: Partial<Parameters<typeof EvidenceEntry>[0]> = {}): 
       onRecord={() => "ev-test"}
       onAdopt={() => {}}
       onOverride={() => {}}
+      unifiedSubmission={props.unifiedSubmission}
     />,
   );
 }
@@ -873,5 +875,30 @@ describe("EvidenceSubmitForm artifact entry", () => {
     });
     assert.doesNotMatch(html, />从本地项目读取文件…<\/button>/);
     assert.match(html, /当前证据要求不接受本地文件静态检查/);
+  });
+});
+
+describe("BatchEvidencePanel", () => {
+  it("offers one artifact submission for all artifact-inspectable criteria", () => {
+    const contract = fullContract({
+      acceptanceCriteria: [criterion({ id: "AC-1" }), criterion({ id: "AC-2" })],
+    });
+    const html = renderToStaticMarkup(
+      <BatchEvidencePanel
+        contract={contract}
+        locked={false}
+        onRecord={() => "ev-test"}
+        onAdopt={() => {}}
+      />,
+    );
+    assert.match(html, /提交一次，审核全部标准/);
+    assert.match(html, /核查 2 项验收标准/);
+    assert.equal((html.match(/type="file"/g) ?? []).length, 1);
+  });
+
+  it("turns artifact-backed criterion cards into diagnostics instead of repeated forms", () => {
+    const html = renderEntry({ unifiedSubmission: true });
+    assert.doesNotMatch(html, />提交证据<\/button>/);
+    assert.match(html, /AC-2/);
   });
 });

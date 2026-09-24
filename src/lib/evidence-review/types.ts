@@ -18,7 +18,7 @@ export const REVIEW_SCHEMA_VERSION = "evidence-review.v0" as const;
 
 /** Submissions are pasted text only: short notes, code fragments, logs. */
 export const CONTENT_MIN_LENGTH = 1;
-export const CONTENT_MAX_LENGTH = 4000;
+export const CONTENT_MAX_LENGTH = 12000;
 export const SOURCE_NAME_MAX_LENGTH = 200;
 export const DELIVERABLE_DESCRIPTION_MAX_LENGTH = 1000;
 export const RATIONALE_MAX_LENGTH = 2000;

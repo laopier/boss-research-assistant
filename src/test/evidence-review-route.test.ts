@@ -18,6 +18,7 @@ import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
 import { POST } from "../app/api/evidence/review/route";
+import { CONTENT_MAX_LENGTH } from "../lib/evidence-review/types";
 
 const ENDPOINT = "http://localhost/api/evidence/review";
 
@@ -151,7 +152,7 @@ describe("POST /api/evidence/review", () => {
     it("rejects content past the length limit", async () => {
       const payload = {
         ...VALID_REQUEST,
-        submission: { ...VALID_REQUEST.submission, content: "x".repeat(4001) },
+        submission: { ...VALID_REQUEST.submission, content: "x".repeat(CONTENT_MAX_LENGTH + 1) },
       };
       assert.equal((await postJson(payload)).status, 400);
     });
@@ -159,7 +160,7 @@ describe("POST /api/evidence/review", () => {
     it("never reports a client mistake as an internal fault", async () => {
       const payload = {
         ...VALID_REQUEST,
-        submission: { ...VALID_REQUEST.submission, content: "x".repeat(4001) },
+        submission: { ...VALID_REQUEST.submission, content: "x".repeat(CONTENT_MAX_LENGTH + 1) },
       };
       const body = (await (await postJson(payload)).json()) as { error: { code: string } };
       assert.notEqual(body.error.code, "INTERNAL_ERROR");

@@ -43,6 +43,7 @@ import literatureReadingFixture from "../../examples/ai/literature-reading.json"
 import wacaDemoFixture from "../../examples/waca-se-boss.json";
 import { DeliverableCard } from "./deliverable-card";
 import { EvidenceEntry, EvidenceSubmissionInput } from "./evidence-entry";
+import { BatchEvidencePanel } from "./batch-evidence-panel";
 import { FailureLibrary } from "./failure-library";
 import { ResearchJourney } from "./journey-panel";
 import { ProgressPanel } from "./progress-panel";
@@ -590,6 +591,16 @@ function ContractView({
     else evidenceByCriterion.set(item.criterionId, [item]);
   }
 
+  const unifiedCriterionIds = new Set(
+    contract.acceptanceCriteria
+      .filter((criterion) =>
+        criterion.evidenceRequirements.some((requirement) =>
+          requirement.acceptedSourceTypes.includes("ARTIFACT_INSPECTED"),
+        ),
+      )
+      .map((criterion) => criterion.id),
+  );
+
   return (
     <section className="contract" aria-live="polite">
       <div className="contract-heading">
@@ -646,8 +657,24 @@ function ContractView({
         progress={progress}
         onAccept={onAccept}
         onIncubate={onIncubate}
-        onSubmitEvidence={(criterionId) => setSubmitFor({ criterionId })}
+        onSubmitEvidence={(criterionId) => {
+          if (unifiedCriterionIds.has(criterionId)) {
+            document.getElementById("batch-evidence")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+            return;
+          }
+          setSubmitFor({ criterionId });
+        }}
         onCompleteBoss={onCompleteBoss}
+      />
+
+      <BatchEvidencePanel
+        contract={contract}
+        locked={!accepted}
+        onRecord={onRecord}
+        onAdopt={onAdopt}
       />
 
       <div className="content-grid">
@@ -673,6 +700,7 @@ function ContractView({
               onRecord={(input) => onRecord(criterion.id, input)}
               onAdopt={onAdopt}
               onOverride={onOverride}
+              unifiedSubmission={unifiedCriterionIds.has(criterion.id)}
             />
           ))}
         </article>
@@ -728,6 +756,11 @@ function ContractView({
               records={records}
               locked={!accepted}
               active={submitFor?.deliverableId === deliverable.id}
+              unifiedSubmissionAvailable={contract.acceptanceCriteria.some((criterion) =>
+                criterion.evidenceRequirements.some((requirement) =>
+                  requirement.acceptedSourceTypes.includes("ARTIFACT_INSPECTED"),
+                ),
+              )}
               onSubmitFor={(criterionId, deliverableId) =>
                 setSubmitFor({ criterionId, deliverableId })
               }

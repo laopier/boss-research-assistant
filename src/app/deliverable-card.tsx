@@ -31,6 +31,8 @@ export interface DeliverableCardProps {
    * already live; this card only points at it.
    */
   onSubmitFor: (criterionId: string, deliverableId: string) => void;
+  /** A single contract-level artifact form owns the normal submission path. */
+  unifiedSubmissionAvailable?: boolean;
 }
 
 /**
@@ -49,6 +51,7 @@ export function DeliverableCard({
   locked,
   active,
   onSubmitFor,
+  unifiedSubmissionAvailable = false,
 }: DeliverableCardProps) {
   const [criterionId, setCriterionId] = useState(contract.acceptanceCriteria[0]?.id ?? "");
   const derivation: DeliverableDerivation = deriveDeliverable(contract, deliverable.id, records);
@@ -93,7 +96,9 @@ export function DeliverableCard({
         )}
       </p>
 
-      {active ? (
+      {unifiedSubmissionAvailable ? (
+        <p className="muted">由上方“提交最终产物”统一关联和审核。</p>
+      ) : active ? (
         <p className="deliverable-open-hint">
           提交表单已在{" "}
           <a href={`#criterion-${criterionId}`}>{criterionId}</a>{" "}

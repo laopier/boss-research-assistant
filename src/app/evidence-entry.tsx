@@ -322,6 +322,8 @@ export interface EvidenceEntryProps {
   onRecord: (input: EvidenceSubmissionInput) => string;
   onAdopt: (outcome: ReviewOutcome) => void;
   onOverride: (draft: OverrideDraft, outcome: ReviewOutcome | undefined) => void;
+  /** The primary path is the single artifact form above; keep this card diagnostic-only. */
+  unifiedSubmission?: boolean;
 }
 
 /**
@@ -344,6 +346,7 @@ export function EvidenceEntry({
   onRecord,
   onAdopt,
   onOverride,
+  unifiedSubmission = false,
 }: EvidenceEntryProps) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -424,8 +427,6 @@ export function EvidenceEntry({
 
   return (
     <div className="criterion" id={`criterion-${criterion.id}`}>
-      <span className="index">{criterion.id.replace(/^AC-?/i, "") || criterion.id}</span>
-
       <div>
         <span className="criterion-id">{criterion.id}</span>
         <span className={criterion.required ? "tag tag-required" : "tag"}>
@@ -503,7 +504,7 @@ export function EvidenceEntry({
           </div>
         )}
 
-        <div className="evidence-actions">
+        {!unifiedSubmission && <div className="evidence-actions">
           {locked ? (
             <span className="muted">接受合同后才能开始记录证据。</span>
           ) : formOpen ? (
@@ -524,7 +525,7 @@ export function EvidenceEntry({
               提交证据
             </button>
           )}
-        </div>
+        </div>}
 
         <p className="derivation">
           <span className={criterionStatusClass[derivation.status]}>

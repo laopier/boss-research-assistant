@@ -23,7 +23,7 @@ import type {
   EvidenceReviewRequest,
   SuggestedEvidence,
 } from "../lib/evidence-review/types";
-import { ReviewError } from "../lib/evidence-review/types";
+import { CONTENT_MAX_LENGTH, ReviewError } from "../lib/evidence-review/types";
 import {
   PROOF_BOUNDARY_ORDER,
   detectPromptInjection,
@@ -192,7 +192,7 @@ describe("validateReviewRequest", () => {
     assert.equal(
       validateReviewRequest({
         ...request,
-        submission: { ...request.submission, content: "x".repeat(4001) },
+        submission: { ...request.submission, content: "x".repeat(CONTENT_MAX_LENGTH + 1) },
       }).ok,
       false,
     );

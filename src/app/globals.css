@@ -74,13 +74,22 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .progress-note { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 18px 0 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .content-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; margin-top: 34px; align-items: start; }
 h3 { margin: 0 0 16px; font-size: 15px; }
-.criterion { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: start; padding: 18px 0; border-top: 1px solid var(--line); }
-.index { color: var(--orange); font-family: Georgia, serif; }
+.criterion { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; padding: 18px 0; border-top: 1px solid var(--line); }
 .criterion-id { font-weight: 750; font-size: 14px; }
 .criterion p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .criterion-desc { color: var(--ink) !important; }
 .tag { margin-left: 8px; padding: 2px 7px; color: var(--muted); background: #eef0ec; border-radius: 5px; font-size: 11px; font-weight: 600; }
 .tag-required { color: #7a4a12; background: #f6e6c8; }
+
+.batch-evidence { display: grid; grid-template-columns: 1fr minmax(320px, .9fr); gap: 22px; margin-top: 24px; padding: 22px; background: #eef3ec; border: 1px solid #d3dacd; border-radius: 16px; }
+.batch-evidence h3 { margin-bottom: 7px; font-size: 18px; }
+.batch-evidence .eyebrow { margin-bottom: 6px; }
+.batch-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.batch-upload input { flex: 1 1 220px; min-width: 0; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
+.batch-evidence .privacy-note, .batch-evidence .error, .batch-results { grid-column: 1 / -1; }
+.batch-results { display: grid; gap: 8px; padding-top: 14px; border-top: 1px solid #d3dacd; }
+.batch-result { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 10px 0; }
+.batch-result p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 
 /* Status chips. PASS/FAIL must be visually distinct: a failed required
    criterion is the single most important signal on this page. */
@@ -298,6 +307,7 @@ ul { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; line-h
 
 @media (max-width: 900px) {
   .content-grid { grid-template-columns: 1fr; }
+  .batch-evidence { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
   main { width: min(100% - 24px, 1120px); padding-top: 18px; }
@@ -307,7 +317,7 @@ ul { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; line-h
   .contract-heading { flex-direction: column; }
   .demo-entry, .gate, .evidence-form-footer, .failure-foot { flex-direction: column; align-items: stretch; }
   .field-row { grid-template-columns: 1fr; }
-  .criterion { grid-template-columns: 28px 1fr; }
-  .criterion > .status { grid-column: 2; justify-self: start; }
+  .criterion { grid-template-columns: 1fr; }
+  .criterion > .status { grid-column: 1; justify-self: start; }
   .progress-note { align-items: flex-start; flex-direction: column; gap: 8px; }
 }
