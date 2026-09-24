@@ -147,3 +147,51 @@ export const proofBoundaryHint: Record<EvidenceSourceType, string> = {
   LOG_INSPECTED: "审核器看到了提交的运行日志；平台本身没有执行该命令。",
   AUTO_VERIFIED: "平台亲自执行了隔离验证。粘贴的文本永远达不到这一层。",
 };
+
+// ---------------------------------------------------------------------------
+// issue #21: readable labels instead of internal ids
+// ---------------------------------------------------------------------------
+
+/**
+ * Short labels for the things a new user is asked to act on.
+ *
+ * The number is the 1-based position of the criterion or deliverable in the
+ * FULL contract, never in a filtered or derived list, so every region of the
+ * page numbers the same task identically and a country lane that is also
+ * required cannot be renumbered by another country's filter. Nothing here
+ * maps a particular generated id to particular Chinese: the ids differ per
+ * generated Boss, so the label comes from the position alone and the internal
+ * id stays visible next to it for tracing.
+ */
+export function criterionLabel(index: number): string {
+  return `验收项 ${index}`;
+}
+
+export function deliverableLabel(index: number): string {
+  return `交付物 ${index}`;
+}
+
+/** True when `index` really came from a position in the contract. */
+export function hasIndex(index: number | undefined): index is number {
+  return typeof index === "number" && Number.isFinite(index) && index > 0;
+}
+
+/**
+ * Places where internal ids remain the only stable name (fixtures, callers
+ * that hold an id but no contract) fall back to the id itself rather than
+ * inventing a number.
+ */
+export function criterionLabelOrId(index: number | undefined, criterionId: string): string {
+  return hasIndex(index) ? criterionLabel(index) : criterionId;
+}
+
+/**
+ * The full description is what tells a newcomer what the task is, but it must
+ * not become a button. Controls that cannot wrap — `<option>`, chips — get a
+ * shortened form and rely on the neighbouring card for the whole sentence.
+ */
+export function shortenedDescription(description: string | undefined, limit = 16): string {
+  const text = description?.trim() ?? "";
+  if (!text) return "";
+  return text.length > limit ? `${text.slice(0, limit)}…` : text;
+}

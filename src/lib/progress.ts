@@ -24,6 +24,12 @@ import {
 export interface MissingRequirement {
   criterionId: string;
   criterionRequired: boolean;
+  /**
+   * 1-based position of the criterion in the contract's full
+   * `acceptanceCriteria` list (issue #21). The page numbers tasks from this so
+   * every region agrees; when it is absent the UI falls back to the id.
+   */
+  criterionIndex?: number;
   requirementId: string;
   description: string;
   have: number;
@@ -82,12 +88,14 @@ function countSatisfying(
 export function missingRequirements(
   criterion: AcceptanceCriterion,
   records: readonly EvidenceRecord[],
+  criterionIndex?: number,
 ): MissingRequirement[] {
   if (deriveCriterion(criterion, records).status === "FAIL") return [];
   return criterion.evidenceRequirements
     .map((requirement) => ({
       criterionId: criterion.id,
       criterionRequired: criterion.required,
+      ...(criterionIndex === undefined ? {} : { criterionIndex }),
       requirementId: requirement.id,
       description: requirement.description,
       have: countSatisfying(criterion, requirement, records),
@@ -117,8 +125,10 @@ export function deriveProgress(
     (deliverable) => deriveDeliverable(contract, deliverable.id, records).status === "DONE",
   ).length;
 
-  const missing = contract.acceptanceCriteria.flatMap((criterion) =>
-    missingRequirements(criterion, records),
+  // `index` counts the full list, not the missing ones, so "验收项 3" means the
+  // third criterion of the contract everywhere it appears (issue #21).
+  const missing = contract.acceptanceCriteria.flatMap((criterion, index) =>
+    missingRequirements(criterion, records, index + 1),
   );
 
   const unresolved = listFailures(ledger).filter(

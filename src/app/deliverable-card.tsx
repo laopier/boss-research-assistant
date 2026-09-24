@@ -11,8 +11,12 @@ import {
 import {
   criterionStatusClass,
   criterionStatusText,
+  criterionLabelOrId,
+  deliverableLabel,
   deliverableStatusClass,
   deliverableStatusText,
+  hasIndex,
+  shortenedDescription,
 } from "./labels";
 
 export interface DeliverableCardProps {
@@ -69,15 +73,30 @@ export function DeliverableCard({
     return deriveCriterion(criterion, records.filter((item) => item.criterionId === id)).status;
   };
 
+  /**
+   * issue #21: numbers come from the position in the contract's own lists, so
+   * the deliverable card, the Evidence Map and the progress panel all call the
+   * same task by the same number.
+   */
+  const deliverableIndex = contract.deliverables.findIndex((item) => item.id === deliverable.id) + 1;
+  const criterionIndex = (id: string) =>
+    contract.acceptanceCriteria.findIndex((item) => item.id === id) + 1;
+  const criterionName = (id: string) => criterionLabelOrId(criterionIndex(id), id);
+
   return (
     <article>
       <div className="deliverable-head">
-        <strong>{deliverable.id}</strong>
+        <span className="task-title">
+          <strong className="task-label">
+            {hasIndex(deliverableIndex) ? deliverableLabel(deliverableIndex) : deliverable.id}
+          </strong>
+          <code className="internal-id">{deliverable.id}</code>
+        </span>
         <span className={deliverableStatusClass[derivation.status]}>
           {deliverableStatusText[derivation.status]}
         </span>
       </div>
-      <p>{deliverable.description}</p>
+      <p className="task-desc">{deliverable.description}</p>
 
       <p className="deliverable-reason">
         {derivation.reason}
@@ -89,7 +108,7 @@ export function DeliverableCard({
                 className={`deliverable-link ${criterionStatusClass[statusOf(id)]}`}
                 href={`#criterion-${id}`}
               >
-                {id} · {criterionStatusText[statusOf(id)]}
+                {criterionName(id)} · {criterionStatusText[statusOf(id)]}
               </a>
             ))}
           </span>
@@ -101,7 +120,7 @@ export function DeliverableCard({
       ) : active ? (
         <p className="deliverable-open-hint">
           提交表单已在{" "}
-          <a href={`#criterion-${criterionId}`}>{criterionId}</a>{" "}
+          <a href={`#criterion-${criterionId}`}>{criterionName(criterionId)}</a>{" "}
           的卡片中打开，并预填了本交付物。
         </p>
       ) : locked ? (
@@ -115,7 +134,7 @@ export function DeliverableCard({
             <select value={criterionId} onChange={(event) => setCriterionId(event.target.value)}>
               {contract.acceptanceCriteria.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.id} · {item.required ? "必需" : "可选"}
+                  {`${criterionName(item.id)} · ${item.required ? "必需" : "可选"} · ${shortenedDescription(item.description, 14)}`}
                 </option>
               ))}
             </select>

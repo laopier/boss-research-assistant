@@ -21,10 +21,13 @@ import {
 } from "@/lib/failure-ledger";
 import { EvidenceReviewPanel } from "./evidence-review-panel";
 import {
+  criterionLabelOrId,
   criterionStatusClass,
   criterionStatusText,
+  deliverableLabel,
   findingText,
   reviewStatusText,
+  shortenedDescription,
   sourceTypeHint,
   sourceTypeText,
 } from "./labels";
@@ -172,7 +175,7 @@ export function EvidenceSubmitForm({
           >
             {criterion.evidenceRequirements.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.id}
+                {`${shortenedDescription(item.description, 20)}（${item.id}）`}
               </option>
             ))}
           </select>
@@ -198,9 +201,9 @@ export function EvidenceSubmitForm({
           关联交付物（可选，用于推导交付物进度）
           <select value={deliverableId} onChange={(event) => setDeliverableId(event.target.value)}>
             <option value="">（不关联任何交付物）</option>
-            {deliverables.map((item) => (
+            {deliverables.map((item, position) => (
               <option key={item.id} value={item.id}>
-                {item.id}
+                {`${deliverableLabel(position + 1)} · ${shortenedDescription(item.description, 14)}`}
               </option>
             ))}
           </select>
@@ -301,6 +304,12 @@ export function EvidenceSubmitForm({
 
 export interface EvidenceEntryProps {
   criterion: AcceptanceCriterion;
+  /**
+   * 1-based position in the contract's full acceptance list (issue #21). Every
+   * region numbers tasks from this, so the card, the map, the deliverable card
+   * and the next action all agree. Falls back to the raw id when unknown.
+   */
+  index?: number;
   derivation: CriterionDerivation;
   records: EvidenceRecord[];
   /** The whole ledger: reviews and the override log are read through its helpers. */
@@ -336,6 +345,7 @@ export interface EvidenceEntryProps {
  */
 export function EvidenceEntry({
   criterion,
+  index,
   derivation,
   records,
   ledger,
@@ -428,17 +438,20 @@ export function EvidenceEntry({
   return (
     <div className="criterion" id={`criterion-${criterion.id}`}>
       <div>
-        <span className="criterion-id">{criterion.id}</span>
+        <span className="criterion-label">
+          {criterionLabelOrId(index, criterion.id)}
+        </span>
         <span className={criterion.required ? "tag tag-required" : "tag"}>
           {criterion.required ? "必需" : "可选"}
         </span>
+        <code className="internal-id">{criterion.id}</code>
         <p className="criterion-desc">{criterion.description}</p>
 
         <ul className="requirement-list">
           {criterion.evidenceRequirements.map((item) => (
             <li key={item.id}>
-              <code>{item.id}</code>
-              <span>{item.description}</span>
+              <span className="task-desc">{item.description}</span>
+              <code className="internal-id">{item.id}</code>
               <span className="source-types">
                 可接受来源：{item.acceptedSourceTypes.map((source) => sourceTypeText[source]).join(" / ")}
                 ，至少 {item.minimumCount} 条
