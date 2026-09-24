@@ -228,10 +228,14 @@ h3 { margin: 0 0 16px; font-size: 15px; }
 .boss-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 12px; }
 .boss-card { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; background: #f7f7f2; border: 1px solid transparent; border-radius: 12px; }
 .boss-card-current { border-color: var(--green); background: #f1f5ef; }
+.boss-card-planned { border-style: dashed; border-color: #c8cec6; background: #fafaf7; }
 .boss-card-head { display: flex; align-items: center; gap: 8px; }
 .boss-card-objective { margin: 0; color: var(--ink); font-size: 13px; font-weight: 650; line-height: 1.5; }
 .boss-card p { margin: 0; font-size: 12px; line-height: 1.6; }
 .boss-card .button-secondary { align-self: flex-start; }
+.plan-assumptions { margin-top: 12px; color: var(--muted); font-size: 12px; }
+.plan-assumptions summary { cursor: pointer; font-weight: 650; }
+.plan-assumptions ul { margin: 8px 0 0; padding-left: 20px; }
 
 /* Boss Negotiation (#18 §2): proposal -> preview -> confirmed revision. */
 .negotiation { margin-top: 20px; padding: 18px 20px; background: #f7f7f2; border: 1px solid var(--line); border-radius: 14px; }

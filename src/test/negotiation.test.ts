@@ -150,6 +150,41 @@ describe("draftProposal", () => {
     assert.match(proposal.changes[1].summary, /生成一个新的 Boss/);
     assert.match(proposal.note, /生成失败时原计划不会改变/);
   });
+
+  it("can add a future step so negotiation changes the global denominator", () => {
+    let ledger = ledgerWith([contract()]);
+    ledger = {
+      ...ledger,
+      project: {
+        ...ledger.project!,
+        milestones: [{
+          id: "M-1",
+          title: "实验",
+          bossIds: ["boss-1"],
+          steps: [{
+            id: "S-1",
+            title: "当前步骤",
+            objective: "完成当前工作",
+            estimatedMinutes: 90,
+            contractId: "boss-1",
+          }],
+        }],
+      },
+    };
+    const input = {
+      kind: "ADD_PLANNED_STEP" as const,
+      milestoneId: "M-1",
+      title: "多随机种子验证",
+      nextGoal: "用三个随机种子重复主要实验",
+      estimatedMinutes: 240,
+    };
+    const proposal = draftProposal(input, "再补一个稳定性实验", ledger, "np-add", AT);
+    assert.ok(!("error" in proposal));
+    if ("error" in proposal) return;
+    const applied = applyProposalWith(ledger, proposal, input, AT);
+    assert.equal(applied.project?.milestones[0].steps?.length, 2);
+    assert.equal(applied.project?.milestones[0].steps?.[1].estimatedMinutes, 240);
+  });
 });
 
 describe("applyProposalWith", () => {

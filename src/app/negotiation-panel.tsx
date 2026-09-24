@@ -58,6 +58,13 @@ export function NegotiationPanel({ ledger, roadmap, onApply, onClose }: Negotiat
         id,
         objective: ledger.contracts[id]?.objective ?? id,
       })),
+      ...(ledger.project?.milestones.find((item) => item.id === milestone.id)?.steps
+        ? {
+            plannedSteps: ledger.project.milestones
+              .find((item) => item.id === milestone.id)!
+              .steps!.map((step) => ({ ...step })),
+          }
+        : {}),
     })),
   };
 

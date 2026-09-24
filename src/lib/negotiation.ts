@@ -33,7 +33,11 @@ export type NegotiationKind =
   /** 把 Boss 移出路线图（暂停）；合同与证据保留在账本中。 */
   | "DROP_BOSS"
   /** 暂停一个重复 Boss，并用 AI 生成的下一步 Boss 在指定阶段替换它。 */
-  | "REPLACE_BOSS";
+  | "REPLACE_BOSS"
+  /** Add one future Boss-sized step to an existing planned milestone. */
+  | "ADD_PLANNED_STEP"
+  /** Remove one not-yet-expanded future step from the global denominator. */
+  | "DROP_PLANNED_STEP";
 
 export interface ProposalChange {
   kind: NegotiationKind;
@@ -68,6 +72,10 @@ export interface ProposalInput {
    * is never allowed to provide or invent this id.
    */
   replacementContractId?: string;
+  /** For DROP_PLANNED_STEP. */
+  stepId?: string;
+  /** For ADD_PLANNED_STEP. */
+  estimatedMinutes?: number;
 }
 
 export interface ProposalImpact {
@@ -202,6 +210,38 @@ function buildChange(
         note: "接受后会先生成新 Boss；只有生成成功，替换才会作为一个计划版本整体生效。生成失败时原计划不会改变。",
       };
     }
+    case "ADD_PLANNED_STEP": {
+      const milestone = projectName.milestones.find((item) => item.id === input.milestoneId);
+      const title = input.title?.trim();
+      const objective = input.nextGoal?.trim();
+      const estimatedMinutes = input.estimatedMinutes;
+      if (!milestone || !milestone.steps) return { error: "请选择已有整体规划的目标里程碑。" };
+      if (!title || !objective) return { error: "请说明新增步骤的名称和目标。" };
+      if (!estimatedMinutes || estimatedMinutes < 15 || estimatedMinutes > 480) {
+        return { error: "请为新增步骤提供 15 到 480 分钟的预计投入。" };
+      }
+      return {
+        change: {
+          kind: "ADD_PLANNED_STEP",
+          summary: `在「${milestone.title}」新增未来步骤「${title}」（预计 ${estimatedMinutes} 分钟）：${objective}`,
+        },
+        note: "新增工作会扩大整体计划的分母，因此当前百分比可能下降；这是路线更完整，不代表已经完成的工作倒退。",
+      };
+    }
+    case "DROP_PLANNED_STEP": {
+      const match = projectName.milestones
+        .flatMap((milestone) => (milestone.steps ?? []).map((step) => ({ milestone, step })))
+        .find((item) => item.step.id === input.stepId);
+      if (!match) return { error: "找不到要移除的未来步骤。" };
+      if (match.step.contractId) return { error: "该步骤已经生成 Boss，请改为暂停对应 Boss。" };
+      return {
+        change: {
+          kind: "DROP_PLANNED_STEP",
+          summary: `从「${match.milestone.title}」移除尚未开始的步骤「${match.step.title}」。`,
+        },
+        note: "该步骤尚无合同或证据；移除后整体分母会缩小，计划版本会记录你的原因。",
+      };
+    }
   }
 }
 
@@ -232,33 +272,58 @@ export function applyProposalWith(
   if (!current) return ledger;
 
   const progressBefore = deriveRoadmap(ledger)?.progressPercent ?? 0;
-  let milestones = current.milestones.map((item) => ({ ...item, bossIds: [...item.bossIds] }));
+  let milestones = current.milestones.map((item) => ({
+    ...item,
+    bossIds: [...item.bossIds],
+    ...(item.steps ? { steps: item.steps.map((step) => ({ ...step })) } : {}),
+  }));
   let currentBossId = current.currentBossId;
 
-  const removeEverywhere = (contractId: string) => {
-    milestones = milestones.map((item) => ({
-      ...item,
-      bossIds: item.bossIds.filter((id) => id !== contractId),
-    }));
+  const detachEverywhere = (contractId: string) => {
+    let detachedStep: NonNullable<(typeof milestones)[number]["steps"]>[number] | undefined;
+    milestones = milestones.map((item) => {
+      const found = item.steps?.find((step) => step.contractId === contractId);
+      if (found && !detachedStep) detachedStep = found;
+      return {
+        ...item,
+        bossIds: item.bossIds.filter((id) => id !== contractId),
+        ...(item.steps
+          ? { steps: item.steps.filter((step) => step.contractId !== contractId) }
+          : {}),
+      };
+    });
     if (currentBossId === contractId) {
       currentBossId = milestones.flatMap((item) => item.bossIds)[0];
     }
+    return detachedStep;
   };
 
   switch (input.kind) {
     case "DEFER_BOSS": {
       if (input.contractId) {
-        removeEverywhere(input.contractId);
-        milestones.at(-1)?.bossIds.push(input.contractId);
+        const step = detachEverywhere(input.contractId);
+        const last = milestones.at(-1);
+        last?.bossIds.push(input.contractId);
+        if (step && last?.steps) last.steps.push(step);
       }
       break;
     }
     case "REPLACE_BOSS": {
-      if (input.contractId) removeEverywhere(input.contractId);
+      const oldStep = input.contractId ? detachEverywhere(input.contractId) : undefined;
       if (input.replacementContractId && input.milestoneId) {
         const target = milestones.find((item) => item.id === input.milestoneId);
         if (target && !target.bossIds.includes(input.replacementContractId)) {
           target.bossIds.push(input.replacementContractId);
+          if (target.steps) {
+            const replacement = ledger.contracts[input.replacementContractId];
+            target.steps.push({
+              id: oldStep?.id ?? `S-${input.replacementContractId}`,
+              title: replacement?.title ?? oldStep?.title ?? input.nextGoal ?? "新增步骤",
+              objective: replacement?.objective ?? oldStep?.objective ?? input.nextGoal ?? "新增步骤",
+              estimatedMinutes: replacement?.estimatedMinutes ?? oldStep?.estimatedMinutes ?? 90,
+              contractId: input.replacementContractId,
+            });
+          }
           currentBossId = input.replacementContractId;
         }
       }
@@ -266,10 +331,10 @@ export function applyProposalWith(
     }
     case "MOVE_BOSS": {
       if (input.contractId && input.milestoneId) {
-        removeEverywhere(input.contractId);
-        milestones
-          .find((item) => item.id === input.milestoneId)
-          ?.bossIds.push(input.contractId);
+        const step = detachEverywhere(input.contractId);
+        const target = milestones.find((item) => item.id === input.milestoneId);
+        target?.bossIds.push(input.contractId);
+        if (step && target?.steps) target.steps.push(step);
       }
       break;
     }
@@ -280,6 +345,7 @@ export function applyProposalWith(
         id: `M-${at}-${milestones.length + 1}`.replace(/[:.]/g, ""),
         title,
         bossIds: [],
+        ...(milestones.some((item) => item.steps !== undefined) ? { steps: [] } : {}),
       });
       break;
     }
@@ -287,14 +353,41 @@ export function applyProposalWith(
       if (input.milestoneId && milestones.length > 1) {
         const target = milestones.find((item) => item.id === input.milestoneId);
         const orphanIds = target?.bossIds ?? [];
+        const orphanSteps = target?.steps ?? [];
         milestones = milestones.filter((item) => item.id !== input.milestoneId);
         const remaining = milestones.find((item) => item.id !== input.milestoneId) ?? milestones[0];
-        if (remaining) remaining.bossIds.push(...orphanIds);
+        if (remaining) {
+          remaining.bossIds.push(...orphanIds);
+          if (remaining.steps) remaining.steps.push(...orphanSteps);
+        }
       }
       break;
     }
     case "DROP_BOSS": {
-      if (input.contractId) removeEverywhere(input.contractId);
+      if (input.contractId) detachEverywhere(input.contractId);
+      break;
+    }
+    case "ADD_PLANNED_STEP": {
+      if (input.milestoneId && input.title && input.nextGoal && input.estimatedMinutes) {
+        const target = milestones.find((item) => item.id === input.milestoneId);
+        target?.steps?.push({
+          id: input.stepId ?? `S-${at}-${target.steps.length + 1}`.replace(/[:.]/g, ""),
+          title: input.title.trim(),
+          objective: input.nextGoal.trim(),
+          estimatedMinutes: input.estimatedMinutes,
+        });
+      }
+      break;
+    }
+    case "DROP_PLANNED_STEP": {
+      if (input.stepId) {
+        milestones = milestones.map((milestone) => ({
+          ...milestone,
+          ...(milestone.steps
+            ? { steps: milestone.steps.filter((step) => step.id !== input.stepId) }
+            : {}),
+        }));
+      }
       break;
     }
   }

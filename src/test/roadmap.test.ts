@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { AcceptanceCriterion, BossContract } from "../lib/contracts";
+import { AcceptanceCriterion, BossContract, ProjectPlanDraft } from "../lib/contracts";
 import {
   Ledger,
   LedgerStorage,
@@ -26,7 +26,7 @@ import {
   LEGACY_TUTORIAL_RESET_KEY,
   loadLedgerForFirstRun,
 } from "../lib/ledger-store";
-import { deriveRoadmap, nextActionSummary } from "../lib/roadmap";
+import { deriveRoadmap, nextActionSummary, nextPlannedStep } from "../lib/roadmap";
 
 function criterion(overrides: Partial<AcceptanceCriterion> = {}): AcceptanceCriterion {
   return {
@@ -100,6 +100,31 @@ function memoryStorage(initial?: string): LedgerStorage {
     setItem: (key, next) => {
       values.set(key, next);
     },
+  };
+}
+
+function fullPlan(): ProjectPlanDraft {
+  return {
+    schemaVersion: "project-plan.v1",
+    milestones: [
+      {
+        id: "M-1",
+        title: "理解与准备",
+        steps: [
+          { id: "S-1", title: "理解论文", objective: "输出方法笔记", estimatedMinutes: 100 },
+          { id: "S-2", title: "准备数据", objective: "获得数据与环境", estimatedMinutes: 100 },
+        ],
+      },
+      {
+        id: "M-2",
+        title: "实验与总结",
+        steps: [
+          { id: "S-3", title: "跑通实验", objective: "完成训练与评测", estimatedMinutes: 100 },
+          { id: "S-4", title: "整理结论", objective: "完成复现报告", estimatedMinutes: 200 },
+        ],
+      },
+    ],
+    assumptions: ["初始路线可协商"],
   };
 }
 
@@ -210,6 +235,34 @@ describe("deriveRoadmap", () => {
     const ledger = ledgerWith([contract()], { project: project() });
     assert.equal(deriveRoadmap(ledger)?.currentBossId, "boss-1");
   });
+
+  it("counts unexpanded future steps from day one and weights progress by estimated effort", () => {
+    let ledger = withContract(emptyLedger(), contract());
+    ledger = withNewProject(ledger, "复现论文", "boss-1", "2026-09-23T10:00:00.000Z", fullPlan());
+    ledger = withAcceptedContract(ledger, "boss-1", "2026-09-23T10:01:00.000Z");
+    ledger = {
+      ...ledger,
+      evidence: [{
+        id: "EV-PLAN",
+        contractId: "boss-1",
+        contractRevision: 1,
+        criterionId: "AC-1",
+        requirementId: "REQ-1",
+        sourceType: "LOG_INSPECTED",
+        sourceName: "pass.log",
+        summary: "passed",
+        finding: "PASS",
+        reviewStatus: "ACCEPTED",
+        recordedAt: "2026-09-23T10:02:00.000Z",
+      }],
+    };
+    const roadmap = deriveRoadmap(ledger);
+    assert.ok(roadmap);
+    assert.equal(roadmap.bossesDone, 1);
+    assert.equal(roadmap.bossesTotal, 4, "future planned steps are already in the denominator");
+    assert.equal(roadmap.progressPercent, 20, "100 completed minutes out of 500 planned minutes");
+    assert.equal(roadmap.milestones[0].plannedSteps[1].state, "PLANNED");
+  });
 });
 
 describe("roadmap storage", () => {
@@ -282,6 +335,31 @@ describe("roadmap updates", () => {
     assert.equal(ledger.project?.goal, "复现 WACA");
     assert.deepEqual(ledger.project?.milestones[0].bossIds, ["boss-1"]);
     assert.equal(ledger.project?.currentBossId, "boss-1");
+  });
+
+  it("creates the whole outline with only the first step expanded", () => {
+    const ledger = withNewProject(
+      emptyLedger(),
+      "复现论文",
+      "boss-1",
+      "2026-09-23T10:00:00.000Z",
+      fullPlan(),
+    );
+    assert.equal(ledger.project?.milestones.length, 2);
+    assert.equal(ledger.project?.milestones.flatMap((item) => item.steps ?? []).length, 4);
+    assert.equal(ledger.project?.milestones[0].steps?.[0].contractId, "boss-1");
+    assert.equal(ledger.project?.milestones[0].steps?.[1].contractId, undefined);
+    assert.equal(nextPlannedStep(ledger.project!)?.step.id, "S-2");
+  });
+
+  it("expands the next planned slot without increasing the global denominator", () => {
+    let ledger = withContract(emptyLedger(), contract());
+    ledger = withNewProject(ledger, "复现论文", "boss-1", "2026-09-23T10:00:00.000Z", fullPlan());
+    ledger = withContract(ledger, contract({ id: "boss-2", title: "准备数据" }));
+    const updated = withBossInProject(ledger, "boss-2", undefined, "2026-09-23T10:05:00.000Z");
+    assert.equal(updated.project?.milestones[0].steps?.[1].contractId, "boss-2");
+    assert.equal(deriveRoadmap(updated)?.bossesTotal, 4);
+    assert.equal(nextPlannedStep(updated.project!)?.step.id, "S-3");
   });
 
   it("never overwrites an existing project", () => {

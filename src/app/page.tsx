@@ -38,7 +38,7 @@ import {
   subscribeLedger,
   updateLedger,
 } from "@/lib/ledger-store";
-import { deriveRoadmap } from "@/lib/roadmap";
+import { deriveRoadmap, nextPlannedStep } from "@/lib/roadmap";
 import { applyProposalWith } from "@/lib/negotiation";
 import datasetInvestigationFixture from "../../examples/ai/dataset-investigation.json";
 import literatureReadingFixture from "../../examples/ai/literature-reading.json";
@@ -194,6 +194,7 @@ export default function Home() {
   async function requestContract(
     goalText: string,
     projectContext?: ProjectContextInput,
+    includeProjectPlan = false,
   ): Promise<GenerateBossContractResponse> {
     const response = await fetch("/api/contracts/generate", {
       method: "POST",
@@ -202,6 +203,7 @@ export default function Home() {
         schemaVersion: CONTRACT_SCHEMA_VERSION,
         goal: goalText,
         ...(projectContext ? { projectContext } : {}),
+        ...(includeProjectPlan ? { includeProjectPlan: true } : {}),
       }),
     });
     const body = (await response.json()) as GenerateBossContractResponse | ApiErrorResponse;
@@ -225,6 +227,8 @@ export default function Home() {
       seed: Ledger,
       generation: "MOCK" | "AI",
       contextFileNames?: string[],
+      plan?: GenerateBossContractResponse["projectPlan"],
+      targetMilestoneId?: string,
     ) => {
       let registered = withImportedEvidence(seed, next, at);
       registered = withContext(registered, {
@@ -236,9 +240,9 @@ export default function Home() {
       });
       registered = withContract(registered, next);
       if (!registered.project) {
-        registered = withNewProject(registered, goalText, next.id, at);
+        registered = withNewProject(registered, goalText, next.id, at, plan);
       } else {
-        registered = withBossInProject(registered, next.id, undefined, at);
+        registered = withBossInProject(registered, next.id, targetMilestoneId, at);
       }
       return registered;
     },
@@ -262,7 +266,11 @@ export default function Home() {
             content: bundle.content,
           }
         : undefined;
-      const body = await requestContract(goal, projectContext);
+      const creatingProject = !ledger.project;
+      const body = await requestContract(goal, projectContext, creatingProject);
+      if (creatingProject && !body.projectPlan) {
+        throw new Error("整体路线图生成失败，尚未创建项目，请重试。");
+      }
       updateLedger((current) =>
         registerContract(
           body.contract,
@@ -271,6 +279,7 @@ export default function Home() {
           current,
           body.generation,
           projectContext?.fileNames,
+          body.projectPlan,
         ),
       );
       setContextFiles([]);
@@ -342,8 +351,11 @@ export default function Home() {
 
   async function advanceProject() {
     if (!contract || !ledger.project) return;
+    const planned = nextPlannedStep(ledger.project);
     const goalText = clampGoal(
-      `继续推进科研项目“${ledger.project.goal}”。当前阶段“${contract.objective}”已通过验收。请基于已完成内容与原范围外事项，生成下一项不重复、可验证的具体 Boss。`,
+      planned
+        ? `继续推进科研项目“${ledger.project.goal}”。按照已确认路线图，下一步是“${planned.step.title}”：${planned.step.objective}。请将它收敛成一个不重复、可验证的具体 Boss。`
+        : `继续推进科研项目“${ledger.project.goal}”。当前阶段“${contract.objective}”已通过验收。已规划步骤均已展开，请基于新发现生成下一项不重复、可验证的具体 Boss。`,
     );
     const context: ProjectContextInput = {
       sourceName: "当前项目路线与已完成 Boss 摘要",
@@ -358,6 +370,14 @@ export default function Home() {
             inScope: contract.scopeGuard.inScope,
             outOfScope: contract.scopeGuard.outOfScope,
           },
+          nextPlannedStep: planned
+            ? {
+                milestone: planned.milestoneTitle,
+                title: planned.step.title,
+                objective: planned.step.objective,
+                estimatedMinutes: planned.step.estimatedMinutes,
+              }
+            : null,
         },
         null,
         2,
@@ -369,7 +389,16 @@ export default function Home() {
     try {
       const body = await requestContract(goalText, context);
       updateLedger((current) =>
-        registerContract(body.contract, new Date().toISOString(), goalText, current, body.generation),
+        registerContract(
+          body.contract,
+          new Date().toISOString(),
+          goalText,
+          current,
+          body.generation,
+          undefined,
+          undefined,
+          planned?.milestoneId,
+        ),
       );
       setGoal(goalText);
       setView("boss");

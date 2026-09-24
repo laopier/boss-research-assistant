@@ -88,6 +88,8 @@ export interface GenerateBossContractRequest {
   goal: string;
   /** User-selected local text used only while generating this contract. */
   projectContext?: ProjectContextInput;
+  /** First Boss only: ask the server to outline the whole project as well. */
+  includeProjectPlan?: boolean;
 }
 
 export interface ProjectContextInput {
@@ -96,9 +98,34 @@ export interface ProjectContextInput {
   content: string;
 }
 
+export const PROJECT_PLAN_SCHEMA_VERSION = "project-plan.v1" as const;
+
+/** A future Boss-sized unit. Only the current unit has a contract initially. */
+export interface PlannedStepDraft {
+  id: string;
+  title: string;
+  objective: string;
+  estimatedMinutes: number;
+}
+
+export interface PlannedMilestoneDraft {
+  id: string;
+  title: string;
+  steps: PlannedStepDraft[];
+}
+
+/** Coarse, revisable project outline generated together with the first Boss. */
+export interface ProjectPlanDraft {
+  schemaVersion: typeof PROJECT_PLAN_SCHEMA_VERSION;
+  milestones: PlannedMilestoneDraft[];
+  assumptions: string[];
+}
+
 export interface GenerateBossContractResponse {
   contract: BossContract;
   generation: "MOCK" | "AI";
+  /** Present only when the first-Boss request asked for a global outline. */
+  projectPlan?: ProjectPlanDraft;
 }
 
 export interface ApiErrorResponse {

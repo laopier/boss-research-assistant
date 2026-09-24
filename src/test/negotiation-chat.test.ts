@@ -20,7 +20,19 @@ const context: NegotiationChatContext = {
       title: "读懂论文",
       bosses: [{ id: "boss-1", objective: "整理论文方法" }],
     },
-    { id: "M-2", title: "完成实验", bosses: [] },
+    {
+      id: "M-2",
+      title: "完成实验",
+      bosses: [],
+      plannedSteps: [
+        {
+          id: "S-next",
+          title: "最小实验",
+          objective: "跑通最小训练链路",
+          estimatedMinutes: 180,
+        },
+      ],
+    },
   ],
 };
 
@@ -62,6 +74,7 @@ describe("negotiation chat validation", () => {
           milestoneId: "M-2",
           title: undefined,
           nextGoal: undefined,
+          stepId: undefined,
         },
       },
     );
@@ -105,6 +118,7 @@ describe("negotiation chat validation", () => {
         milestoneId: "M-2",
         title: undefined,
         nextGoal: replacement.proposalInput.nextGoal,
+        stepId: undefined,
       },
     });
     assert.equal(
@@ -129,6 +143,46 @@ describe("negotiation chat validation", () => {
     assert.match(prompt, /REPLACE_BOSS/);
     assert.match(prompt, /do not ask again/);
     assert.match(prompt, /取消一个重复/);
+  });
+
+  it("validates adding and removing future steps against the visible global outline", () => {
+    const added = parseNegotiationModelReply(
+      {
+        reply: "我整理了一份新增步骤提案。",
+        state: "PROPOSAL",
+        proposalInput: {
+          kind: "ADD_PLANNED_STEP",
+          milestoneId: "M-2",
+          title: "多随机种子验证",
+          nextGoal: "用三个随机种子重复主要实验",
+          estimatedMinutes: 240,
+        },
+      },
+      context,
+    );
+    assert.equal(added?.proposalInput?.kind, "ADD_PLANNED_STEP");
+    assert.equal(added?.proposalInput?.estimatedMinutes, 240);
+
+    const dropped = parseNegotiationModelReply(
+      {
+        reply: "我整理了一份移除未来步骤的提案。",
+        state: "PROPOSAL",
+        proposalInput: { kind: "DROP_PLANNED_STEP", stepId: "S-next" },
+      },
+      context,
+    );
+    assert.equal(dropped?.proposalInput?.stepId, "S-next");
+    assert.equal(
+      parseNegotiationModelReply(
+        {
+          reply: "移除。",
+          state: "PROPOSAL",
+          proposalInput: { kind: "DROP_PLANNED_STEP", stepId: "invented" },
+        },
+        context,
+      ),
+      null,
+    );
   });
 });
 

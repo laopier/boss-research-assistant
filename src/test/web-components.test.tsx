@@ -780,12 +780,12 @@ describe("Workbench", () => {
   it("shows the project goal, the global progress and the composition", () => {
     const html = renderWorkbench();
     assert.match(html, /复现 WACA 论文/);
-    assert.match(html, /当前已规划进度/);
+    assert.match(html, /项目整体进度/);
     assert.match(html, /50%/);
-    assert.match(html, /1\/2 个已规划 Boss/);
+    assert.match(html, /1\/2 个规划步骤/);
     assert.match(
       html,
-      /由各里程碑下的 Boss 按必需验收项状态推导/,
+      /分母来自项目创建时生成的完整路线图/,
       "the number must be explainable, not an opaque average",
     );
   });
@@ -808,6 +808,46 @@ describe("Workbench", () => {
 
   it("offers the new-Boss flow", () => {
     assert.match(renderWorkbench(), /新建 Boss/);
+  });
+
+  it("shows future planned steps before their detailed Boss contracts exist", () => {
+    const ledger = workbenchLedger();
+    const plannedLedger = {
+      ...ledger,
+      project: {
+        ...ledger.project!,
+        milestones: [
+          {
+            ...ledger.project!.milestones[0],
+            steps: [
+              {
+                id: "S-future",
+                title: "跑通最小可运行示例",
+                objective: "完成数据加载、前向传播和一次训练迭代",
+                estimatedMinutes: 180,
+              },
+            ],
+          },
+          ledger.project!.milestones[1],
+        ],
+      },
+    };
+    const roadmap = deriveRoadmap(plannedLedger);
+    assert.ok(roadmap && plannedLedger.project);
+    const html = renderToStaticMarkup(
+      <Workbench
+        project={plannedLedger.project}
+        roadmap={roadmap}
+        ledger={plannedLedger}
+        onOpenBoss={() => {}}
+        onNewBoss={() => {}}
+        onStartOver={() => {}}
+        onApplyProposal={() => {}}
+      />,
+    );
+    assert.match(html, /跑通最小可运行示例/);
+    assert.match(html, /计划中/);
+    assert.match(html, /预计 180 分钟/);
   });
 
   it("does not show one Boss as complete because another Boss has matching evidence ids", () => {

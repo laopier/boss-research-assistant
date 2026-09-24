@@ -69,7 +69,7 @@ export function Workbench({
           <p className="eyebrow">科研项目 · 计划版本 Revision {roadmap.revision}</p>
           <h2>{roadmap.goal}</h2>
           <p className="muted">
-            已通过 {roadmap.bossesDone}/{roadmap.bossesTotal} 个已规划 Boss；当前打开的 Boss 始终标有「当前」。
+            已完成 {roadmap.bossesDone}/{roadmap.bossesTotal} 个规划步骤；当前只展开正在执行的 Boss，后续步骤会按路线逐步生成。
           </p>
         </div>
         <span className="actions">
@@ -103,7 +103,7 @@ export function Workbench({
 
       <div className="workbench-progress">
         <div className="progress-bar-head">
-          <strong>当前已规划进度</strong>
+          <strong>项目整体进度</strong>
           <span>{roadmap.progressPercent}%</span>
         </div>
         <div className="progress-track">
@@ -113,8 +113,16 @@ export function Workbench({
           />
         </div>
         <p className="field-hint">
-          由各里程碑下的 Boss 按必需验收项状态推导；只统计当前已经生成的阶段，不代表整个科研目标已经结束。当前阶段全部通过后，可以继续生成下一阶段。
+          分母来自项目创建时生成的完整路线图，并按各步骤预计投入加权；未来步骤即使尚未生成详细合同，也会计入整体进度。协商修改路线后，分母与版本会同步更新。
         </p>
+        {project.planningAssumptions && project.planningAssumptions.length > 0 && (
+          <details className="plan-assumptions">
+            <summary>查看初始规划假设</summary>
+            <ul>
+              {project.planningAssumptions.map((item) => <li key={item}>{item}</li>)}
+            </ul>
+          </details>
+        )}
       </div>
 
       {roadmap.milestones.map((milestone) => (
@@ -175,7 +183,7 @@ function MilestoneCard({
           {milestoneStateText[milestone.state]}
         </span>
         <span className="muted">
-          {milestone.bossesDone}/{milestone.bossesTotal} Boss · {percent(milestone.progress)}
+          {milestone.bossesDone}/{milestone.bossesTotal} 步 · {percent(milestone.progress)}
         </span>
       </div>
       <div className="progress-track">
@@ -228,6 +236,18 @@ function MilestoneCard({
             </article>
           );
         })}
+        {milestone.plannedSteps
+          .filter((step) => !step.contractId)
+          .map((step) => (
+            <article className="boss-card boss-card-planned" key={step.id}>
+              <div className="boss-card-head">
+                <span className="status status-unknown">计划中</span>
+              </div>
+              <p className="boss-card-objective">{step.title}</p>
+              <p className="muted">{step.objective}</p>
+              <p className="field-hint">预计 {step.estimatedMinutes} 分钟 · 完成前序步骤后生成详细 Boss</p>
+            </article>
+          ))}
       </div>
     </article>
   );

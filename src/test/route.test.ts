@@ -177,5 +177,27 @@ describe("POST /api/contracts/generate", () => {
       });
       assert.equal(response.status, 200);
     });
+
+    it("generates a complete project outline only when the first Boss asks for it", async () => {
+      const response = await postJson({
+        schemaVersion: "boss-contract.v0",
+        goal: "我想复现一篇论文",
+        includeProjectPlan: true,
+      });
+      assert.equal(response.status, 200);
+      const body = (await response.json()) as {
+        projectPlan?: { schemaVersion: string; milestones: Array<{ steps: unknown[] }> };
+      };
+      assert.equal(body.projectPlan?.schemaVersion, "project-plan.v1");
+      assert.ok((body.projectPlan?.milestones.length ?? 0) >= 2);
+      assert.ok((body.projectPlan?.milestones.flatMap((item) => item.steps).length ?? 0) >= 4);
+
+      const ordinary = await postJson({
+        schemaVersion: "boss-contract.v0",
+        goal: "生成后续 Boss",
+      });
+      const ordinaryBody = (await ordinary.json()) as { projectPlan?: unknown };
+      assert.equal(ordinaryBody.projectPlan, undefined);
+    });
   });
 });

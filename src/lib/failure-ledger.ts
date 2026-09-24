@@ -4,6 +4,7 @@ import {
   BossStatus,
   CriterionStatus,
   EvidenceSourceType,
+  ProjectPlanDraft,
 } from "./contracts";
 import type { ReviewDecision, ReviewFinding, SuggestedEvidence } from "./evidence-review/types";
 
@@ -194,11 +195,22 @@ export interface Ledger {
   project?: ResearchProject;
 }
 
-/** One milestone of the research roadmap (#18): a titled group of Bosses. */
+/** One planned Boss-sized unit. `contractId` appears only when it is expanded. */
+export interface RoadmapStep {
+  id: string;
+  title: string;
+  objective: string;
+  estimatedMinutes: number;
+  contractId?: string;
+}
+
+/** One milestone of the research roadmap (#18): planned steps plus generated Bosses. */
 export interface RoadmapMilestone {
   id: string;
   title: string;
   bossIds: string[];
+  /** Missing on legacy projects created before global planning existed. */
+  steps?: RoadmapStep[];
 }
 
 /**
@@ -229,6 +241,8 @@ export interface PlanRevision {
 export interface ResearchProject {
   goal: string;
   milestones: RoadmapMilestone[];
+  /** Why the initial AI outline may need revision; visible, never treated as fact. */
+  planningAssumptions?: string[];
   /** The Boss the workbench currently has open. */
   currentBossId?: string;
   revision: number;
@@ -406,7 +420,19 @@ function isRoadmapMilestone(value: unknown): value is RoadmapMilestone {
     typeof value.id === "string" &&
     typeof value.title === "string" &&
     Array.isArray(value.bossIds) &&
-    value.bossIds.every((item: unknown) => typeof item === "string")
+    value.bossIds.every((item: unknown) => typeof item === "string") &&
+    (value.steps === undefined ||
+      (Array.isArray(value.steps) &&
+        value.steps.every(
+          (step: unknown) =>
+            isRecord(step) &&
+            typeof step.id === "string" &&
+            typeof step.title === "string" &&
+            typeof step.objective === "string" &&
+            typeof step.estimatedMinutes === "number" &&
+            Number.isInteger(step.estimatedMinutes) &&
+            (step.contractId === undefined || typeof step.contractId === "string"),
+        )))
   );
 }
 
@@ -434,6 +460,9 @@ function isResearchProject(value: unknown): value is ResearchProject {
     typeof value.goal === "string" &&
     Array.isArray(value.milestones) &&
     value.milestones.every(isRoadmapMilestone) &&
+    (value.planningAssumptions === undefined ||
+      (Array.isArray(value.planningAssumptions) &&
+        value.planningAssumptions.every((item: unknown) => typeof item === "string"))) &&
     (value.currentBossId === undefined || typeof value.currentBossId === "string") &&
     typeof value.revision === "number" &&
     typeof value.updatedAt === "string" &&
@@ -679,13 +708,31 @@ export function withContract(ledger: Ledger, contract: BossContract): Ledger {
  * put a freshly generated Boss; negotiation (#18) is what will grow it into
  * multiple milestones.
  */
-export function withNewProject(ledger: Ledger, goal: string, contractId: string, at: string): Ledger {
+export function withNewProject(
+  ledger: Ledger,
+  goal: string,
+  contractId: string,
+  at: string,
+  plan?: ProjectPlanDraft,
+): Ledger {
   if (ledger.project) return ledger;
+  const milestones: RoadmapMilestone[] = plan
+    ? plan.milestones.map((milestone, milestoneIndex) => ({
+        id: milestone.id,
+        title: milestone.title,
+        bossIds: milestoneIndex === 0 ? [contractId] : [],
+        steps: milestone.steps.map((step, stepIndex) => ({
+          ...step,
+          ...(milestoneIndex === 0 && stepIndex === 0 ? { contractId } : {}),
+        })),
+      }))
+    : [{ id: "M-1", title: "第一阶段", bossIds: [contractId] }];
   return {
     ...ledger,
     project: {
       goal: goal.trim() || contractId,
-      milestones: [{ id: "M-1", title: "第一阶段", bossIds: [contractId] }],
+      milestones,
+      ...(plan?.assumptions.length ? { planningAssumptions: [...plan.assumptions] } : {}),
       currentBossId: contractId,
       revision: 1,
       updatedAt: at,
@@ -708,6 +755,92 @@ export function withBossInProject(
   if (!project) return ledger;
   if (project.milestones.some((milestone) => milestone.bossIds.includes(contractId))) {
     return ledger;
+  }
+
+  const hasPlannedSteps = project.milestones.some((milestone) => milestone.steps !== undefined);
+  if (hasPlannedSteps) {
+    const targetMilestone =
+      project.milestones.find(
+        (milestone) =>
+          milestone.id === milestoneId && milestone.steps?.some((step) => !step.contractId),
+      ) ??
+      project.milestones.find((milestone) => milestone.steps?.some((step) => !step.contractId));
+    if (targetMilestone) {
+      return {
+        ...ledger,
+        project: {
+          ...project,
+          revision: project.revision + 1,
+          updatedAt: at,
+          currentBossId: contractId,
+          milestones: project.milestones.map((milestone) => {
+            if (milestone.id !== targetMilestone.id) return milestone;
+            let filled = false;
+            return {
+              ...milestone,
+              bossIds: [...milestone.bossIds, contractId],
+              steps: milestone.steps?.map((step) => {
+                if (filled || step.contractId) return step;
+                filled = true;
+                return { ...step, contractId };
+              }),
+            };
+          }),
+        },
+      };
+    }
+    const contract = ledger.contracts[contractId];
+    const fallbackTarget =
+      project.milestones.find((milestone) => milestone.id === milestoneId) ??
+      project.milestones.find((milestone) =>
+        milestone.bossIds.some((id) => !isBossClear(ledger, id)),
+      );
+    const newStep: RoadmapStep = {
+      id: `S-${contractId}`,
+      title: contract?.title ?? contractId,
+      objective: contract?.objective ?? contractId,
+      estimatedMinutes: contract?.estimatedMinutes ?? 90,
+      contractId,
+    };
+    if (fallbackTarget) {
+      return {
+        ...ledger,
+        project: {
+          ...project,
+          revision: project.revision + 1,
+          updatedAt: at,
+          currentBossId: contractId,
+          milestones: project.milestones.map((milestone) =>
+            milestone.id === fallbackTarget.id
+              ? {
+                  ...milestone,
+                  bossIds: [...milestone.bossIds, contractId],
+                  steps: [...(milestone.steps ?? []), newStep],
+                }
+              : milestone,
+          ),
+        },
+      };
+    }
+    const nextNumber = project.milestones.length + 1;
+    return {
+      ...ledger,
+      project: {
+        ...project,
+        revision: project.revision + 1,
+        updatedAt: at,
+        currentBossId: contractId,
+        milestones: [
+          ...project.milestones,
+          {
+            id: `M-${nextNumber}`,
+            title: `第${nextNumber}阶段（协商新增）`,
+            bossIds: [contractId],
+            steps: [newStep],
+          },
+        ],
+      },
+    };
   }
 
   const target =

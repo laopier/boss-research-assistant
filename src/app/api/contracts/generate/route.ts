@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { CONTRACT_SCHEMA_VERSION, GenerateBossContractRequest } from "@/lib/contracts";
 import { getGenerator } from "@/lib/goal-discovery/factory";
 import { GenerationError } from "@/lib/goal-discovery/generator";
+import { generateProjectPlan } from "@/lib/project-plan";
 import {
   PROJECT_CONTEXT_MAX_FILES,
   PROJECT_CONTEXT_MAX_LENGTH,
@@ -51,6 +52,9 @@ export async function POST(request: Request) {
   if (body.schemaVersion !== CONTRACT_SCHEMA_VERSION || !goal || goal.length > 500) {
     return invalidRequest(INVALID_GOAL_MESSAGE);
   }
+  if (body.includeProjectPlan !== undefined && typeof body.includeProjectPlan !== "boolean") {
+    return invalidRequest("includeProjectPlan 必须是布尔值。");
+  }
 
   const context = body.projectContext;
   if (
@@ -74,10 +78,14 @@ export async function POST(request: Request) {
   try {
     const generator = getGenerator();
     const contract = await generator.generate(goal, { projectContext: context });
+    const projectPlan = body.includeProjectPlan
+      ? await generateProjectPlan(goal, contract)
+      : undefined;
 
     return NextResponse.json({
       contract,
       generation: (process.env.BOSS_GENERATOR ?? "mock").trim().toLowerCase() === "llm" ? "AI" : "MOCK",
+      ...(projectPlan ? { projectPlan } : {}),
     });
   } catch (error) {
     if (error instanceof GenerationError && error.code === "INPUT_REJECTED") {

@@ -17,6 +17,13 @@ export interface NegotiationChatContext {
     id: string;
     title: string;
     bosses: Array<{ id: string; objective: string }>;
+    plannedSteps?: Array<{
+      id: string;
+      title: string;
+      objective: string;
+      estimatedMinutes: number;
+      contractId?: string;
+    }>;
   }>;
 }
 
@@ -41,6 +48,8 @@ const NEGOTIATION_KINDS = new Set<NegotiationKind>([
   "REMOVE_MILESTONE",
   "DROP_BOSS",
   "REPLACE_BOSS",
+  "ADD_PLANNED_STEP",
+  "DROP_PLANNED_STEP",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -89,7 +98,37 @@ export function parseNegotiationRequest(value: unknown): NegotiationChatRequest 
       if (!bossId || !objective) return null;
       bosses.push({ id: bossId, objective });
     }
-    milestones.push({ id, title, bosses });
+    let plannedSteps: NegotiationChatContext["milestones"][number]["plannedSteps"];
+    if (milestone.plannedSteps !== undefined) {
+      if (!Array.isArray(milestone.plannedSteps) || milestone.plannedSteps.length > 20) return null;
+      plannedSteps = [];
+      for (const step of milestone.plannedSteps) {
+        if (!isRecord(step)) return null;
+        const stepId = cleanText(step.id, 120);
+        const stepTitle = cleanText(step.title, 140);
+        const objective = cleanText(step.objective, 500);
+        if (
+          !stepId ||
+          !stepTitle ||
+          !objective ||
+          typeof step.estimatedMinutes !== "number" ||
+          !Number.isInteger(step.estimatedMinutes) ||
+          step.estimatedMinutes < 15 ||
+          step.estimatedMinutes > 480 ||
+          (step.contractId !== undefined && !cleanText(step.contractId, 120))
+        ) {
+          return null;
+        }
+        plannedSteps.push({
+          id: stepId,
+          title: stepTitle,
+          objective,
+          estimatedMinutes: step.estimatedMinutes,
+          ...(step.contractId ? { contractId: String(step.contractId).trim() } : {}),
+        });
+      }
+    }
+    milestones.push({ id, title, bosses, ...(plannedSteps ? { plannedSteps } : {}) });
   }
   const currentBossId =
     value.context.currentBossId === undefined
@@ -118,11 +157,18 @@ export function parseNegotiationModelReply(
 
   const knownBosses = new Set(context.milestones.flatMap((item) => item.bosses.map((boss) => boss.id)));
   const knownMilestones = new Set(context.milestones.map((item) => item.id));
+  const knownFutureSteps = new Set(
+    context.milestones.flatMap((item) =>
+      (item.plannedSteps ?? []).filter((step) => !step.contractId).map((step) => step.id),
+    ),
+  );
   const kind = value.proposalInput.kind as NegotiationKind;
   const contractId = cleanText(value.proposalInput.contractId, 120) ?? undefined;
   const milestoneId = cleanText(value.proposalInput.milestoneId, 120) ?? undefined;
   const title = cleanText(value.proposalInput.title, 40) ?? undefined;
   const nextGoal = cleanText(value.proposalInput.nextGoal, 500) ?? undefined;
+  const stepId = cleanText(value.proposalInput.stepId, 120) ?? undefined;
+  const estimatedMinutes = value.proposalInput.estimatedMinutes;
 
   if ((kind === "DEFER_BOSS" || kind === "DROP_BOSS") && (!contractId || !knownBosses.has(contractId))) {
     return null;
@@ -147,11 +193,33 @@ export function parseNegotiationModelReply(
   ) {
     return null;
   }
+  if (
+    kind === "ADD_PLANNED_STEP" &&
+    (!milestoneId ||
+      !knownMilestones.has(milestoneId) ||
+      !title ||
+      !nextGoal ||
+      typeof estimatedMinutes !== "number" ||
+      !Number.isInteger(estimatedMinutes) ||
+      estimatedMinutes < 15 ||
+      estimatedMinutes > 480)
+  ) {
+    return null;
+  }
+  if (kind === "DROP_PLANNED_STEP" && (!stepId || !knownFutureSteps.has(stepId))) return null;
 
   return {
     reply,
     state: "PROPOSAL",
-    proposalInput: { kind, contractId, milestoneId, title, nextGoal },
+    proposalInput: {
+      kind,
+      contractId,
+      milestoneId,
+      title,
+      nextGoal,
+      stepId,
+      ...(typeof estimatedMinutes === "number" ? { estimatedMinutes } : {}),
+    },
   };
 }
 
@@ -168,13 +236,17 @@ export function buildNegotiationPrompt(request: NegotiationChatRequest): string 
       DROP_BOSS: "Pause a Boss by removing it from the roadmap while preserving its contract and evidence.",
       REPLACE_BOSS:
         "Pause one existing duplicate Boss, generate one bounded next-step Boss from nextGoal, and place it in one existing milestone. Use this for requests such as 'cancel one duplicate and add the minimal runnable example'.",
+      ADD_PLANNED_STEP:
+        "Add one not-yet-expanded future step to an existing milestone. Provide milestoneId, title, nextGoal, and estimatedMinutes (15..480).",
+      DROP_PLANNED_STEP:
+        "Remove one future step that has no contract yet. Provide its existing stepId.",
     },
     instruction:
       "Reply in the user's language. The user may discuss any desired adjustment; do not force them to choose from a menu. Resolve short confirmations from the immediately preceding assistant question and the full conversation; do not ask again after the user has selected one of your stated options. Ask one concise clarifying question only when intent, target, or tradeoff is genuinely unclear. If the desired change is outside the executable set, discuss it honestly and help reformulate it as a safe next step instead of pretending it was applied. When one supported change is unambiguous, return state PROPOSAL with proposalInput. For REPLACE_BOSS, contractId is the existing Boss to pause, milestoneId is where the generated replacement belongs, and nextGoal is a concrete bounded instruction for generating that new Boss; never invent a replacement id. Otherwise return DISCUSSING without proposalInput. Return one JSON object only.",
     outputShape: {
       reply: "string",
       state: "DISCUSSING or PROPOSAL",
-      proposalInput: "omit while DISCUSSING; otherwise {kind, contractId?, milestoneId?, title?, nextGoal?}",
+      proposalInput: "omit while DISCUSSING; otherwise {kind, contractId?, milestoneId?, title?, nextGoal?, stepId?, estimatedMinutes?}",
     },
   });
 }

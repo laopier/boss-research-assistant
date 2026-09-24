@@ -26,6 +26,16 @@ export interface MilestoneDerivation {
   bossesDone: number;
   bossesTotal: number;
   bossIds: string[];
+  plannedSteps: Array<{
+    id: string;
+    title: string;
+    objective: string;
+    estimatedMinutes: number;
+    contractId?: string;
+    state: "DONE" | "ACTIVE" | "PLANNED";
+  }>;
+  /** Sum of the planned effort used in the global weighted calculation. */
+  weightMinutes: number;
 }
 
 export interface RoadmapDerivation {
@@ -46,21 +56,40 @@ export function deriveRoadmap(ledger: Ledger): RoadmapDerivation | null {
   if (!project) return null;
 
   const milestones: MilestoneDerivation[] = project.milestones.map((milestone) => {
-    const bossesDone = milestone.bossIds.filter((id) => isBossCleared(ledger, id)).length;
-    const progress =
-      milestone.bossIds.length === 0
-        ? 0
-        : milestone.bossIds.reduce(
-            (sum, id) => sum + bossScore(ledger, id),
-            0,
-          ) / milestone.bossIds.length;
+    const plannedSteps = milestone.steps?.map((step) => {
+      const score = step.contractId ? bossScore(ledger, step.contractId) : 0;
+      return {
+        ...step,
+        state: (score >= 1 ? "DONE" : step.contractId ? "ACTIVE" : "PLANNED") as
+          | "DONE"
+          | "ACTIVE"
+          | "PLANNED",
+      };
+    }) ?? milestone.bossIds.map((contractId) => ({
+      id: contractId,
+      title: ledger.contracts[contractId]?.title ?? contractId,
+      objective: ledger.contracts[contractId]?.objective ?? contractId,
+      estimatedMinutes: 1,
+      contractId,
+      state: (isBossCleared(ledger, contractId) ? "DONE" : "ACTIVE") as "DONE" | "ACTIVE",
+    }));
+    const bossesDone = plannedSteps.filter((step) => step.state === "DONE").length;
+    const weightMinutes = plannedSteps.reduce((sum, step) => sum + step.estimatedMinutes, 0);
+    const progress = weightMinutes === 0
+      ? 0
+      : plannedSteps.reduce(
+          (sum, step) => sum + (step.contractId ? bossScore(ledger, step.contractId) : 0) * step.estimatedMinutes,
+          0,
+        ) / weightMinutes;
     return {
       id: milestone.id,
       title: milestone.title,
       bossesDone,
-      bossesTotal: milestone.bossIds.length,
+      bossesTotal: plannedSteps.length,
       progress,
       bossIds: milestone.bossIds,
+      plannedSteps,
+      weightMinutes,
       state: "PENDING",
     };
   });
@@ -81,15 +110,16 @@ export function deriveRoadmap(ledger: Ledger): RoadmapDerivation | null {
 
   const bossesTotal = milestones.reduce((sum, item) => sum + item.bossesTotal, 0);
   const bossesDone = milestones.reduce((sum, item) => sum + item.bossesDone, 0);
+  const totalWeight = milestones.reduce((sum, item) => sum + item.weightMinutes, 0);
   const progressPercent =
-    bossesTotal === 0
+    totalWeight === 0
       ? 0
       : Math.round(
           (milestones.reduce(
-            (sum, item) => sum + item.progress * item.bossesTotal,
+            (sum, item) => sum + item.progress * item.weightMinutes,
             0,
           ) /
-            bossesTotal) *
+            totalWeight) *
             100,
         );
 
@@ -103,6 +133,15 @@ export function deriveRoadmap(ledger: Ledger): RoadmapDerivation | null {
     activeMilestoneId: milestones.find((item) => item.state === "ACTIVE")?.id,
     currentBossId: project.currentBossId,
   };
+}
+
+/** The next outlined step that has not yet been expanded into a Boss contract. */
+export function nextPlannedStep(project: ResearchProject) {
+  for (const milestone of project.milestones) {
+    const step = milestone.steps?.find((item) => !item.contractId);
+    if (step) return { milestoneId: milestone.id, milestoneTitle: milestone.title, step };
+  }
+  return undefined;
 }
 
 function isBossCleared(ledger: Ledger, contractId: string): boolean {
