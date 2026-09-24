@@ -102,6 +102,26 @@ describe("POST /api/contracts/generate", () => {
       const body = (await response.json()) as { error: { code: string } };
       assert.notEqual(body.error.code, "INTERNAL_ERROR");
     });
+
+    it("rejects malformed or oversized local project context", async () => {
+      const malformed = await postJson({
+        schemaVersion: "boss-contract.v0",
+        goal: "continue",
+        projectContext: { sourceName: "repo", fileNames: [], content: "x" },
+      });
+      assert.equal(malformed.status, 400);
+
+      const oversized = await postJson({
+        schemaVersion: "boss-contract.v0",
+        goal: "continue",
+        projectContext: {
+          sourceName: "repo",
+          fileNames: ["README.md"],
+          content: "x".repeat(24_001),
+        },
+      });
+      assert.equal(oversized.status, 400);
+    });
   });
 
   describe("a valid goal is accepted", () => {
@@ -141,6 +161,19 @@ describe("POST /api/contracts/generate", () => {
       const response = await postJson({
         schemaVersion: "boss-contract.v0",
         goal: "x".repeat(500),
+      });
+      assert.equal(response.status, 200);
+    });
+
+    it("accepts bounded, explicitly selected local context", async () => {
+      const response = await postJson({
+        schemaVersion: "boss-contract.v0",
+        goal: "根据已有笔记生成下一步",
+        projectContext: {
+          sourceName: "本地项目",
+          fileNames: ["README.md"],
+          content: "--- file: README.md ---\n已完成数据审计。",
+        },
       });
       assert.equal(response.status, 200);
     });

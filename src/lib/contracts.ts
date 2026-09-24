@@ -86,6 +86,14 @@ export interface BossContract {
 export interface GenerateBossContractRequest {
   schemaVersion: typeof CONTRACT_SCHEMA_VERSION;
   goal: string;
+  /** User-selected local text used only while generating this contract. */
+  projectContext?: ProjectContextInput;
+}
+
+export interface ProjectContextInput {
+  sourceName: string;
+  fileNames: string[];
+  content: string;
 }
 
 export interface GenerateBossContractResponse {

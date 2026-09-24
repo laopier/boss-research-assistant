@@ -93,6 +93,8 @@ export interface BossContext {
    * Boss after a refresh. Absent on contexts written before this existed.
    */
   generation?: "MOCK" | "AI";
+  /** Names only: selected file contents are intentionally never persisted. */
+  contextFileNames?: string[];
 }
 
 /** Where a Boss came from, when it was incubated out of a recorded failure. */
@@ -301,7 +303,10 @@ function isBossContext(value: unknown): value is BossContext {
     typeof value.contractId === "string" &&
     typeof value.objective === "string" &&
     typeof value.rawGoal === "string" &&
-    (value.generation === undefined || value.generation === "MOCK" || value.generation === "AI")
+    (value.generation === undefined || value.generation === "MOCK" || value.generation === "AI") &&
+    (value.contextFileNames === undefined ||
+      (Array.isArray(value.contextFileNames) &&
+        value.contextFileNames.every((name) => typeof name === "string")))
   );
 }
 
@@ -690,8 +695,8 @@ export function withNewProject(ledger: Ledger, goal: string, contractId: string,
 
 /**
  * Adds a Boss to the roadmap. Without a target milestone it joins the first
- * non-completed one (a new Boss is work that is about to start, so it belongs
- * where work is still open), falling back to the last milestone.
+ * non-completed one. When every known milestone is already done, a new stage
+ * is created instead of reopening the completed stage.
  */
 export function withBossInProject(
   ledger: Ledger,
@@ -711,9 +716,24 @@ export function withBossInProject(
       (milestone) =>
         milestone.bossIds.length === 0 ||
         milestone.bossIds.some((id) => !isBossClear(ledger, id)),
-    ) ??
-    project.milestones.at(-1);
-  if (!target) return ledger;
+    );
+
+  if (!target) {
+    const nextNumber = project.milestones.length + 1;
+    return {
+      ...ledger,
+      project: {
+        ...project,
+        revision: project.revision + 1,
+        updatedAt: at,
+        currentBossId: contractId,
+        milestones: [
+          ...project.milestones,
+          { id: `M-${nextNumber}`, title: `第${nextNumber}阶段`, bossIds: [contractId] },
+        ],
+      },
+    };
+  }
 
   return {
     ...ledger,

@@ -164,7 +164,7 @@ describe("deriveProgress", () => {
   it("reports completion when all required criteria pass", () => {
     const result = deriveProgress(contract(), ledger([evidence()]), true);
     assert.equal(result.requiredPassed, 1);
-    assert.equal(result.nextAction.kind, "COMPLETE_BOSS");
+    assert.equal(result.nextAction.kind, "ADVANCE_PROJECT");
   });
 
   it("prefers incubation when an accepted failure is unresolved", () => {
@@ -183,7 +183,7 @@ describe("deriveProgress", () => {
     ];
     const result = deriveProgress(optionalFailure, ledger(records), true);
     assert.equal(result.requiredPassed, 1);
-    assert.equal(result.nextAction.kind, "COMPLETE_BOSS", "optional FAIL must not block CLEAR");
+    assert.equal(result.nextAction.kind, "ADVANCE_PROJECT", "optional FAIL must not block CLEAR");
     assert.equal(result.unresolvedFailures, 1);
   });
 
@@ -219,7 +219,7 @@ describe("deriveProgress", () => {
     const result = deriveProgress(blocked, ledger([]), true);
     assert.deepEqual(result.blockers, ["BL-1"]);
     assert.equal(result.nextAction.kind, "RESOLVE_BLOCKER");
-    assert.notEqual(result.nextAction.kind, "COMPLETE_BOSS");
+    assert.notEqual(result.nextAction.kind, "ADVANCE_PROJECT");
   });
 
   it("prioritizes a missing required criterion over an earlier optional one", () => {

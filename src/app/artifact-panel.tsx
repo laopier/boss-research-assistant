@@ -16,6 +16,8 @@ export interface ArtifactPanelProps {
   /** Called with the files the user finally selected, already read into text. */
   onUse: (files: ReadArtifact[]) => void;
   onCancel: () => void;
+  /** Evidence sends files to review; context sends them to Boss generation. */
+  purpose?: "evidence" | "context";
 }
 
 function formatBytes(bytes: number): string {
@@ -31,7 +33,8 @@ function formatBytes(bytes: number): string {
  * read before the user chooses, nothing is persisted here, and the caller is
  * responsible for what happens to the text next.
  */
-export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
+export function ArtifactPanel({ onUse, onCancel, purpose = "evidence" }: ArtifactPanelProps) {
+  const forContext = purpose === "context";
   const [status, setStatus] = useState<"idle" | "picking" | "scanning" | "ready" | "reading">(
     "idle",
   );
@@ -59,7 +62,7 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
     setSelected(new Set());
     setStatus("ready");
     if (scan.items.length === 0) {
-      setMessage("这个目录里没有可送审的文本文件（或全部被排除）。");
+      setMessage(`这个目录里没有可${forContext ? "用作上下文" : "送审"}的文本文件（或全部被排除）。`);
     }
   }
 
@@ -83,7 +86,7 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
       if (read.length === 0) {
         setStatus("ready");
         setReading(null);
-        setMessage("没有读取到可送审的文本内容，请重新选择文件。");
+        setMessage(`没有读取到可${forContext ? "用作上下文" : "送审"}的文本内容，请重新选择文件。`);
         return;
       }
       onUse(read);
@@ -97,14 +100,16 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
   return (
     <div className="artifact-panel">
       <div className="artifact-head">
-        <strong>从本地项目读取文件</strong>
+        <strong>{forContext ? "添加本地项目上下文" : "从本地项目读取文件"}</strong>
         <button type="button" className="button-secondary" onClick={onCancel}>
           取消
         </button>
       </div>
       <p className="privacy-note">
-        只读、不修改本地文件。只有你<strong>勾选</strong>的文件内容会被读取并送审；原始内容不会保存，
-        页面只保留审核结论、来源名称和证明边界。送审的证据最高只能标记为「已检查产物」，绝不会是「平台自动验证」。
+        只读、不修改本地文件。只有你<strong>勾选</strong>的文件内容会被读取；敏感文件会自动排除。
+        {forContext
+          ? "内容只用于本次 Boss 生成，不会保存在项目账本中；AI 会把它当作不可信资料而不是指令。"
+          : "原始内容不会保存，页面只保留审核结论、来源名称和证明边界。送审证据最高只能标记为「已检查产物」，绝不会是「平台自动验证」。"}
       </p>
 
       {status === "idle" && (
@@ -128,8 +133,8 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
             </p>
           )}
           <p className="muted">
-            找到 {items.length} 个可送审文件
-            {excluded.length > 0 && `，另有 ${excluded.length} 个被排除`}。勾选你这次要交给 AI 审核的文件。
+            找到 {items.length} 个可{forContext ? "用作上下文" : "送审"}文件
+            {excluded.length > 0 && `，另有 ${excluded.length} 个被排除`}。勾选你这次要交给 AI {forContext ? "生成 Boss" : "审核"}的文件。
           </p>
           {items.length > 0 && (
             <>
@@ -152,7 +157,7 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
                   disabled={selected.size === 0}
                   onClick={() => void submit()}
                 >
-                  送审选中的 {selected.size} 个文件
+                  {forContext ? "使用" : "送审"}选中的 {selected.size} 个文件
                 </button>
                 <button
                   type="button"
@@ -170,7 +175,7 @@ export function ArtifactPanel({ onUse, onCancel }: ArtifactPanelProps) {
               </div>
             </>
           )}
-          {items.length === 0 && !message && <p className="error">没有可送审的文件。</p>}
+          {items.length === 0 && !message && <p className="error">没有可用的文件。</p>}
           {excluded.length > 0 && (
             <details className="artifact-excluded">
               <summary>被排除的 {excluded.length} 个文件</summary>

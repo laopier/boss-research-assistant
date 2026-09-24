@@ -14,7 +14,9 @@ export interface ProgressPanelProps {
   onIncubate: (failure: FailureAsset) => void;
   /** Points at the criterion that still needs evidence. */
   onSubmitEvidence: (criterionId: string) => void;
-  onCompleteBoss: () => void;
+  onAdvanceProject: () => void;
+  onExportReport: () => void;
+  advancing?: boolean;
 }
 
 function requirementGap(item: MissingRequirement): string {
@@ -31,13 +33,17 @@ function NextActionControl({
   onAccept,
   onIncubate,
   onSubmitEvidence,
-  onCompleteBoss,
+  onAdvanceProject,
+  onExportReport,
+  advancing = false,
 }: {
   action: NextAction;
   onAccept: () => void;
   onIncubate: (failure: FailureAsset) => void;
   onSubmitEvidence: (criterionId: string) => void;
-  onCompleteBoss: () => void;
+  onAdvanceProject: () => void;
+  onExportReport: () => void;
+  advancing?: boolean;
 }) {
   switch (action.kind) {
     case "ACCEPT_CONTRACT":
@@ -46,11 +52,15 @@ function NextActionControl({
           接受合同，开始记录证据
         </button>
       );
-    case "COMPLETE_BOSS":
+    case "ADVANCE_PROJECT":
       return (
         <div className="next-action">
-          <button type="button" onClick={onCompleteBoss}>
-            完成 Boss，导出验收报告
+          <p className="muted">当前 Boss 已通过验收，但整个科研目标尚未被判定为结束。</p>
+          <button type="button" onClick={onAdvanceProject} disabled={advancing}>
+            {advancing ? "正在生成下一阶段…" : "生成下一阶段 Boss"}
+          </button>
+          <button type="button" className="button-secondary" onClick={onExportReport}>
+            导出本阶段验收报告
           </button>
         </div>
       );
@@ -119,7 +129,9 @@ export function ProgressPanel({
   onAccept,
   onIncubate,
   onSubmitEvidence,
-  onCompleteBoss,
+  onAdvanceProject,
+  onExportReport,
+  advancing = false,
 }: ProgressPanelProps) {
   return (
     <section className="progress-panel" aria-label="完成进度">
@@ -185,7 +197,9 @@ export function ProgressPanel({
         onAccept={onAccept}
         onIncubate={onIncubate}
         onSubmitEvidence={onSubmitEvidence}
-        onCompleteBoss={onCompleteBoss}
+        onAdvanceProject={onAdvanceProject}
+        onExportReport={onExportReport}
+        advancing={advancing}
       />
     </section>
   );

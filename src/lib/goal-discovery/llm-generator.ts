@@ -9,7 +9,7 @@
  *              fallback, no silently weakened criteria.
  */
 import { BossContractJson } from "./contract-types";
-import { assertGoalValid, ContractGenerator, GenerationError } from "./generator";
+import { assertGoalValid, ContractGenerator, GenerationError, GenerateOptions } from "./generator";
 import { buildGoalDiscoveryUserPrompt, GOAL_DISCOVERY_SYSTEM_PROMPT, PROMPT_VERSION } from "./prompt";
 import {
   formatDiagnostics,
@@ -168,15 +168,15 @@ export interface LLMContractGeneratorOptions {
 export class LLMContractGenerator implements ContractGenerator {
   constructor(private readonly options: LLMContractGeneratorOptions) {}
 
-  async generate(goal: string): Promise<BossContractJson> {
+  async generate(goal: string, options?: GenerateOptions): Promise<BossContractJson> {
     const trimmed = assertGoalValid(goal);
     let lastDiagnostics: string[] = [];
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const userPrompt =
         attempt === 1
-          ? buildGoalDiscoveryUserPrompt(trimmed)
-          : buildRepairPrompt(trimmed, lastDiagnostics);
+          ? buildGoalDiscoveryUserPrompt(trimmed, options?.projectContext)
+          : buildRepairPrompt(trimmed, lastDiagnostics, options?.projectContext);
 
       const response = await this.options.transport.complete({
         systemPrompt: GOAL_DISCOVERY_SYSTEM_PROMPT,
@@ -207,10 +207,15 @@ export class LLMContractGenerator implements ContractGenerator {
   }
 }
 
-function buildRepairPrompt(goal: string, diagnostics: string[]): string {
+function buildRepairPrompt(
+  goal: string,
+  diagnostics: string[],
+  projectContext?: GenerateOptions["projectContext"],
+): string {
   return JSON.stringify({
     schemaVersion: "boss-contract.v0",
     goal,
+    ...(projectContext ? { projectContext } : {}),
     previousAttemptInvalid: true,
     validationErrors: diagnostics.join("\n").slice(0, 2000),
     instruction:

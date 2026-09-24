@@ -548,7 +548,8 @@ function renderProgress(progress: ProgressDerivation): string {
       onAccept={() => {}}
       onIncubate={() => {}}
       onSubmitEvidence={() => {}}
-      onCompleteBoss={() => {}}
+      onAdvanceProject={() => {}}
+      onExportReport={() => {}}
     />,
   );
 }
@@ -593,11 +594,12 @@ describe("ProgressPanel", () => {
     assert.match(html, /孵化成下一个 Boss/);
   });
 
-  it("offers to complete the Boss once it is clear", () => {
+  it("offers the next stage and a separate report once the Boss is clear", () => {
     const html = renderProgress(
-      progressFixture({ nextAction: { kind: "COMPLETE_BOSS" }, missing: [] }),
+      progressFixture({ nextAction: { kind: "ADVANCE_PROJECT" }, missing: [] }),
     );
-    assert.match(html, /完成 Boss，导出验收报告/);
+    assert.match(html, /生成下一阶段 Boss/);
+    assert.match(html, /导出本阶段验收报告/);
   });
 
   it("lists blockers separately from missing evidence", () => {
@@ -778,9 +780,9 @@ describe("Workbench", () => {
   it("shows the project goal, the global progress and the composition", () => {
     const html = renderWorkbench();
     assert.match(html, /复现 WACA 论文/);
-    assert.match(html, /项目总进度/);
+    assert.match(html, /当前已规划进度/);
     assert.match(html, /50%/);
-    assert.match(html, /1\/2 个 Boss/);
+    assert.match(html, /1\/2 个已规划 Boss/);
     assert.match(
       html,
       /由各里程碑下的 Boss 按必需验收项状态推导/,

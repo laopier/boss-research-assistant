@@ -1,5 +1,5 @@
 /**
- * Regenerates docs/ai/prompts/goal-discovery.v2.md (the review-friendly
+ * Regenerates the versioned Goal Discovery prompt document (the review-friendly
  * prompt document) from the runtime source of truth in src/lib/goal-discovery/prompt.ts.
  *
  * Run: node --import tsx scripts/gen-prompt-md.ts
@@ -11,7 +11,7 @@ import { dirname, resolve } from "node:path";
 
 import { GOAL_DISCOVERY_SYSTEM_PROMPT, PROMPT_VERSION } from "../src/lib/goal-discovery/prompt";
 
-const targetPath = resolve(__dirname, "../docs/ai/prompts/goal-discovery.v2.md");
+const targetPath = resolve(__dirname, `../docs/ai/prompts/${PROMPT_VERSION}.md`);
 
 const markdown = [
   `# Goal Discovery System Prompt (${PROMPT_VERSION})`,

@@ -11,11 +11,18 @@ The response contract is defined by `schemas/boss-contract.v0.schema.json`. The 
 ```json
 {
   "schemaVersion": "boss-contract.v0",
-  "goal": "我想复现 WACA 论文，但不知道从哪里开始"
+  "goal": "我想复现 WACA 论文，但不知道从哪里开始",
+  "projectContext": {
+    "sourceName": "用户选择的本地项目文件（2 个）",
+    "fileNames": ["README.md", "notes/progress.md"],
+    "content": "--- file: README.md ---\n..."
+  }
 }
 ```
 
 The trimmed goal must contain 1 to 500 characters.
+
+`projectContext` is optional. It may contain at most 20 explicitly selected text files and 24,000 characters. The browser must obtain permission through the system folder picker; a web page cannot silently read an arbitrary local path. Selected content is treated as untrusted data, is used only for this generation request, and is not persisted in the local ledger. File names may be retained as provenance metadata.
 
 ## Success Response
 

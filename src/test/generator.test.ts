@@ -202,6 +202,23 @@ test("LLM generator returns a contract when the first attempt is valid", async (
   assert.equal(transport.requests.length, 1);
 });
 
+test("LLM generator includes selected project context in initial and repair prompts", async () => {
+  const broken = validContractJson();
+  broken.acceptanceCriteria[0].status = "PASS";
+  const transport = new ScriptedTransport([JSON.stringify(broken), JSON.stringify(validContractJson())]);
+  const generator = new LLMContractGenerator({ transport });
+  const projectContext = {
+    sourceName: "本地项目",
+    fileNames: ["notes.md"],
+    content: "--- file: notes.md ---\n已有工作",
+  };
+  await generator.generate("继续下一步", { projectContext });
+  for (const request of transport.requests) {
+    const payload = JSON.parse(request.userPrompt) as { projectContext?: typeof projectContext };
+    assert.deepEqual(payload.projectContext, projectContext);
+  }
+});
+
 test("LLM generator repairs once when the second attempt is valid", async () => {
   const broken = validContractJson();
   broken.acceptanceCriteria[0].status = "PASS"; // S11 violation

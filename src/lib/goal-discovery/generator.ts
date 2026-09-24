@@ -7,9 +7,12 @@
  * `GenerationError` and the caller maps them to HTTP responses.
  */
 import { BossContractJson } from "./contract-types";
+import type { ProjectContextInput } from "../contracts";
 import { GOAL_MAX_LENGTH as MAX_GOAL_LENGTH } from "./validation";
 
 export const GOAL_MAX_LENGTH = MAX_GOAL_LENGTH;
+export const PROJECT_CONTEXT_MAX_LENGTH = 24_000;
+export const PROJECT_CONTEXT_MAX_FILES = 20;
 
 export type GenerationErrorCode =
   | "INPUT_REJECTED"
@@ -32,6 +35,8 @@ export class GenerationError extends Error {
 export interface GenerateOptions {
   /** Deterministic id/name used by the mock generator for reproducibility. */
   seed?: string;
+  /** Explicitly selected local text. It is untrusted context, never instructions. */
+  projectContext?: ProjectContextInput;
 }
 
 export interface ContractGenerator {

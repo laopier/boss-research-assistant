@@ -6,6 +6,7 @@ import {
   BossContract,
   CONTRACT_SCHEMA_VERSION,
   GenerateBossContractResponse,
+  ProjectContextInput,
 } from "@/lib/contracts";
 import {
   FailureAsset,
@@ -13,6 +14,7 @@ import {
   OverrideDraft,
   ReviewOutcome,
   buildIncubationGoal,
+  clampGoal,
   deriveBoss,
   deriveCriterion,
   listFailures,
@@ -55,6 +57,15 @@ import {
   criterionStatusText,
 } from "./labels";
 import { deriveProgress, listJourneyEvents } from "@/lib/progress";
+import { ArtifactPanel } from "./artifact-panel";
+import {
+  ReadArtifact,
+  combineArtifactContentsBounded,
+} from "@/lib/artifact-reader";
+import {
+  PROJECT_CONTEXT_MAX_FILES,
+  PROJECT_CONTEXT_MAX_LENGTH,
+} from "@/lib/goal-discovery/generator";
 
 /**
  * The frozen MVP-0 demonstration case.
@@ -98,6 +109,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [incubating, setIncubating] = useState(false);
   const [notice, setNotice] = useState("");
+  const [contextFiles, setContextFiles] = useState<ReadArtifact[]>([]);
+  const [showContextPicker, setShowContextPicker] = useState(false);
 
   const ledger = useSyncExternalStore(
     subscribeLedger,
@@ -145,9 +158,8 @@ export default function Home() {
   );
 
   /**
-   * The "complete the Boss" action: exports an acceptance report and resets to
-   * the empty state so the user can start the next Boss. No schema, no server —
-   * the report is derived from the same ledger the page already renders.
+   * Exports this bounded stage's acceptance report. Exporting is separate from
+   * continuing the research project and never changes roadmap state.
    */
   function exportReport() {
     if (!contract || !progress) return;
@@ -176,14 +188,21 @@ export default function Home() {
     anchor.download = `${contract.id}-acceptance-report.json`;
     anchor.click();
     URL.revokeObjectURL(url);
-    setNotice("验收报告已导出。你可以回到上方开始下一个 Boss。");
+    setNotice("本阶段验收报告已导出；你仍可继续生成下一阶段 Boss。");
   }
 
-  async function requestContract(goalText: string): Promise<GenerateBossContractResponse> {
+  async function requestContract(
+    goalText: string,
+    projectContext?: ProjectContextInput,
+  ): Promise<GenerateBossContractResponse> {
     const response = await fetch("/api/contracts/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ schemaVersion: CONTRACT_SCHEMA_VERSION, goal: goalText }),
+      body: JSON.stringify({
+        schemaVersion: CONTRACT_SCHEMA_VERSION,
+        goal: goalText,
+        ...(projectContext ? { projectContext } : {}),
+      }),
     });
     const body = (await response.json()) as GenerateBossContractResponse | ApiErrorResponse;
     if (!response.ok || "error" in body) {
@@ -199,13 +218,21 @@ export default function Home() {
    * to the first milestone that still has open work.
    */
   const registerContract = useCallback(
-    (next: BossContract, at: string, goalText: string, seed: Ledger, generation: "MOCK" | "AI") => {
+    (
+      next: BossContract,
+      at: string,
+      goalText: string,
+      seed: Ledger,
+      generation: "MOCK" | "AI",
+      contextFileNames?: string[],
+    ) => {
       let registered = withImportedEvidence(seed, next, at);
       registered = withContext(registered, {
         contractId: next.id,
         objective: next.objective,
         rawGoal: next.rawGoal,
         generation,
+        ...(contextFileNames?.length ? { contextFileNames } : {}),
       });
       registered = withContract(registered, next);
       if (!registered.project) {
@@ -224,12 +251,36 @@ export default function Home() {
     setNotice("");
     setLoading(true);
     try {
-      const body = await requestContract(goal);
-      updateLedger((current) =>
-        registerContract(body.contract, new Date().toISOString(), goal, current, body.generation),
+      const bundle = combineArtifactContentsBounded(
+        contextFiles.slice(0, PROJECT_CONTEXT_MAX_FILES),
+        PROJECT_CONTEXT_MAX_LENGTH,
       );
+      const projectContext = bundle.content
+        ? {
+            sourceName: `用户选择的本地项目文件（${bundle.includedFiles.length} 个）`,
+            fileNames: bundle.includedFiles.map((file) => file.relativePath),
+            content: bundle.content,
+          }
+        : undefined;
+      const body = await requestContract(goal, projectContext);
+      updateLedger((current) =>
+        registerContract(
+          body.contract,
+          new Date().toISOString(),
+          goal,
+          current,
+          body.generation,
+          projectContext?.fileNames,
+        ),
+      );
+      setContextFiles([]);
+      setShowContextPicker(false);
       setView("boss");
-      setNotice("新 Boss 已生成并加入项目路线图。");
+      setNotice(
+        projectContext
+          ? `新 Boss 已结合 ${projectContext.fileNames.length} 个本地文件生成并加入路线图。文件内容未保存。`
+          : "新 Boss 已生成并加入项目路线图。",
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "生成失败，请稍后重试。");
     } finally {
@@ -287,6 +338,47 @@ export default function Home() {
     });
     setView("workbench");
     setNotice("已载入演示项目：2 个里程碑、3 个 Boss。");
+  }
+
+  async function advanceProject() {
+    if (!contract || !ledger.project) return;
+    const goalText = clampGoal(
+      `继续推进科研项目“${ledger.project.goal}”。当前阶段“${contract.objective}”已通过验收。请基于已完成内容与原范围外事项，生成下一项不重复、可验证的具体 Boss。`,
+    );
+    const context: ProjectContextInput = {
+      sourceName: "当前项目路线与已完成 Boss 摘要",
+      fileNames: ["boss-project-history.json"],
+      content: JSON.stringify(
+        {
+          projectGoal: ledger.project.goal,
+          completedBoss: {
+            title: contract.title,
+            objective: contract.objective,
+            deliverables: contract.deliverables.map((item) => item.description),
+            inScope: contract.scopeGuard.inScope,
+            outOfScope: contract.scopeGuard.outOfScope,
+          },
+        },
+        null,
+        2,
+      ),
+    };
+    setError("");
+    setNotice("");
+    setLoading(true);
+    try {
+      const body = await requestContract(goalText, context);
+      updateLedger((current) =>
+        registerContract(body.contract, new Date().toISOString(), goalText, current, body.generation),
+      );
+      setGoal(goalText);
+      setView("boss");
+      setNotice("当前阶段已保留为完成状态，下一阶段 Boss 已生成。整个项目不会因单个 Boss 通过而自动结束。");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "生成下一阶段失败，请稍后重试。");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function startOver() {
@@ -409,6 +501,7 @@ export default function Home() {
       </header>
 
       {notice && <p className="notice" role="status">{notice}</p>}
+      {error && effectiveView !== "new" && <p className="error" role="alert">{error}</p>}
 
       {effectiveView === "workbench" && roadmap && ledger.project && (
         <Workbench
@@ -467,6 +560,37 @@ export default function Home() {
                   </button>
                 </span>
               </div>
+              <div className="artifact-actions">
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => setShowContextPicker((shown) => !shown)}
+                >
+                  {showContextPicker ? "收起本地文件" : "添加本地文件夹上下文"}
+                </button>
+                {contextFiles.length > 0 && (
+                  <span className="muted">已选择 {contextFiles.length} 个文件，将只用于本次生成</span>
+                )}
+              </div>
+              {showContextPicker && (
+                <ArtifactPanel
+                  purpose="context"
+                  onUse={(files) => {
+                    setContextFiles(files.slice(0, PROJECT_CONTEXT_MAX_FILES));
+                    setShowContextPicker(false);
+                  }}
+                  onCancel={() => setShowContextPicker(false)}
+                />
+              )}
+              {contextFiles.length > 0 && (
+                <div className="context-file-summary">
+                  <strong>本次生成会参考：</strong>
+                  <span>{contextFiles.map((file) => file.relativePath).join("、")}</span>
+                  <button type="button" className="button-secondary" onClick={() => setContextFiles([])}>
+                    移除
+                  </button>
+                </div>
+              )}
               {error && <p className="error" role="alert">{error}</p>}
             </form>
 
@@ -526,7 +650,9 @@ export default function Home() {
             onAdopt={adoptReview}
             onOverride={overrideEvidence}
             onIncubate={incubate}
-            onCompleteBoss={exportReport}
+            onAdvanceProject={() => void advanceProject()}
+            onExportReport={exportReport}
+            advancing={loading}
           />
 
           <FailureLibrary failures={failures} busy={incubating} onIncubate={incubate} />
@@ -552,7 +678,9 @@ interface ContractViewProps {
   onAdopt: (outcome: ReviewOutcome) => void;
   onOverride: (draft: OverrideDraft, outcome: ReviewOutcome | undefined) => void;
   onIncubate: (failure: FailureAsset) => void;
-  onCompleteBoss: () => void;
+  onAdvanceProject: () => void;
+  onExportReport: () => void;
+  advancing: boolean;
 }
 
 function ContractView({
@@ -570,7 +698,9 @@ function ContractView({
   onAdopt,
   onOverride,
   onIncubate,
-  onCompleteBoss,
+  onAdvanceProject,
+  onExportReport,
+  advancing,
 }: ContractViewProps) {
   /**
    * A request to open a criterion's submission form, either from a deliverable
@@ -667,7 +797,9 @@ function ContractView({
           }
           setSubmitFor({ criterionId });
         }}
-        onCompleteBoss={onCompleteBoss}
+        onAdvanceProject={onAdvanceProject}
+        onExportReport={onExportReport}
+        advancing={advancing}
       />
 
       <BatchEvidencePanel

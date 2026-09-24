@@ -140,8 +140,8 @@ export function nextActionSummary(ledger: Ledger, contractId: string): string {
   switch (progress.nextAction.kind) {
     case "ACCEPT_CONTRACT":
       return "接受合同，开始记录证据";
-    case "COMPLETE_BOSS":
-      return "全部必需验收项通过，可以完成此 Boss";
+    case "ADVANCE_PROJECT":
+      return "当前阶段已通过，继续生成下一阶段 Boss";
     case "INCUBATE_FAILURE":
       return `存在未解决的失败（${progress.nextAction.failure.evidence.criterionId}），可孵化下一 Boss`;
     case "SUBMIT_EVIDENCE":

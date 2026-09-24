@@ -33,7 +33,7 @@ export interface MissingRequirement {
 
 export type NextAction =
   | { kind: "ACCEPT_CONTRACT" }
-  | { kind: "COMPLETE_BOSS" }
+  | { kind: "ADVANCE_PROJECT" }
   | { kind: "REVISE_CONTRACT" }
   | { kind: "RESOLVE_BLOCKER"; blocker: Blocker }
   | { kind: "INCUBATE_FAILURE"; failure: FailureAsset }
@@ -101,7 +101,7 @@ export function missingRequirements(
  * The one thing to do next, picked by the priority issue #15 gives.
  *
  * Priority: accept the contract first; then, if every required criterion has
- * passed, complete the Boss; then, if an accepted failure is still unresolved,
+ * passed, continue to the next bounded stage; then, if an accepted failure is still unresolved,
  * incubate it; otherwise keep submitting evidence. An optional failure does not
  * block completion — that is §4, already pinned by the Boss-derivation tests.
  */
@@ -133,7 +133,7 @@ export function deriveProgress(
   } else if (boss.status === "BLOCKED" && contract.blockers[0]) {
     nextAction = { kind: "RESOLVE_BLOCKER", blocker: contract.blockers[0] };
   } else if (boss.status === "CLEAR") {
-    nextAction = { kind: "COMPLETE_BOSS" };
+    nextAction = { kind: "ADVANCE_PROJECT" };
   } else if (unresolved.length > 0) {
     nextAction = { kind: "INCUBATE_FAILURE", failure: unresolved[0] };
   } else if (missing.length > 0) {

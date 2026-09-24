@@ -69,7 +69,7 @@ export function Workbench({
           <p className="eyebrow">科研项目 · 计划版本 Revision {roadmap.revision}</p>
           <h2>{roadmap.goal}</h2>
           <p className="muted">
-            已完成 {roadmap.bossesDone}/{roadmap.bossesTotal} 个 Boss；当前打开的 Boss 始终标有「当前」。
+            已通过 {roadmap.bossesDone}/{roadmap.bossesTotal} 个已规划 Boss；当前打开的 Boss 始终标有「当前」。
           </p>
         </div>
         <span className="actions">
@@ -103,7 +103,7 @@ export function Workbench({
 
       <div className="workbench-progress">
         <div className="progress-bar-head">
-          <strong>项目总进度</strong>
+          <strong>当前已规划进度</strong>
           <span>{roadmap.progressPercent}%</span>
         </div>
         <div className="progress-track">
@@ -113,7 +113,7 @@ export function Workbench({
           />
         </div>
         <p className="field-hint">
-          由各里程碑下的 Boss 按必需验收项状态推导，不能手动修改；每个里程碑的构成见下方。
+          由各里程碑下的 Boss 按必需验收项状态推导；只统计当前已经生成的阶段，不代表整个科研目标已经结束。当前阶段全部通过后，可以继续生成下一阶段。
         </p>
       </div>
 

@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { CONTRACT_SCHEMA_VERSION, GenerateBossContractRequest } from "@/lib/contracts";
 import { getGenerator } from "@/lib/goal-discovery/factory";
 import { GenerationError } from "@/lib/goal-discovery/generator";
+import {
+  PROJECT_CONTEXT_MAX_FILES,
+  PROJECT_CONTEXT_MAX_LENGTH,
+} from "@/lib/goal-discovery/generator";
 
 const INVALID_GOAL_MESSAGE = "请输入 1 到 500 个字符的科研目标，并使用当前接口版本。";
+const INVALID_CONTEXT_MESSAGE = "本地上下文格式不正确，或内容超过 24000 字符 / 20 个文件。";
 
 function invalidRequest(message: string) {
   return NextResponse.json(
@@ -47,9 +52,28 @@ export async function POST(request: Request) {
     return invalidRequest(INVALID_GOAL_MESSAGE);
   }
 
+  const context = body.projectContext;
+  if (
+    context !== undefined &&
+    (typeof context !== "object" ||
+      context === null ||
+      typeof context.sourceName !== "string" ||
+      !context.sourceName.trim() ||
+      context.sourceName.length > 200 ||
+      !Array.isArray(context.fileNames) ||
+      context.fileNames.length === 0 ||
+      context.fileNames.length > PROJECT_CONTEXT_MAX_FILES ||
+      context.fileNames.some((name) => typeof name !== "string" || !name.trim() || name.length > 240) ||
+      typeof context.content !== "string" ||
+      !context.content.trim() ||
+      context.content.length > PROJECT_CONTEXT_MAX_LENGTH)
+  ) {
+    return invalidRequest(INVALID_CONTEXT_MESSAGE);
+  }
+
   try {
     const generator = getGenerator();
-    const contract = await generator.generate(goal);
+    const contract = await generator.generate(goal, { projectContext: context });
 
     return NextResponse.json({
       contract,

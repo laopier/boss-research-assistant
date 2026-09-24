@@ -265,6 +265,8 @@ h3 { margin: 0 0 16px; font-size: 15px; }
 .artifact-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .artifact-head strong { font-size: 13px; }
 .artifact-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.context-file-summary { margin-top: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+.context-file-summary > span { flex: 1 1 320px; overflow-wrap: anywhere; }
 .artifact-list { margin-top: 12px; max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
 .artifact-file { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 12px; }
 .artifact-file:last-child { border-bottom: none; }
