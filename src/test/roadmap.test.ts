@@ -12,6 +12,7 @@ import { AcceptanceCriterion, BossContract } from "../lib/contracts";
 import {
   Ledger,
   LedgerStorage,
+  LEDGER_STORAGE_KEY,
   emptyLedger,
   loadLedger,
   saveLedger,
@@ -21,6 +22,10 @@ import {
   withCurrentBoss,
   withNewProject,
 } from "../lib/failure-ledger";
+import {
+  LEGACY_TUTORIAL_RESET_KEY,
+  loadLedgerForFirstRun,
+} from "../lib/ledger-store";
 import { deriveRoadmap, nextActionSummary } from "../lib/roadmap";
 
 function criterion(overrides: Partial<AcceptanceCriterion> = {}): AcceptanceCriterion {
@@ -88,11 +93,12 @@ function project(overrides: Record<string, unknown> = {}): NonNullable<Ledger["p
 }
 
 function memoryStorage(initial?: string): LedgerStorage {
-  let value = initial ?? null;
+  const values = new Map<string, string>();
+  if (initial !== undefined) values.set(LEDGER_STORAGE_KEY, initial);
   return {
-    getItem: () => value,
-    setItem: (_key, next) => {
-      value = next;
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, next) => {
+      values.set(key, next);
     },
   };
 }
@@ -234,6 +240,39 @@ describe("roadmap storage", () => {
   it("fails closed on a malformed project", () => {
     const malformed = JSON.stringify({ ...emptyLedger(), project: { goal: 42 } });
     assert.deepEqual(loadLedger(memoryStorage(malformed)), emptyLedger());
+  });
+
+  it("clears the old bundled tutorial once so the first-run screen is blank", () => {
+    const tutorialIds = [
+      "boss-literature-reading-demo",
+      "boss-dataset-investigation-demo",
+      "boss-waca-se-demo",
+    ];
+    const tutorial = ledgerWith(
+      tutorialIds.map((id) => contract({ id, recordKind: "DEMO_FIXTURE" })),
+      {
+        project: project({
+          milestones: [
+            { id: "M-1", title: "读懂论文与数据", bossIds: tutorialIds.slice(0, 2) },
+            { id: "M-2", title: "构建并验证模型", bossIds: tutorialIds.slice(2) },
+          ],
+          currentBossId: "boss-waca-se-demo",
+        }),
+      },
+    );
+    const storage = memoryStorage(JSON.stringify(tutorial));
+
+    assert.deepEqual(loadLedgerForFirstRun(storage), emptyLedger());
+    assert.equal(storage.getItem(LEGACY_TUTORIAL_RESET_KEY), "done");
+    assert.deepEqual(loadLedger(storage), emptyLedger());
+  });
+
+  it("preserves a real project while completing the tutorial migration", () => {
+    const real = ledgerWith([contract()], { project: project() });
+    const storage = memoryStorage(JSON.stringify(real));
+
+    assert.deepEqual(loadLedgerForFirstRun(storage), real);
+    assert.equal(storage.getItem(LEGACY_TUTORIAL_RESET_KEY), "done");
   });
 });
 

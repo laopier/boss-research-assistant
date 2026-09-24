@@ -29,6 +29,7 @@ import {
   withReviewOutcome,
 } from "@/lib/failure-ledger";
 import {
+  clearLedgerStore,
   getLedgerServerSnapshot,
   getLedgerSnapshot,
   hydrateLedger,
@@ -90,7 +91,7 @@ function formatDeadline(value: string): string {
 }
 
 export default function Home() {
-  const [goal, setGoal] = useState("我想复现 WACA 论文，但不知道从哪里开始");
+  const [goal, setGoal] = useState("");
   const [view, setView] = useState<"workbench" | "boss" | "new">("workbench");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -287,6 +288,18 @@ export default function Home() {
     setNotice("已载入演示项目：2 个里程碑、3 个 Boss。");
   }
 
+  function startOver() {
+    const confirmed = window.confirm(
+      "确定重新开始吗？当前项目、Boss、证据和失败记录都会从此浏览器中清除，且无法撤销。",
+    );
+    if (!confirmed) return;
+    clearLedgerStore();
+    setGoal("");
+    setView("new");
+    setError("");
+    setNotice("已清空本地项目，可以从新的科研目标开始。");
+  }
+
   function acceptContract() {
     if (!contract) return;
     setNotice("合同已接受，验收语义生效。现在可以记录证据。");
@@ -410,6 +423,7 @@ export default function Home() {
             setError("");
             setView("new");
           }}
+          onStartOver={startOver}
           onApplyProposal={(proposal, input) => {
             updateLedger((current) =>
               applyProposalWith(current, proposal, input, new Date().toISOString()),

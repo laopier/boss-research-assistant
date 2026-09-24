@@ -19,6 +19,8 @@ export interface WorkbenchProps {
   onOpenBoss: (contractId: string) => void;
   /** Starts the new-Boss flow. */
   onNewBoss: () => void;
+  /** Clears the current local project after the parent confirms the action. */
+  onStartOver: () => void;
   /** Applies an ACCEPTED negotiation proposal (the only roadmap-write path). */
   onApplyProposal: (proposal: NegotiationProposal, input: ProposalInput) => void;
 }
@@ -53,6 +55,7 @@ export function Workbench({
   ledger,
   onOpenBoss,
   onNewBoss,
+  onStartOver,
   onApplyProposal,
 }: WorkbenchProps) {
   // The panel is presentation state; the proposal itself lives inside it and
@@ -79,6 +82,9 @@ export function Workbench({
           </button>
           <button type="button" className="button-secondary" onClick={onNewBoss}>
             新建 Boss
+          </button>
+          <button type="button" className="button-danger" onClick={onStartOver}>
+            重新开始
           </button>
         </span>
       </div>

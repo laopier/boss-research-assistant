@@ -40,6 +40,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
    with 生成 Boss Contract, which stays the default path. */
 .button-secondary { color: var(--green); background: transparent; border: 1px solid var(--line); }
 .button-secondary:hover { background: #eef3ec; }
+.button-danger { color: #9b3d27; background: transparent; border: 1px solid #d9b5aa; }
+.button-danger:hover { background: #fbefeb; }
 .button-mini { padding: 5px 11px; font-size: 12px; font-weight: 700; }
 .demo-entry { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
 .demo-entry p { margin: 0; max-width: 620px; line-height: 1.7; }

@@ -766,6 +766,7 @@ function renderWorkbench(): string {
       ledger={ledger}
       onOpenBoss={() => {}}
       onNewBoss={() => {}}
+      onStartOver={() => {}}
       onApplyProposal={() => {}}
     />,
   );
@@ -817,6 +818,7 @@ describe("Workbench", () => {
         ledger={ledger}
         onOpenBoss={() => {}}
         onNewBoss={() => {}}
+        onStartOver={() => {}}
         onApplyProposal={() => {}}
       />,
     );
