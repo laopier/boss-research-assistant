@@ -119,6 +119,7 @@ function renderEntry(props: Partial<Parameters<typeof EvidenceEntry>[0]> = {}): 
   return renderToStaticMarkup(
     <EvidenceEntry
       criterion={targetCriterion}
+      index={props.index}
       derivation={deriveCriterion(targetCriterion, records)}
       records={records}
       ledger={props.ledger ?? emptyLedger()}
@@ -361,6 +362,31 @@ describe("EvidenceEntry", () => {
     assert.match(html, /必需/);
   });
 
+  it("labels the criterion and keeps its internal id beside it (issue #21)", () => {
+    const html = renderEntry({ index: 3 });
+    assert.match(html, /验收项 3/);
+    assert.match(html, /AC-2/, "the id stays for tracing");
+    assert.match(
+      html,
+      /Stage 2 receives Xweak/,
+      "the card still carries the whole task sentence",
+    );
+  });
+
+  it("numbers from the contract position, not from the card alone", () => {
+    // A different position must produce a different number for a criterion
+    // whose own id never changes: that is issue #21's consistency rule.
+    assert.match(renderEntry({ index: 2 }), /验收项 2/);
+    assert.doesNotMatch(renderEntry({ index: 2 }), /验收项 3/);
+  });
+
+  it("offers requirements by description in the dropdown, with the id kept", () => {
+    // The form only exists while it is open, which is what `openRequest` asks
+    // the card for from elsewhere on the page.
+    const html = renderEntry({ openRequest: {} });
+    assert.match(html, /Source inspection id…（REQ-2-SOURCE）/);
+  });
+
   it("shows the derivation reason so the verdict is explainable", () => {
     const html = renderEntry();
     assert.match(html, /证据要求未满足/, "an unmet requirement must be explained");
@@ -470,7 +496,25 @@ describe("DeliverableCard", () => {
     // Regression: the chip used to read the contract's frozen `status` (always
     // UNKNOWN in a fresh contract) instead of the derived one, so it said
     // 待验证 next to a record that had already decided 未通过.
-    assert.match(html, /AC-2 · 未通过/);
+    // issue #21: the chip names the task now; the anchor still uses the id.
+    assert.match(html, /验收项 1 · 未通过/);
+  });
+
+  it("names the deliverable by its position and keeps the id for tracing (issue #21)", () => {
+    const html = renderCard();
+    assert.match(html, /交付物 1/);
+    assert.match(html, /DEL-1/, "the internal id must not disappear");
+    assert.match(html, /The WACA-SE module/, "the full task sentence stays on the card");
+  });
+
+  it("offers criteria by readable name in its submit dropdown", () => {
+    const two = fullContract({
+      acceptanceCriteria: [criterion(), criterion({ id: "AC-3", required: false })],
+    });
+    const html = renderCard({ contract: two });
+    assert.match(html, /验收项 1 · 必需 · Stage 2 receiv…/);
+    assert.match(html, /验收项 2 · 可选 · Stage 2 receiv…/);
+    assert.match(html, /value="AC-3"/, "the dropdown still submits internal ids");
   });
 
   it("derives DONE only from criteria that all pass", () => {
@@ -486,7 +530,8 @@ describe("DeliverableCard", () => {
   it("replaces the entry point with a pointer while its form is open", () => {
     const html = renderCard({ active: true });
     assert.match(html, /提交表单已在/);
-    assert.match(html, /AC-2<\/a> 的卡片中打开/);
+    assert.match(html, /验收项 1<\/a> 的卡片中打开/);
+    assert.match(html, /href="#criterion-AC-2"/, "the anchor still targets the internal id");
     assert.doesNotMatch(html, /去提交/);
   });
 
@@ -518,6 +563,9 @@ describe("copy consistency", () => {
 const missingFixture = {
   criterionId: "AC-2",
   criterionRequired: true,
+  // issue #21: the position in the contract's full acceptance list, so this
+  // criterion reads "验收项 1" in every region that points at it.
+  criterionIndex: 1,
   requirementId: "REQ-2-SOURCE",
   description: "Source inspection",
   have: 0,
@@ -564,15 +612,35 @@ describe("ProgressPanel", () => {
     assert.doesNotMatch(html, /<input/, "there is no input for a user to type a percentage");
   });
 
-  it("names the requirement still missing and the source types it accepts", () => {
+  it("names the requirement still missing by its own description, not its id", () => {
     const html = renderProgress(progressFixture());
-    assert.match(html, /REQ-2-SOURCE 还缺 1 条/);
+    assert.match(html, /Source inspection 还缺 1 条/);
     assert.match(html, /已检查产物/);
+    // The id must not disappear: it is how a report is traced back.
+    assert.match(html, /AC-2 · REQ-2-SOURCE/);
+  });
+
+  it("labels the missing criterion instead of printing its internal id", () => {
+    const html = renderProgress(progressFixture());
+    assert.match(html, /验收项 1/);
+  });
+
+  it("keeps pointing at the internal id when no position in the contract is known", () => {
+    const html = renderProgress(
+      progressFixture({
+        missing: [{ ...missingFixture, criterionIndex: undefined }],
+        nextAction: {
+          kind: "SUBMIT_EVIDENCE",
+          missing: { ...missingFixture, criterionIndex: undefined },
+        },
+      }),
+    );
+    assert.match(html, /AC-2/);
   });
 
   it("renders the submit-evidence action with the criterion it targets", () => {
     const html = renderProgress(progressFixture());
-    assert.match(html, /去 AC-2 提交证据/);
+    assert.match(html, /为验收项 1 提交材料/);
   });
 
   it("offers to accept the contract first when that has not happened", () => {

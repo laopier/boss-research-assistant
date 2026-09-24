@@ -75,11 +75,22 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .content-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 28px; margin-top: 34px; align-items: start; }
 h3 { margin: 0 0 16px; font-size: 15px; }
 .criterion { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; padding: 18px 0; border-top: 1px solid var(--line); }
-.criterion-id { font-weight: 750; font-size: 14px; }
 .criterion p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .criterion-desc { color: var(--ink) !important; }
 .tag { margin-left: 8px; padding: 2px 7px; color: var(--muted); background: #eef0ec; border-radius: 5px; font-size: 11px; font-weight: 600; }
 .tag-required { color: #7a4a12; background: #f6e6c8; }
+
+/* issue #21: short readable labels replace internal ids as the headline, the
+   id stays beside it for tracing. Task sentences can be a whole paragraph, so
+   every place they land must be allowed to wrap instead of stretching its
+   parent — that is what `min-width: 0` and `overflow-wrap` buy on a phone. */
+.task-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.criterion-label, .task-label { font-weight: 750; font-size: 14px; }
+.internal-id { padding: 2px 6px; color: var(--muted); background: #eef0ec; border-radius: 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.task-desc, .criterion-desc, .evidence-group-desc { min-width: 0; overflow-wrap: anywhere; }
+.evidence-group-desc { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.progress-missing li > .task-desc { flex: 1 1 240px; }
+.deliverable-grid p, .batch-result p, .requirement-list li .task-desc { overflow-wrap: anywhere; }
 
 .batch-evidence { display: grid; grid-template-columns: 1fr minmax(320px, .9fr); gap: 22px; margin-top: 24px; padding: 22px; background: #eef3ec; border: 1px solid #d3dacd; border-radius: 16px; }
 .batch-evidence h3 { margin-bottom: 7px; font-size: 18px; }
@@ -222,6 +233,13 @@ h3 { margin: 0 0 16px; font-size: 15px; }
 .workbench-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .workbench-head h2 { margin: 0 0 8px; font-size: 22px; line-height: 1.3; }
 .workbench-progress { margin: 20px 0 4px; }
+/* Three rows, not two: title + percent, the bar, then the explanation. The
+   shared `.field-hint` carries -4px of top margin because it normally sits
+   under a form row; here there is no row above it, so that negative margin
+   glued the sentence to the bar. Overridden locally rather than globally —
+   the form hint is used elsewhere and must keep its compact spacing. */
+.workbench-progress .field-hint { margin: 10px 0 14px; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.workbench-progress .progress-bar-head { margin-bottom: 8px; }
 .milestone { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line); }
 .milestone-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 14px; }
 .milestone-head .muted { font-size: 12px; }

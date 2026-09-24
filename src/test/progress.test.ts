@@ -142,6 +142,44 @@ describe("missingRequirements", () => {
     const result = missingRequirements(criterion(), [evidence({ finding: "FAIL" })]);
     assert.deepEqual(result, [], "a FAIL is a failure to incubate, not missing evidence");
   });
+
+  it("carries the position given by the caller and nothing invented of its own", () => {
+    assert.equal(missingRequirements(criterion(), [], 3)[0].criterionIndex, 3);
+    assert.equal(
+      missingRequirements(criterion(), [])[0].criterionIndex,
+      undefined,
+      "no position means no invented number",
+    );
+  });
+});
+
+describe("issue #21: label numbers come from the whole contract", () => {
+  it("numbers missing criteria by their position before any filtering", () => {
+    // AC-1 is already satisfied, so it drops out of `missing`; AC-2 must still
+    // read as the second acceptance criterion everywhere on the page.
+    const satisfied = criterion({ id: "AC-1" });
+    const pending = criterion({ id: "AC-2" });
+    const base = contract({ acceptanceCriteria: [satisfied, pending] });
+    const checked = ledger([
+      evidence({ id: "EV-1", criterionId: "AC-1", requirementId: "REQ-1" }),
+    ]);
+    const { missing } = deriveProgress(base, checked, true);
+    assert.equal(missing.length, 1);
+    assert.equal(missing[0].criterionId, "AC-2");
+    assert.equal(missing[0].criterionIndex, 2, "counted from the full list, not the missing one");
+  });
+
+  it("keeps the number stable when later criteria are satisfied first", () => {
+    const order = contract({
+      acceptanceCriteria: [criterion({ id: "AC-1" }), criterion({ id: "AC-2" })],
+    });
+    const onlySecondMet = ledger([
+      evidence({ id: "EV-2", criterionId: "AC-2", requirementId: "REQ-1" }),
+    ]);
+    const { missing } = deriveProgress(order, onlySecondMet, true);
+    assert.equal(missing[0].criterionId, "AC-1");
+    assert.equal(missing[0].criterionIndex, 1);
+  });
 });
 
 describe("deriveProgress", () => {

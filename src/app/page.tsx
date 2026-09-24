@@ -55,6 +55,7 @@ import {
   bossStatusText,
   criterionStatusClass,
   criterionStatusText,
+  criterionLabel,
 } from "./labels";
 import { deriveProgress, listJourneyEvents } from "@/lib/progress";
 import { ArtifactPanel } from "./artifact-panel";
@@ -887,10 +888,11 @@ function ContractView({
       <div className="content-grid">
         <article className="criteria-card">
           <h3>验收标准与证据</h3>
-          {contract.acceptanceCriteria.map((criterion) => (
+          {contract.acceptanceCriteria.map((criterion, criterionOrder) => (
             <EvidenceEntry
               key={`${contract.id}:${criterion.id}`}
               criterion={criterion}
+              index={criterionOrder + 1}
               derivation={deriveCriterion(criterion, evidenceByCriterion.get(criterion.id) ?? [])}
               records={evidenceByCriterion.get(criterion.id) ?? []}
               ledger={ledger}
@@ -919,18 +921,22 @@ function ContractView({
             而「被接受」不等于「通过」。
           </p>
 
-          {contract.acceptanceCriteria.map((criterion) => {
+          {contract.acceptanceCriteria.map((criterion, criterionPosition) => {
             const items = evidenceByCriterion.get(criterion.id) ?? [];
             const derivation = deriveCriterion(criterion, items);
             const acceptedItems = items.filter((item) => item.reviewStatus === "ACCEPTED");
             return (
               <div className="evidence-group" key={criterion.id}>
                 <div className="evidence-group-head">
-                  <strong>{criterion.id}</strong>
+                  <span className="task-title">
+                    <strong className="task-label">{criterionLabel(criterionPosition + 1)}</strong>
+                    <code className="internal-id">{criterion.id}</code>
+                  </span>
                   <span className={criterionStatusClass[derivation.status]}>
                     {criterionStatusText[derivation.status]}
                   </span>
                 </div>
+                <p className="evidence-group-desc">{criterion.description}</p>
                 {items.length === 0 ? (
                   <p className="evidence-empty">
                     {derivation.status === "UNKNOWN"

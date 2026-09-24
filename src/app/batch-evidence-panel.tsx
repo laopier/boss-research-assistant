@@ -13,6 +13,7 @@ import {
   SOURCE_NAME_MAX_LENGTH,
 } from "@/lib/evidence-review/types";
 import { ReviewOutcome } from "@/lib/failure-ledger";
+import { criterionLabelOrId } from "./labels";
 import { EvidenceSubmissionInput } from "./evidence-entry";
 
 interface BatchEvidencePanelProps {
@@ -24,6 +25,7 @@ interface BatchEvidencePanelProps {
 
 interface BatchResult {
   criterionId: string;
+  criterionIndex: number;
   requirementId: string;
   state: "PASS" | "FAIL" | "INCONCLUSIVE" | "ERROR";
   detail: string;
@@ -54,6 +56,7 @@ export function BatchEvidencePanel({
           .filter((requirement) => requirement.acceptedSourceTypes.includes("ARTIFACT_INSPECTED"))
           .map((requirement) => ({
             criterion,
+            criterionIndex: criterionIndex + 1,
             requirement,
             deliverable:
               contract.deliverables.length === 1
@@ -65,6 +68,10 @@ export function BatchEvidencePanel({
   );
 
   const coveredCriteria = new Set(targets.map((target) => target.criterion.id)).size;
+
+  /** issue #21: the task sentence, kept out of the button but on the result. */
+  const criterionDescription = (criterionId: string) =>
+    contract.acceptanceCriteria.find((item) => item.id === criterionId)?.description ?? "";
 
   function chooseFile(event: ChangeEvent<HTMLInputElement>) {
     setFile(event.target.files?.[0] ?? null);
@@ -141,6 +148,7 @@ export function BatchEvidencePanel({
         onAdopt(outcome);
         nextResults.push({
           criterionId: target.criterion.id,
+          criterionIndex: target.criterionIndex,
           requirementId: target.requirement.id,
           state: submitted.review.finding,
           detail: submitted.review.rationale,
@@ -148,6 +156,7 @@ export function BatchEvidencePanel({
       } catch (caught) {
         nextResults.push({
           criterionId: target.criterion.id,
+          criterionIndex: target.criterionIndex,
           requirementId: target.requirement.id,
           state: "ERROR",
           detail: reviewErrorDetail(caught),
@@ -201,7 +210,11 @@ export function BatchEvidencePanel({
                 {result.state === "PASS" ? "通过" : result.state === "FAIL" ? "未通过" : result.state === "ERROR" ? "审核失败" : "信息不足"}
               </span>
               <div>
-                <strong>{result.criterionId}</strong>
+                <strong className="task-label">
+                  {criterionLabelOrId(result.criterionIndex, result.criterionId)}
+                </strong>
+                <code className="internal-id">{`${result.criterionId} · ${result.requirementId}`}</code>
+                <p className="task-desc">{criterionDescription(result.criterionId)}</p>
                 <p>{result.detail}</p>
               </div>
             </div>

@@ -6,7 +6,7 @@ import {
   NextAction,
   ProgressDerivation,
 } from "@/lib/progress";
-import { sourceTypeText } from "./labels";
+import { sourceTypeText, criterionLabelOrId } from "./labels";
 
 export interface ProgressPanelProps {
   progress: ProgressDerivation;
@@ -19,9 +19,13 @@ export interface ProgressPanelProps {
   advancing?: boolean;
 }
 
+/**
+ * issue #21: the requirement's own sentence says what to bring, so it replaces
+ * `requirementId` here; the id is still rendered next to the row for tracing.
+ */
 function requirementGap(item: MissingRequirement): string {
   const sources = item.acceptedSourceTypes.map((source) => sourceTypeText[source]).join(" / ");
-  return `${item.requirementId} 还缺 ${item.need - item.have} 条（${sources}）`;
+  return `${item.description} 还缺 ${item.need - item.have} 条（${sources}）`;
 }
 
 /**
@@ -93,21 +97,24 @@ function NextActionControl({
           </button>
         </div>
       );
-    case "SUBMIT_EVIDENCE":
+    case "SUBMIT_EVIDENCE": {
+      // Short and repeatable: the full task sentence sits outside the button.
+      const target = criterionLabelOrId(action.missing.criterionIndex, action.missing.criterionId);
       return (
         <div className="next-action">
           <p className="muted">
-            还缺证据：{action.missing.criterionId} · {requirementGap(action.missing)}
+            还缺证据：{target} · {requirementGap(action.missing)}
           </p>
           <button
             type="button"
             className="button-secondary"
             onClick={() => onSubmitEvidence(action.missing.criterionId)}
           >
-            去 {action.missing.criterionId} 提交证据
+            {`为${target} 提交材料`}
           </button>
         </div>
       );
+    }
   }
 }
 
@@ -176,11 +183,14 @@ export function ProgressPanel({
         <ul className="progress-missing">
           {progress.missing.map((item) => (
             <li key={`${item.criterionId}:${item.requirementId}`}>
-              <code>{item.criterionId}</code>
+              <strong className="task-label">
+                {criterionLabelOrId(item.criterionIndex, item.criterionId)}
+              </strong>
               <span className={item.criterionRequired ? "tag tag-required" : "tag"}>
                 {item.criterionRequired ? "必需" : "可选"}
               </span>
-              <span>{requirementGap(item)}</span>
+              <span className="task-desc">{requirementGap(item)}</span>
+              <code className="internal-id">{`${item.criterionId} · ${item.requirementId}`}</code>
             </li>
           ))}
         </ul>
