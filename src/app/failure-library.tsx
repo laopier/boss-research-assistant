@@ -35,16 +35,16 @@ export function FailureLibrary({ failures, busy, onIncubate }: FailureLibraryPro
   return (
     <section className="library">
       <div className="library-head">
-        <h3>失败资产库</h3>
+        <h3>踩坑记录</h3>
         <p className="muted">
-          已累计 <strong>{failures.length}</strong> 条失败证据，其中 <strong>{unresolved}</strong> 条尚未解决。
-          已解决的失败同样保留——失败记录本身就是资产。
+          已经记下 <strong>{failures.length}</strong> 个问题，其中 <strong>{unresolved}</strong> 个还没解决。
+          修好以后记录也会保留，方便以后少走弯路。
         </p>
       </div>
 
       {failures.length === 0 && (
         <p className="library-empty">
-          还没有任何未通过的验收项。记录一条判定为「未通过」的证据，它就会沉淀到这里。
+          目前还没有踩坑记录。如果检查发现问题，Boss 会把它留在这里。
         </p>
       )}
 
@@ -73,11 +73,11 @@ export function FailureLibrary({ failures, busy, onIncubate }: FailureLibraryPro
           <div className="failure-foot">
             <span className="muted">
               {failure.resolved
-                ? "该验收项后来有了一条通过的证据；这条失败记录仍作为经验保留。"
-                : "可以把它孵化成一个新的、有界的 Boss。"}
+                ? "这个问题后来已经解决；原来的记录仍会保留。"
+                : "可以把这个问题拆成一个更小的下一步。"}
             </span>
             <button type="button" className="button-secondary" disabled={busy} onClick={() => onIncubate(failure)}>
-              {busy ? "正在孵化…" : "孵化下一个 Boss"}
+              {busy ? "正在拆分…" : "拆成下一步"}
             </button>
           </div>
         </article>

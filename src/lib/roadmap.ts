@@ -173,20 +173,20 @@ function recordsOf(ledger: Ledger, contractId: string) {
 /** One line for a workbench card: what the user should do next on this Boss. */
 export function nextActionSummary(ledger: Ledger, contractId: string): string {
   const contract = ledger.contracts[contractId];
-  if (!contract) return "该 Boss 的合同缺失，无法推导下一步。";
+  if (!contract) return "这一步的详细计划没有找到，暂时无法继续。";
   const accepted = Boolean(ledger.accepted[contractId]);
   const progress = deriveProgress(contract, ledger, accepted);
   switch (progress.nextAction.kind) {
     case "ACCEPT_CONTRACT":
-      return "接受合同，开始记录证据";
+      return "确认这一步，然后开始做";
     case "ADVANCE_PROJECT":
       return "当前阶段已通过，继续生成下一阶段 Boss";
     case "INCUBATE_FAILURE":
-      return `存在未解决的失败（${progress.nextAction.failure.evidence.criterionId}），可孵化下一 Boss`;
+      return "有一个问题还没解决，可以把它拆成下一步";
     case "SUBMIT_EVIDENCE":
-      return `为 ${progress.nextAction.missing.criterionId} 补充 ${progress.nextAction.missing.need - progress.nextAction.missing.have} 条证据`;
+      return `为完成标准 ${progress.nextAction.missing.criterionIndex} 补充 ${progress.nextAction.missing.need - progress.nextAction.missing.have} 份材料`;
     case "REVISE_CONTRACT":
-      return "合同缺少验收标准，需要协商补充";
+      return "这一步缺少完成标准，需要先补充";
     case "RESOLVE_BLOCKER":
       return `先解除阻塞项 ${progress.nextAction.blocker.id}`;
   }

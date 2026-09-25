@@ -116,7 +116,7 @@ export function EvidenceSubmitForm({
 
   if (!requirement) {
     return (
-      <p className="muted">这个验收项没有定义证据要求，因此无法提交证据。</p>
+      <p className="muted">这条完成标准还没写清要检查什么，因此暂时不能提交材料。</p>
     );
   }
 
@@ -132,15 +132,15 @@ export function EvidenceSubmitForm({
     );
     setSummary(
       included.length > 0
-        ? `已读取本地项目中的 ${included.length} 个文件用于静态产物检查`
+        ? `已读取本地项目中的 ${included.length} 个文件用于内容检查`
         : "",
     );
     setSourceType("ARTIFACT_INSPECTED");
     setArtifactNotice(
       bundle.truncated || bundle.omittedCount > 0
-        ? `受单条证据 ${CONTENT_MAX_LENGTH} 字限制，本次实际送审 ${included.length}/${files.length} 个文件${
+        ? `受单次检查 ${CONTENT_MAX_LENGTH} 字限制，本次实际检查 ${included.length}/${files.length} 个文件${
             bundle.truncated ? "，最后一个文件仅送审可容纳的前半部分" : ""
-          }。如需完整审核，请分批提交。`
+          }。如需完整检查，请分批提交。`
         : `本次将送审 ${included.length} 个文件。`,
     );
     setUsingArtifact(false);
@@ -158,7 +158,7 @@ export function EvidenceSubmitForm({
     <div className="evidence-form">
       <div className="field-row">
         <label>
-          对应证据要求
+          这份材料要证明什么
           <select
             value={requirement.id}
             onChange={(event) => {
@@ -181,7 +181,7 @@ export function EvidenceSubmitForm({
           </select>
         </label>
         <label>
-          证据来源类型
+          你准备提交什么
           <select
             value={sourceType}
             onChange={(event) => setSourceType(event.target.value as EvidenceSourceType)}
@@ -198,9 +198,9 @@ export function EvidenceSubmitForm({
 
       {deliverables && deliverables.length > 0 && (
         <label>
-          关联交付物（可选，用于推导交付物进度）
+          对应哪项成果（可选）
           <select value={deliverableId} onChange={(event) => setDeliverableId(event.target.value)}>
-            <option value="">（不关联任何交付物）</option>
+            <option value="">（不对应某一项成果）</option>
             {deliverables.map((item, position) => (
               <option key={item.id} value={item.id}>
                 {`${deliverableLabel(position + 1)} · ${shortenedDescription(item.description, 14)}`}
@@ -211,7 +211,7 @@ export function EvidenceSubmitForm({
       )}
 
       <label>
-        来源名称
+        文件或结果名称
         <input
           value={sourceName}
           onChange={(event) => setSourceName(event.target.value)}
@@ -221,7 +221,7 @@ export function EvidenceSubmitForm({
       </label>
 
       <label>
-        一句话说明这条证据是什么
+        用一句话说明这份材料是什么
         <input
           value={summary}
           onChange={(event) => setSummary(event.target.value)}
@@ -260,21 +260,21 @@ export function EvidenceSubmitForm({
         </>
       ) : (
         <p className="field-hint">
-          当前证据要求不接受本地文件静态检查，请按上方允许的来源类型提交。
+          这条完成标准不能只靠查看文件来确认，请按上方允许的材料类型提交。
         </p>
       )}
 
       <p className="privacy-note">
-        提交内容会发送到本应用的审核服务做判定；当服务端配置为 AI 模式（
+        提交内容会发送给本应用的检查服务；当服务端使用 AI 模式（
         <code>BOSS_GENERATOR=llm</code>）时，内容会进一步发送给 DeepSeek。
         请勿粘贴密钥、个人信息或未脱敏数据。原始文本<strong>不会被保存</strong>，
-        页面只保留审核结论、证明边界与理由。
+        页面只保留检查结果和理由。
       </p>
 
       <div className="evidence-form-footer">
         <span className="muted">
-          {content.trim().length} / {CONTENT_MAX_LENGTH} 字 · 提交后进入「待审核」，
-          采纳审核结论才会影响判定。
+          {content.trim().length} / {CONTENT_MAX_LENGTH} 字 · 提交后会进入检查，
+          采用检查结果后才会更新进度。
         </span>
         <span className="actions">
           <button type="button" className="button-secondary" onClick={onCancel}>
@@ -294,7 +294,7 @@ export function EvidenceSubmitForm({
               })
             }
           >
-            {submitting ? "正在审核…" : "提交并送审"}
+            {submitting ? "正在检查…" : "提交并检查"}
           </button>
         </span>
       </div>
@@ -453,7 +453,7 @@ export function EvidenceEntry({
               <span className="task-desc">{item.description}</span>
               <code className="internal-id">{item.id}</code>
               <span className="source-types">
-                可接受来源：{item.acceptedSourceTypes.map((source) => sourceTypeText[source]).join(" / ")}
+                可以提交：{item.acceptedSourceTypes.map((source) => sourceTypeText[source]).join(" / ")}
                 ，至少 {item.minimumCount} 条
               </span>
             </li>
@@ -519,7 +519,7 @@ export function EvidenceEntry({
 
         {!unifiedSubmission && <div className="evidence-actions">
           {locked ? (
-            <span className="muted">接受合同后才能开始记录证据。</span>
+            <span className="muted">确认这一步后才能提交材料。</span>
           ) : formOpen ? (
             <EvidenceSubmitForm
               // Remount when the request targets a different deliverable, so a
@@ -535,7 +535,7 @@ export function EvidenceEntry({
             />
           ) : (
             <button type="button" className="button-secondary" onClick={() => setOpen(true)}>
-              提交证据
+              提交材料
             </button>
           )}
         </div>}

@@ -121,7 +121,7 @@ function isEvidenceReview(value: unknown): value is EvidenceReview {
  * not touched. "The AI was down and the page said something vague" is how a
  * fabricated PASS gets into a demo.
  */
-export const REVIEW_FAILURE_GUARANTEE = "证据仍为「待审核」，判定没有被改变。";
+export const REVIEW_FAILURE_GUARANTEE = "这份材料仍在等待检查，完成情况没有被改变。";
 
 /**
  * Turns anything the transport or the server can throw into one sentence a
@@ -134,15 +134,15 @@ export const REVIEW_FAILURE_GUARANTEE = "证据仍为「待审核」，判定没
 export function reviewErrorDetail(error: unknown): string {
   if (error instanceof ReviewRequestError) return error.message;
   if (error instanceof DOMException && error.name === "AbortError") {
-    return "审核请求超时，已放弃等待。";
+    return "检查请求超时，已停止等待。";
   }
   if (error instanceof Error && error.name === "AbortError") {
-    return "审核请求超时，已放弃等待。";
+    return "检查请求超时，已停止等待。";
   }
   if (error instanceof TypeError) {
-    return "无法连接审核服务（网络中断或本地服务未启动）。";
+    return "无法连接检查服务（网络中断或本地服务未启动）。";
   }
-  return "审核失败，请稍后重试。";
+  return "检查失败，请稍后重试。";
 }
 
 /** What went wrong, plus the guarantee that nothing was written. */
@@ -173,7 +173,7 @@ async function readError(response: Response): Promise<ReviewRequestError> {
   }
   if (message) return new ReviewRequestError(message, response.status, code);
   return new ReviewRequestError(
-    `审核服务返回了 ${response.status}，且没有给出原因。证据仍为「待审核」。`,
+    `检查服务返回了 ${response.status}，但没有给出原因。这份材料仍在等待检查。`,
     response.status,
     code,
   );
@@ -218,7 +218,7 @@ export async function requestEvidenceReview(
     body = await response.json();
   } catch {
     throw new ReviewRequestError(
-      "审核服务返回了无法解析的内容，本次审核结果已丢弃。",
+      "检查服务返回了无法解析的内容，本次结果已丢弃。",
       response.status,
       "MALFORMED_RESPONSE",
     );
@@ -227,7 +227,7 @@ export async function requestEvidenceReview(
   const envelope = body as Partial<SubmittedReview>;
   if (!isEvidenceReview(envelope.review)) {
     throw new ReviewRequestError(
-      "审核结果的结构不符合约定，已丢弃。",
+      "检查结果的格式不正确，已丢弃。",
       response.status,
       "MALFORMED_REVIEW",
     );

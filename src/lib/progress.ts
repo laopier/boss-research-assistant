@@ -229,7 +229,7 @@ export function listJourneyEvents(contract: BossContract, ledger: Ledger): Journ
 
   const acceptedAt = ledger.accepted[contract.id];
   if (acceptedAt) {
-    events.push({ kind: "CONTRACT_ACCEPTED", at: acceptedAt, text: "接受 Boss Contract，验收语义生效。" });
+    events.push({ kind: "CONTRACT_ACCEPTED", at: acceptedAt, text: "确认了这一步的目标和完成标准。" });
   }
 
   const criterionPassedAt = new Map<string, string>();
@@ -247,7 +247,7 @@ export function listJourneyEvents(contract: BossContract, ledger: Ledger): Journ
     events.push({
       kind: "EVIDENCE_RECORDED",
       at: record.recordedAt,
-      text: `提交了证据「${record.sourceName}」（${record.criterionId}）。`,
+      text: `提交了材料「${record.sourceName}」。`,
     });
 
     const review = reviewFor(ledger, record.id);
@@ -255,7 +255,7 @@ export function listJourneyEvents(contract: BossContract, ledger: Ledger): Journ
       events.push({
         kind: "REVIEW_ADOPTED",
         at: review.reviewedAt,
-        text: `采纳了对「${record.sourceName}」的审核结论。`,
+        text: `采用了对「${record.sourceName}」的检查结果。`,
       });
     }
 
@@ -273,13 +273,13 @@ export function listJourneyEvents(contract: BossContract, ledger: Ledger): Journ
       events.push({
         kind: "FAILURE_RECORDED",
         at: adoptionTime(ledger, record),
-        text: `发现未通过的证据：${record.summary}`,
+        text: `检查发现一个问题：${record.summary}`,
       });
     }
   }
 
   for (const [criterionId, at] of criterionPassedAt) {
-    events.push({ kind: "CRITERION_PASSED", at, text: `验收项 ${criterionId} 通过。` });
+    events.push({ kind: "CRITERION_PASSED", at, text: `一条完成标准已经通过（${criterionId}）。` });
   }
 
   for (const incubation of Object.values(ledger.incubations)) {
@@ -288,7 +288,7 @@ export function listJourneyEvents(contract: BossContract, ledger: Ledger): Journ
     events.push({
       kind: "INCUBATED",
       at: source?.recordedAt ?? "",
-      text: `从失败记录孵化出新的 Boss（${incubation.criterionId}）。`,
+      text: `把一个未解决的问题拆成了新的下一步（${incubation.criterionId}）。`,
     });
   }
 
@@ -297,7 +297,7 @@ export function listJourneyEvents(contract: BossContract, ledger: Ledger): Journ
     events.push({
       kind: "BOSS_CLEAR",
       at: maxTime(...required.map((item) => criterionPassedAt.get(item.id) ?? "")),
-      text: "全部必需验收项通过，Boss 完成。",
+      text: "所有必须完成的标准都已通过，这一步完成。",
     });
   }
 

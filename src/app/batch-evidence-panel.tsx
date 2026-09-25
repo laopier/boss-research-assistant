@@ -100,7 +100,7 @@ export function BatchEvidencePanel({
       return;
     }
     if (content.length > CONTENT_MAX_LENGTH) {
-      setError(`文件共 ${content.length} 字，当前单次审核上限为 ${CONTENT_MAX_LENGTH} 字。请先压缩说明后再提交。`);
+      setError(`文件共 ${content.length} 字，当前单次检查上限为 ${CONTENT_MAX_LENGTH} 字。请先压缩说明后再提交。`);
       setBusy(false);
       return;
     }
@@ -174,11 +174,11 @@ export function BatchEvidencePanel({
   return (
     <section id="batch-evidence" className="batch-evidence" aria-label="统一提交研究产物">
       <div>
-        <p className="eyebrow">一次提交 · 多项核查</p>
-        <h3>提交最终产物</h3>
+        <p className="eyebrow">一份文件，一次检查</p>
+        <h3>上传这一步的成果</h3>
         <p className="muted">
-          上传一份文件即可。系统会在后台用同一份产物核查 {coveredCriteria} 项验收标准，
-          不需要逐项重复提交。
+          只要上传一份文件。Boss 会自动用它检查 {coveredCriteria} 条完成标准，
+          不用重复提交。
         </p>
       </div>
 
@@ -191,23 +191,23 @@ export function BatchEvidencePanel({
           aria-label="选择最终产物文件"
         />
         <button type="button" disabled={locked || busy || !file} onClick={() => void submitOnce()}>
-          {busy ? `正在核查 ${progress.done}/${progress.total}…` : "提交一次，审核全部标准"}
+          {busy ? `正在检查 ${progress.done}/${progress.total}…` : "上传并检查全部标准"}
         </button>
       </div>
 
       <p className="privacy-note">
-        文件内容会发送给当前配置的 AI 审核服务；原文不写入本地账本，只保留文件名、审核结论与理由。
+        文件内容会发送给当前配置的 AI 检查服务；页面不会保存原文，只会留下文件名和检查结果。
       </p>
-      {locked && <p className="muted">先接受合同，才能提交最终产物。</p>}
+      {locked && <p className="muted">先确认这一步，再上传成果。</p>}
       {error && <p className="error" role="alert">{error}</p>}
 
       {results.length > 0 && (
         <div className="batch-results" aria-live="polite">
-          <strong>核查结果</strong>
+          <strong>检查结果</strong>
           {results.map((result) => (
             <div className="batch-result" key={`${result.criterionId}:${result.requirementId}`}>
               <span className={`status status-${result.state === "PASS" ? "pass" : result.state === "FAIL" || result.state === "ERROR" ? "fail" : "unknown"}`}>
-                {result.state === "PASS" ? "通过" : result.state === "FAIL" ? "未通过" : result.state === "ERROR" ? "审核失败" : "信息不足"}
+                {result.state === "PASS" ? "通过" : result.state === "FAIL" ? "未通过" : result.state === "ERROR" ? "检查失败" : "信息不足"}
               </span>
               <div>
                 <strong className="task-label">

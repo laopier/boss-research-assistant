@@ -63,10 +63,10 @@ addFormats(reviewAjv);
 const reviewSchemaValidate = reviewAjv.compile(reviewSchemaJson);
 
 export const PROOF_BOUNDARY_TEXT: Record<EvidenceSourceType, string> = {
-  USER_REPORTED: "用户陈述",
-  ARTIFACT_INSPECTED: "成果内容",
-  LOG_INSPECTED: "运行日志",
-  AUTO_VERIFIED: "平台执行",
+  USER_REPORTED: "你的说明",
+  ARTIFACT_INSPECTED: "文件内容",
+  LOG_INSPECTED: "运行结果",
+  AUTO_VERIFIED: "系统实测",
 };
 
 export function proofBoundaryRank(sourceType: EvidenceSourceType): number {

@@ -66,10 +66,10 @@ export function Workbench({
     <section className="workbench" aria-label="Boss 工作台">
       <div className="workbench-head">
         <div>
-          <p className="eyebrow">科研项目 · 计划版本 Revision {roadmap.revision}</p>
+          <p className="eyebrow">科研项目 · 第 {roadmap.revision} 版计划</p>
           <h2>{roadmap.goal}</h2>
           <p className="muted">
-            已完成 {roadmap.bossesDone}/{roadmap.bossesTotal} 个规划步骤；当前只展开正在执行的 Boss，后续步骤会按路线逐步生成。
+            已完成 {roadmap.bossesDone}/{roadmap.bossesTotal} 个步骤；Boss 会先展开眼前的一步，后面的任务会按计划逐步出现。
           </p>
         </div>
         <span className="actions">
@@ -78,10 +78,10 @@ export function Workbench({
             className="button-secondary"
             onClick={() => setNegotiating((open) => !open)}
           >
-            {negotiating ? "收起协商" : "协商调整路线"}
+            {negotiating ? "收起对话" : "和 Boss 调整计划"}
           </button>
           <button type="button" className="button-secondary" onClick={onNewBoss}>
-            新建 Boss
+            添加下一步
           </button>
           <button type="button" className="button-danger" onClick={onStartOver}>
             重新开始
@@ -113,11 +113,11 @@ export function Workbench({
           />
         </div>
         <p className="field-hint">
-          分母来自项目创建时生成的完整路线图，并按各步骤预计投入加权；未来步骤即使尚未生成详细合同，也会计入整体进度。协商修改路线后，分母与版本会同步更新。
+          进度会把后面还没展开的步骤也算进去，并参考每一步的预计用时。调整计划后会自动重新计算。
         </p>
         {project.planningAssumptions && project.planningAssumptions.length > 0 && (
           <details className="plan-assumptions">
-            <summary>查看初始规划假设</summary>
+            <summary>这份计划是怎么估出来的</summary>
             <ul>
               {project.planningAssumptions.map((item) => <li key={item}>{item}</li>)}
             </ul>
@@ -136,22 +136,22 @@ export function Workbench({
       ))}
 
       {roadmap.milestones.length === 0 && (
-        <p className="muted">这个项目还没有里程碑。新建一个 Boss 即可开始。</p>
+        <p className="muted">这个项目还没有阶段。先添加一个下一步。</p>
       )}
 
       {project.currentBossId && ledger.contracts[project.currentBossId] && (
         <p className="muted">
-          当前 Boss：{ledger.contracts[project.currentBossId].objective}
+          正在做：{ledger.contracts[project.currentBossId].objective}
         </p>
       )}
 
       {project.history && project.history.length > 0 && (
         <div className="plan-history">
-          <strong>计划修订历史</strong>
+          <strong>计划调整记录</strong>
           <ul>
             {project.history.slice(0, 5).map((item) => (
               <li key={item.revision}>
-                <code>Revision {item.revision}</code>
+                <code>第 {item.revision} 版</code>
                 <span>
                   {item.reason}（总进度 {item.progressBefore}% → {item.progressAfter}%）
                 </span>
@@ -193,7 +193,7 @@ function MilestoneCard({
         />
       </div>
 
-      {milestone.bossIds.length === 0 && <p className="muted">这个里程碑还没有 Boss。</p>}
+      {milestone.bossIds.length === 0 && <p className="muted">这个阶段还没有安排任务。</p>}
 
       <div className="boss-grid">
         {milestone.bossIds.map((contractId) => {
@@ -201,7 +201,7 @@ function MilestoneCard({
           if (!contract) {
             return (
               <article className="boss-card" key={contractId}>
-                <p className="muted">Boss {contractId} 的合同缺失。</p>
+                <p className="muted">这一步的详细计划没有找到（{contractId}）。</p>
               </article>
             );
           }
@@ -231,7 +231,7 @@ function MilestoneCard({
                 className="button-secondary"
                 onClick={() => onOpenBoss(contractId)}
               >
-                {isCurrent ? "继续这个 Boss" : "进入这个 Boss"}
+                {isCurrent ? "继续这一步" : "查看这一步"}
               </button>
             </article>
           );
@@ -245,7 +245,7 @@ function MilestoneCard({
               </div>
               <p className="boss-card-objective">{step.title}</p>
               <p className="muted">{step.objective}</p>
-              <p className="field-hint">预计 {step.estimatedMinutes} 分钟 · 完成前序步骤后生成详细 Boss</p>
+              <p className="field-hint">预计 {step.estimatedMinutes} 分钟 · 做完前面的步骤后，Boss 会展开详细计划</p>
             </article>
           ))}
       </div>

@@ -1005,7 +1005,7 @@ export function deriveCriterion(
       status: "FAIL",
       acceptedCount: relevant.length,
       pendingCount,
-      reason: `已接受的证据「${failure.sourceName}」判定为未通过。`,
+      reason: `材料「${failure.sourceName}」显示这条标准还没有达到。`,
     };
   }
 
@@ -1030,7 +1030,7 @@ export function deriveCriterion(
       status: "PASS",
       acceptedCount: relevant.length,
       pendingCount,
-      reason: `${criterion.evidenceRequirements.length} 项证据要求全部满足。`,
+      reason: `需要检查的 ${criterion.evidenceRequirements.length} 项内容都已满足。`,
     };
   }
 
@@ -1039,7 +1039,7 @@ export function deriveCriterion(
     status: "UNKNOWN",
     acceptedCount: relevant.length,
     pendingCount,
-    reason: `证据要求未满足：${unmet.join("、")}${extra}。`,
+    reason: `还缺少这些材料：${unmet.join("、")}${extra}。`,
   };
 }
 
@@ -1085,7 +1085,7 @@ export function deriveDeliverable(
   if (linked.length === 0) {
     return {
       status: "NOT_STARTED",
-      reason: "还没有为这个交付物提交过任何材料。",
+      reason: "还没有为这项成果提交任何材料。",
       relatedCriteria: [],
       linkedEvidenceCount: 0,
     };
@@ -1114,7 +1114,7 @@ export function deriveDeliverable(
   if (unpassed.length === 0) {
     return {
       status: "DONE",
-      reason: `关联的验收项（${relatedCriteria.join("、")}）已全部通过。`,
+      reason: `相关完成标准（${relatedCriteria.join("、")}）已经全部通过。`,
       relatedCriteria,
       linkedEvidenceCount: linked.length,
     };
@@ -1122,7 +1122,7 @@ export function deriveDeliverable(
 
   return {
     status: "IN_PROGRESS",
-    reason: `已提交 ${linked.length} 条材料，关联验收项 ${unpassed.join("、")} 尚未全部通过。`,
+    reason: `已提交 ${linked.length} 份材料，相关完成标准 ${unpassed.join("、")} 还没有全部通过。`,
     relatedCriteria,
     linkedEvidenceCount: linked.length,
   };
@@ -1165,7 +1165,7 @@ export function deriveBoss(
   };
 
   if (!accepted) {
-    return { status: "DRAFT", reason: "合同尚未接受，验收语义还未生效。", ...summary };
+    return { status: "DRAFT", reason: "这一步还没有确认，因此还不会判断完成情况。", ...summary };
   }
 
   // §4.1 — the schema has no "resolved" flag on a blocker, so any recorded
@@ -1184,7 +1184,7 @@ export function deriveBoss(
   if (requiredPassed === required.length) {
     return {
       status: "CLEAR",
-      reason: `全部 ${required.length} 个必需验收项通过。`,
+      reason: `所有 ${required.length} 条必须完成的标准都已通过。`,
       ...summary,
     };
   }
@@ -1194,13 +1194,13 @@ export function deriveBoss(
   if (requiredPassed > 0) {
     return {
       status: "PARTIAL",
-      reason: `必需验收项 ${requiredPassed}/${required.length} 通过，尚未全部通过。`,
+      reason: `必须完成的标准已有 ${requiredPassed}/${required.length} 条通过。`,
       ...summary,
     };
   }
 
   // §4.4
-  return { status: "ACTIVE", reason: "尚无必需验收项通过。", ...summary };
+  return { status: "ACTIVE", reason: "还没有任何必须完成的标准通过。", ...summary };
 }
 
 // ---------------------------------------------------------------------------
@@ -1262,9 +1262,9 @@ export function clampGoal(text: string, max = 500): string {
 export function buildIncubationGoal(failure: FailureAsset): string {
   const source = failure.evidence.sourceName.trim();
   const parts = [
-    "上一个 Boss 有一个验收项被判定未通过，需要修正这个具体问题：",
+    "上一步留下了一个需要解决的具体问题：",
     failure.evidence.summary.trim(),
-    source ? `（证据来源：${source}）` : "",
+    source ? `（材料来源：${source}）` : "",
     "请只收敛到能解决该问题的最小一步，不要扩大到完整论文复现。",
   ];
   return clampGoal(parts.join(""));

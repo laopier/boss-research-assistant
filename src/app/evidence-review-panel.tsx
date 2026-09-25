@@ -78,7 +78,7 @@ export function EvidenceReviewPanel({
     <div className="review-panel">
       {proposal && !adopted && (
         <p className="review-callout">
-          这是审核建议，<strong>还没有写入判定</strong>。采纳后才会影响 {record.criterionId} 的状态。
+          这是检查建议，<strong>还没有更新进度</strong>。采用后才会影响这条完成标准的状态。
         </p>
       )}
 
@@ -91,7 +91,7 @@ export function EvidenceReviewPanel({
       {review ? (
         <>
           <p className="review-headline">
-            {overruled ? "审核建议（已被人工覆盖）" : adopted ? "审核结论（已采纳）" : "审核建议（未采纳）"}
+            {overruled ? "检查建议（已手动修改）" : adopted ? "检查结果（已采用）" : "检查建议（未采用）"}
           </p>
           <div className="review-verdict">
             <span className={reviewDecisionClass[review.decision]}>
@@ -108,7 +108,7 @@ export function EvidenceReviewPanel({
           <p className="review-rationale">{review.rationale}</p>
 
           <div className="review-boundary">
-            <span className="review-boundary-label">证明边界</span>
+            <span className="review-boundary-label">这份材料能说明什么</span>
             <span className="review-boundary-value">{proofBoundaryText[review.proofBoundary]}</span>
             <span className="source-type-declared">
               提交时声明：{sourceTypeText[record.sourceType]}
@@ -118,7 +118,7 @@ export function EvidenceReviewPanel({
 
           {review.suggestedNextEvidence.length > 0 && (
             <div className="review-suggestions">
-              <strong>建议补充的证据</strong>
+              <strong>建议补充的材料</strong>
               <ul>
                 {review.suggestedNextEvidence.map((item, index) => (
                   <li key={`${item.sourceType}-${index}`}>
@@ -154,7 +154,7 @@ export function EvidenceReviewPanel({
             </button>
             {adopted && !overruled && (
               <span className="muted">
-                已采纳{adopted.decision === "INCONCLUSIVE" ? "（结论为无法判断，状态保持待审核）" : ""}
+                已采用{adopted.decision === "INCONCLUSIVE" ? "（目前仍无法判断）" : ""}
               </span>
             )}
           </div>
@@ -162,11 +162,11 @@ export function EvidenceReviewPanel({
       ) : (
         <div className="review-actions-row">
           <span className="muted">
-            这条证据还没有审核结论。提交审核后，这里会显示审核器接受了什么、依据是什么。
+            这份材料还没有检查结果。提交检查后，这里会说明它能证明什么、依据是什么。
           </span>
           {canRetry && (
             <button type="button" className="button-secondary" disabled={busy} onClick={onRetry}>
-              {busy ? "审核中…" : "重新审核这条证据"}
+              {busy ? "检查中…" : "重新检查这份材料"}
             </button>
           )}
         </div>
@@ -242,14 +242,14 @@ function OverrideForm({ record, review, busy, onCancel, onConfirm }: OverrideFor
 
       <div className="field-row">
         <label>
-          新的审核状态
+          修改后的状态
           <select
             value={toStatus}
             onChange={(event) => setToStatus(event.target.value as EvidenceReviewStatus)}
           >
             <option value="ACCEPTED">接受（计入判定）</option>
             <option value="REJECTED">拒绝（不计入判定）</option>
-            <option value="PENDING">退回待审核</option>
+            <option value="PENDING">退回等待检查</option>
           </select>
         </label>
         <label>

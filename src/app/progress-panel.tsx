@@ -25,7 +25,7 @@ export interface ProgressPanelProps {
  */
 function requirementGap(item: MissingRequirement): string {
   const sources = item.acceptedSourceTypes.map((source) => sourceTypeText[source]).join(" / ");
-  return `${item.description} 还缺 ${item.need - item.have} 条（${sources}）`;
+  return `${item.description}；还需要 ${item.need - item.have} 份材料（可以提交：${sources}）`;
 }
 
 /**
@@ -53,27 +53,27 @@ function NextActionControl({
     case "ACCEPT_CONTRACT":
       return (
         <button type="button" onClick={onAccept}>
-          接受合同，开始记录证据
+          确认这一步，开始行动
         </button>
       );
     case "ADVANCE_PROJECT":
       return (
         <div className="next-action">
-          <p className="muted">当前 Boss 已通过验收，但整个科研目标尚未被判定为结束。</p>
+          <p className="muted">这一步已经完成，但整个项目还没有结束。</p>
           <button type="button" onClick={onAdvanceProject} disabled={advancing}>
-            {advancing ? "正在生成下一阶段…" : "生成下一阶段 Boss"}
+            {advancing ? "正在准备下一步…" : "开始下一步"}
           </button>
           <button type="button" className="button-secondary" onClick={onExportReport}>
-            导出本阶段验收报告
+            下载这一步的结果记录
           </button>
         </div>
       );
     case "REVISE_CONTRACT":
       return (
         <div className="next-action">
-          <p className="muted">当前合同没有足够的验收标准，无法诚实判定完成。</p>
+          <p className="muted">这一步缺少明确的完成标准，暂时无法判断是否完成。</p>
           <button type="button" className="button-secondary" disabled>
-            请先协商并补充验收标准
+            请先补充完成标准
           </button>
         </div>
       );
@@ -81,19 +81,19 @@ function NextActionControl({
       return (
         <div className="next-action">
           <p className="muted">
-            当前无法完成：{action.blocker.description}。解除方式：{action.blocker.resolution}
+            现在卡在：{action.blocker.description}。可以这样解决：{action.blocker.resolution}
           </p>
           <button type="button" className="button-secondary" disabled>
-            先解除阻塞项 {action.blocker.id}
+            先解决这个问题
           </button>
         </div>
       );
     case "INCUBATE_FAILURE":
       return (
         <div className="next-action">
-          <p className="muted">有一条未解决的失败记录：{action.failure.evidence.summary}</p>
+          <p className="muted">这里记录了一个还没解决的问题：{action.failure.evidence.summary}</p>
           <button type="button" className="button-secondary" onClick={() => onIncubate(action.failure)}>
-            孵化成下一个 Boss
+            把这个问题拆成下一步
           </button>
         </div>
       );
@@ -103,14 +103,14 @@ function NextActionControl({
       return (
         <div className="next-action">
           <p className="muted">
-            还缺证据：{target} · {requirementGap(action.missing)}
+            还需要补充：{target} · {requirementGap(action.missing)}
           </p>
           <button
             type="button"
             className="button-secondary"
             onClick={() => onSubmitEvidence(action.missing.criterionId)}
           >
-            {`为${target} 提交材料`}
+            {`提交${target}需要的材料`}
           </button>
         </div>
       );
@@ -145,9 +145,9 @@ export function ProgressPanel({
       <div className="progress-bars">
         <div className="progress-bar">
           <div className="progress-bar-head">
-            <strong>产出进度</strong>
+            <strong>成果准备</strong>
             <span>
-              {progress.deliverablesDone}/{progress.deliverablesTotal} 交付物
+              {progress.deliverablesDone}/{progress.deliverablesTotal} 项成果
             </span>
           </div>
           <div className="progress-track">
@@ -159,9 +159,9 @@ export function ProgressPanel({
         </div>
         <div className="progress-bar">
           <div className="progress-bar-head">
-            <strong>通关进度</strong>
+            <strong>完成检查</strong>
             <span>
-              {progress.requiredPassed}/{progress.requiredTotal} 必需验收项
+              {progress.requiredPassed}/{progress.requiredTotal} 项必须完成
             </span>
           </div>
           <div className="progress-track">
@@ -175,7 +175,7 @@ export function ProgressPanel({
 
       {progress.blockers.length > 0 && (
         <p className="progress-blocker">
-          当前阻塞：{progress.blockers.join("、")}。
+          现在卡在：{progress.blockers.join("、")}。
         </p>
       )}
 
@@ -187,7 +187,7 @@ export function ProgressPanel({
                 {criterionLabelOrId(item.criterionIndex, item.criterionId)}
               </strong>
               <span className={item.criterionRequired ? "tag tag-required" : "tag"}>
-                {item.criterionRequired ? "必需" : "可选"}
+                {item.criterionRequired ? "必须" : "加分项"}
               </span>
               <span className="task-desc">{requirementGap(item)}</span>
               <code className="internal-id">{`${item.criterionId} · ${item.requirementId}`}</code>
@@ -198,7 +198,7 @@ export function ProgressPanel({
 
       {progress.unresolvedFailures > 0 && (
         <p className="progress-failures muted">
-          还有 {progress.unresolvedFailures} 条未解决的失败证据沉淀在失败资产库。
+          还有 {progress.unresolvedFailures} 个问题没有解决，已经保存在“踩坑记录”里。
         </p>
       )}
 

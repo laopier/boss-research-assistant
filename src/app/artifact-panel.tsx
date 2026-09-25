@@ -62,7 +62,7 @@ export function ArtifactPanel({ onUse, onCancel, purpose = "evidence" }: Artifac
     setSelected(new Set());
     setStatus("ready");
     if (scan.items.length === 0) {
-      setMessage(`这个目录里没有可${forContext ? "用作上下文" : "送审"}的文本文件（或全部被排除）。`);
+      setMessage(`这个文件夹里没有可${forContext ? "供 Boss 参考" : "用于检查"}的文本文件（或全部被排除）。`);
     }
   }
 
@@ -86,7 +86,7 @@ export function ArtifactPanel({ onUse, onCancel, purpose = "evidence" }: Artifac
       if (read.length === 0) {
         setStatus("ready");
         setReading(null);
-        setMessage(`没有读取到可${forContext ? "用作上下文" : "送审"}的文本内容，请重新选择文件。`);
+        setMessage(`没有读取到可${forContext ? "供 Boss 参考" : "用于检查"}的文本内容，请重新选择文件。`);
         return;
       }
       onUse(read);
@@ -100,22 +100,22 @@ export function ArtifactPanel({ onUse, onCancel, purpose = "evidence" }: Artifac
   return (
     <div className="artifact-panel">
       <div className="artifact-head">
-        <strong>{forContext ? "添加本地项目上下文" : "从本地项目读取文件"}</strong>
+        <strong>{forContext ? "让 Boss 参考本地文件" : "选择要检查的本地文件"}</strong>
         <button type="button" className="button-secondary" onClick={onCancel}>
           取消
         </button>
       </div>
       <p className="privacy-note">
-        只读、不修改本地文件。只有你<strong>勾选</strong>的文件内容会被读取；敏感文件会自动排除。
+        只读，不会修改本地文件。只有你<strong>勾选</strong>的文件会被读取；常见敏感文件会自动跳过。
         {forContext
-          ? "内容只用于本次 Boss 生成，不会保存在项目账本中；AI 会把它当作不可信资料而不是指令。"
-          : "原始内容不会保存，页面只保留审核结论、来源名称和证明边界。送审证据最高只能标记为「已检查产物」，绝不会是「平台自动验证」。"}
+          ? "内容只用于生成这一步，不会保存。AI 会把文件当作参考资料，不会执行里面的指令。"
+          : "内容只用于这次检查。页面只保留文件名和检查结果，不会保存原文。"}
       </p>
 
       {status === "idle" && (
         <div className="artifact-actions">
           <button type="button" onClick={connect}>
-            连接本地项目目录
+            选择本地文件夹
           </button>
           {message && <p className="error" role="alert">{message}</p>}
         </div>
@@ -133,8 +133,8 @@ export function ArtifactPanel({ onUse, onCancel, purpose = "evidence" }: Artifac
             </p>
           )}
           <p className="muted">
-            找到 {items.length} 个可{forContext ? "用作上下文" : "送审"}文件
-            {excluded.length > 0 && `，另有 ${excluded.length} 个被排除`}。勾选你这次要交给 AI {forContext ? "生成 Boss" : "审核"}的文件。
+            找到 {items.length} 个可{forContext ? "供 Boss 参考" : "用于检查"}的文件
+            {excluded.length > 0 && `，另有 ${excluded.length} 个被跳过`}。勾选这次要交给 AI {forContext ? "参考" : "检查"}的文件。
           </p>
           {items.length > 0 && (
             <>
@@ -157,7 +157,7 @@ export function ArtifactPanel({ onUse, onCancel, purpose = "evidence" }: Artifac
                   disabled={selected.size === 0}
                   onClick={() => void submit()}
                 >
-                  {forContext ? "使用" : "送审"}选中的 {selected.size} 个文件
+                  {forContext ? "参考" : "检查"}选中的 {selected.size} 个文件
                 </button>
                 <button
                   type="button"
@@ -178,7 +178,7 @@ export function ArtifactPanel({ onUse, onCancel, purpose = "evidence" }: Artifac
           {items.length === 0 && !message && <p className="error">没有可用的文件。</p>}
           {excluded.length > 0 && (
             <details className="artifact-excluded">
-              <summary>被排除的 {excluded.length} 个文件</summary>
+              <summary>自动跳过的 {excluded.length} 个文件</summary>
               <ul>
                 {excluded.map((item) => (
                   <li key={item.relativePath}>

@@ -29,7 +29,7 @@ const WELCOME: DisplayMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "你可以直接告诉我哪里不合理、想先做什么，或者最近时间和优先级发生了什么变化。我会先和你把意图聊清楚，再给出一份可预览的修改提案。",
+    "你可以直接告诉我哪里不合理、想先做什么，或者最近时间和优先级发生了什么变化。我会先和你聊清楚，再给出一份修改后的计划供你确认。",
 };
 
 /**
@@ -147,16 +147,16 @@ export function NegotiationPanel({ ledger, roadmap, onApply, onClose }: Negotiat
   const delta = impact === null ? null : impact.progressAfter - impact.progressBefore;
 
   return (
-    <section className="negotiation" aria-label="协商调整路线">
+    <section className="negotiation" aria-label="和 Boss 调整计划">
       <div className="negotiation-head">
         <div>
-          <p className="eyebrow">Boss Negotiation</p>
+          <p className="eyebrow">自由聊聊怎么改计划</p>
           <h3>和 Boss 聊聊怎么调整计划</h3>
         </div>
         <button type="button" className="button-secondary" onClick={onClose}>关闭</button>
       </div>
       <p className="muted">
-        不需要先理解任何选项，直接说你的情况和想法。聊天不会修改计划；只有你接受提案后才会生成新版本。
+        不需要先理解任何选项，直接说你的情况和想法。聊天不会立刻修改计划；只有你确认修改方案后才会生效。
       </p>
 
       <div className="negotiation-chat" aria-live="polite">
@@ -200,7 +200,7 @@ export function NegotiationPanel({ ledger, roadmap, onApply, onClose }: Negotiat
       {draft && impact && (
         <div className="negotiation-preview">
           <p className="negotiation-callout">
-            Boss 已经把对话整理成一份<strong>可执行提案</strong>。现在仍未修改路线，接受后才会生效。
+            Boss 已经把对话整理成一份<strong>修改方案</strong>。现在还没有改动计划，确认后才会生效。
           </p>
           <ul className="negotiation-changes">
             {draft.proposal.changes.map((change, index) => (
@@ -228,8 +228,8 @@ export function NegotiationPanel({ ledger, roadmap, onApply, onClose }: Negotiat
           <div className="negotiation-actions">
             <button type="button" onClick={() => void accept()} disabled={applying}>
               {applying
-                ? "正在生成下一步 Boss…"
-                : `接受提案，生成计划版本 ${roadmap.revision + 1}`}
+                ? "正在准备下一步…"
+                : `确认修改，保存为第 ${roadmap.revision + 1} 版计划`}
             </button>
             <button type="button" className="button-secondary" disabled={applying} onClick={() => setDraft(null)}>
               先不接受，继续聊

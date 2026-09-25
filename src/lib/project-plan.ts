@@ -83,11 +83,11 @@ export function createMockProjectPlan(goal: string, first: BossContract): Projec
   const chinese = /[\u3400-\u9fff]/u.test(goal);
   const items = chinese
     ? [
-        ["理解问题与冻结范围", first.title, first.objective, first.estimatedMinutes],
-        ["准备资源", "准备环境与数据", "获得可检查的数据、依赖和运行环境，并记录来源与版本。", 120],
-        ["最小链路", "跑通最小可运行示例", "用最小数据跑通数据加载、模型前向和一次训练迭代。", 180],
-        ["完整验证", "完成主要实验与对照", "按计划运行主要实验，保存指标、日志和对照结果。", 300],
-        ["总结交付", "整理复现结论", "对照原目标整理结果、差异、限制和下一步建议。", 120],
+        ["先看懂要做什么", first.title, first.objective, first.estimatedMinutes],
+        ["把材料准备齐", "准备数据和环境", "确认数据、依赖和运行环境都能拿到，并记下来源和版本。", 120],
+        ["先跑一个小例子", "跑通最小例子", "用一小份数据跑通读取、预测和一次参数更新，先确认整条流程能工作。", 180],
+        ["完成主要实验", "跑主要实验并做对比", "保存关键指标、运行记录和对比结果。", 300],
+        ["整理结果", "写下复现结论", "说明哪些结果对上了、哪些没对上，以及下一步怎么查。", 120],
       ]
     : [
         ["Understand and bound", first.title, first.objective, first.estimatedMinutes],
@@ -111,7 +111,7 @@ export function createMockProjectPlan(goal: string, first: BossContract): Projec
       ],
     })),
     assumptions: chinese
-      ? ["这是首次创建时的粗粒度路线图，可在获得新信息后通过协商调整。"]
+      ? ["这是开始时的粗略计划，拿到新信息后可以随时和 Boss 一起调整。"]
       : ["This is a coarse initial outline and may be revised through negotiation."],
   };
 }
@@ -128,6 +128,9 @@ function prompt(goal: string, first: BossContract, repair?: string): string {
     },
     rules: [
       "Use the same language as the goal.",
+      "Write for a first-time researcher. Use short, concrete sentences that say what the user does and what result they get.",
+      "Avoid product jargon such as contract, criterion, artifact, evidence boundary, milestone, ledger, and incubation in user-visible titles and objectives.",
+      "When an unavoidable domain term first appears, explain it briefly in everyday language unless the user already demonstrated that they know it.",
       "Return 2 to 6 milestones and 4 to 12 total Boss-sized steps.",
       "The first step must represent firstBoss; later steps outline the path to the whole goal without pretending they are already complete.",
       "Each step has a unique id, title, objective, and estimatedMinutes from 15 to 480.",
@@ -170,7 +173,7 @@ export async function generateProjectPlan(
   for (let attempt = 0; attempt < MAX_PLAN_ATTEMPTS; attempt += 1) {
     const response = await transport.complete({
       systemPrompt:
-        "You are the project-roadmap adapter of Boss Research Assistant. Produce a provisional, complete research route without claiming future work is done. Return JSON only.",
+        "You are the project-roadmap adapter of Boss Research Assistant. Produce a provisional, complete research route without claiming future work is done. Write for a first-time researcher in short, concrete, jargon-light language. Return JSON only.",
       userPrompt: prompt(goal, first, repair || undefined),
       temperature: attempt === 0 ? 0.2 : 0,
     });

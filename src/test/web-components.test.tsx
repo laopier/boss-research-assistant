@@ -212,10 +212,10 @@ function renderPanel(props: Partial<Parameters<typeof EvidenceReviewPanel>[0]> =
 describe("EvidenceSubmitForm", () => {
   it("collects material and offers no way to declare a verdict", () => {
     const html = renderForm();
-    assert.match(html, /对应证据要求/);
+    assert.match(html, /这份材料要证明什么/);
     assert.match(html, /REQ-2-SOURCE/);
     assert.match(html, /粘贴内容/);
-    assert.match(html, /提交并送审/);
+    assert.match(html, /提交并检查/);
 
     // The defect this ticket closes: the submitter used to pick 通过/未通过.
     assert.doesNotMatch(
@@ -246,20 +246,20 @@ describe("EvidenceSubmitForm", () => {
 
   it("says so instead of rendering a broken form when there is no requirement", () => {
     const html = renderForm({ criterion: criterion({ evidenceRequirements: [] }) });
-    assert.match(html, /没有定义证据要求/);
-    assert.doesNotMatch(html, /提交并送审/);
+    assert.match(html, /还没写清要检查什么/);
+    assert.doesNotMatch(html, /提交并检查/);
   });
 
   it("offers the deliverable link when the contract has deliverables", () => {
     const html = renderForm({ deliverables });
-    assert.match(html, /关联交付物/);
+    assert.match(html, /对应哪项成果/);
     assert.match(html, /<option value="DEL-1"/);
     assert.match(html, /<option value="DEL-2"/);
-    assert.match(html, /不关联任何交付物/, "the default is no link, never a guessed one");
+    assert.match(html, /不对应某一项成果/, "the default is no link, never a guessed one");
   });
 
   it("hides the deliverable link when there is nothing to link to", () => {
-    assert.doesNotMatch(renderForm(), /关联交付物/);
+    assert.doesNotMatch(renderForm(), /对应哪项成果/);
   });
 
   it("preselects the deliverable a card pointed at", () => {
@@ -281,75 +281,75 @@ describe("EvidenceSubmitForm", () => {
 describe("EvidenceReviewPanel", () => {
   it("explains that a fresh proposal has not been applied yet", () => {
     const html = renderPanel({ proposal: outcome() });
-    assert.match(html, /还没有写入判定/);
-    assert.match(html, /采纳后才会影响/);
-    assert.match(html, /审核建议（未采纳）/);
+    assert.match(html, /还没有更新进度/);
+    assert.match(html, /采用后才会影响/);
+    assert.match(html, /检查建议（未采用）/);
     assert.match(html, /采纳这个结论/);
     assert.match(html, /我不认同，人工判定/);
   });
 
   it("shows the verdict, its rationale and the proof boundary", () => {
     const html = renderPanel({ proposal: outcome() });
-    assert.match(html, /接受/);
+    assert.match(html, /可以采用/);
     assert.match(html, /判定：未通过/);
     assert.match(html, /Stage 2 拼接的是 Stage 1 的描述符/);
-    assert.match(html, /证明边界/);
-    assert.match(html, /成果内容/, "the boundary is described in proof terms, not source terms");
-    assert.match(html, /提交时声明：已检查产物/);
+    assert.match(html, /这份材料能说明什么/);
+    assert.match(html, /文件内容/, "the boundary is described in proof terms, not source terms");
+    assert.match(html, /提交时声明：已查看文件/);
   });
 
   it("shows what evidence is still missing", () => {
     const html = renderPanel({ proposal: outcome() });
-    assert.match(html, /建议补充的证据/);
+    assert.match(html, /建议补充的材料/);
     assert.match(html, /附上 Stage 2 打印实际输入张量来源的运行日志/);
   });
 
   it("marks an adopted review as applied and offers only a re-decision", () => {
     const html = renderPanel({ adopted: outcome() });
-    assert.match(html, /审核结论（已采纳）/);
+    assert.match(html, /检查结果（已采用）/);
     assert.match(html, /改判（人工覆盖）/);
     assert.doesNotMatch(html, /采纳这个结论/, "an adopted review must not be adoptable twice");
-    assert.doesNotMatch(html, /还没有写入判定/);
+    assert.doesNotMatch(html, /还没有更新进度/);
   });
 
   it("never credits the AI with a verdict a human overruled", () => {
     const adopted = renderPanel({ adopted: outcome(), override: override() });
-    assert.match(adopted, /审核建议（已被人工覆盖）/);
-    assert.doesNotMatch(adopted, /审核结论（已采纳）/);
+    assert.match(adopted, /检查建议（已手动修改）/);
+    assert.doesNotMatch(adopted, /检查结果（已采用）/);
     assert.doesNotMatch(adopted, /^已采纳/, "the human's decision must not read as the AI's");
 
     // The same must hold when the user overruled the advice instead of adopting
     // it: the panel still knows the advice, but must not claim it was accepted.
     const unadopted = renderPanel({ proposal: outcome(), override: override() });
-    assert.match(unadopted, /审核建议（已被人工覆盖）/);
-    assert.doesNotMatch(unadopted, /审核结论（已采纳）/);
+    assert.match(unadopted, /检查建议（已手动修改）/);
+    assert.doesNotMatch(unadopted, /检查结果（已采用）/);
   });
 
   it("names the reviewer, so a mock verdict is never read as an AI one", () => {
-    assert.match(renderPanel({ proposal: outcome() }), /AI 审核（DeepSeek）/);
+    assert.match(renderPanel({ proposal: outcome() }), /AI 检查（DeepSeek）/);
     assert.match(
       renderPanel({ proposal: outcome({ reviewerKind: "MOCK" }) }),
-      /规则审核（离线）/,
+      /本地规则检查/,
     );
   });
 
   it("records who overrode what, and why", () => {
     const html = renderPanel({ adopted: outcome(), override: override() });
     assert.match(html, /人工覆盖/);
-    assert.match(html, /已拒绝 → 已接受/);
+    assert.match(html, /不能采用 → 可以采用/);
     assert.match(html, /同一段日志已在 CI 上完整跑过/);
   });
 
   it("reports an unavailable reviewer without inventing a verdict", () => {
     const html = renderPanel({ error: "AI 审核服务当前不可用，请稍后重试。" });
     assert.match(html, /AI 审核服务当前不可用/);
-    assert.match(html, /还没有审核结论/);
+    assert.match(html, /还没有检查结果/);
     assert.doesNotMatch(html, /采纳这个结论/, "no verdict, nothing to adopt");
   });
 
   it("offers a re-review only when the page still holds the submitted text", () => {
-    assert.match(renderPanel({ canRetry: true }), /重新审核这条证据/);
-    assert.doesNotMatch(renderPanel({ canRetry: false }), /重新审核这条证据/);
+    assert.match(renderPanel({ canRetry: true }), /重新检查这份材料/);
+    assert.doesNotMatch(renderPanel({ canRetry: false }), /重新检查这份材料/);
   });
 });
 
@@ -358,13 +358,13 @@ describe("EvidenceEntry", () => {
     const html = renderEntry();
     assert.match(html, /AC-2/);
     assert.match(html, /REQ-2-SOURCE/);
-    assert.match(html, /已检查产物/, "the accepted source type must be visible");
+    assert.match(html, /已查看文件/, "the accepted source type must be visible");
     assert.match(html, /必需/);
   });
 
   it("labels the criterion and keeps its internal id beside it (issue #21)", () => {
     const html = renderEntry({ index: 3 });
-    assert.match(html, /验收项 3/);
+    assert.match(html, /完成标准 3/);
     assert.match(html, /AC-2/, "the id stays for tracing");
     assert.match(
       html,
@@ -376,8 +376,8 @@ describe("EvidenceEntry", () => {
   it("numbers from the contract position, not from the card alone", () => {
     // A different position must produce a different number for a criterion
     // whose own id never changes: that is issue #21's consistency rule.
-    assert.match(renderEntry({ index: 2 }), /验收项 2/);
-    assert.doesNotMatch(renderEntry({ index: 2 }), /验收项 3/);
+    assert.match(renderEntry({ index: 2 }), /完成标准 2/);
+    assert.doesNotMatch(renderEntry({ index: 2 }), /完成标准 3/);
   });
 
   it("offers requirements by description in the dropdown, with the id kept", () => {
@@ -389,20 +389,20 @@ describe("EvidenceEntry", () => {
 
   it("shows the derivation reason so the verdict is explainable", () => {
     const html = renderEntry();
-    assert.match(html, /证据要求未满足/, "an unmet requirement must be explained");
+    assert.match(html, /还缺少这些材料/, "an unmet requirement must be explained");
     assert.match(html, /0\/1/, "the satisfied-of-required count must be shown");
   });
 
   it("offers the submit action when the contract is accepted", () => {
     const html = renderEntry({ locked: false });
-    assert.match(html, /提交证据/);
-    assert.doesNotMatch(html, /接受合同后才能开始记录证据/);
+    assert.match(html, /提交材料/);
+    assert.doesNotMatch(html, /确认这一步后才能提交材料/);
   });
 
   it("blocks submission and explains why while the contract is not accepted", () => {
     const html = renderEntry({ locked: true });
-    assert.match(html, /接受合同后才能开始记录证据/);
-    assert.doesNotMatch(html, /提交证据<\/button>/, "no submission action while locked");
+    assert.match(html, /确认这一步后才能提交材料/);
+    assert.doesNotMatch(html, /提交材料<\/button>/, "no submission action while locked");
   });
 
   it("renders a decided record without offering to self-approve it", () => {
@@ -411,16 +411,16 @@ describe("EvidenceEntry", () => {
       ledger: ledgerWith({ reviews: { "EV-2": outcome() } }),
     });
     assert.match(html, /models\/waca\.py/);
-    assert.match(html, /已接受/);
+    assert.match(html, /可以采用/);
     assert.match(html, /未通过/);
-    assert.match(html, /已采纳/);
+    assert.match(html, /检查结果（已采用）/);
     assert.doesNotMatch(html, /接受<\/button>/, "decided evidence must not offer review again");
   });
 
   it("shows a pending record as unreviewed rather than as a claim", () => {
     const html = renderEntry({ records: [record({ reviewStatus: "PENDING", finding: "INCONCLUSIVE" })] });
-    assert.match(html, /待审核/);
-    assert.match(html, /还没有审核结论/);
+    assert.match(html, /等待检查/);
+    assert.match(html, /还没有检查结果/);
     assert.doesNotMatch(html, /判定：/, "an unreviewed record asserts no finding");
     assert.match(html, /不参与判定/, "pending evidence must be excluded from the verdict");
   });
@@ -442,24 +442,24 @@ describe("EvidenceEntry", () => {
       deliverables,
       openRequest: { deliverableId: "DEL-1" },
     });
-    assert.match(html, /提交并送审/, "the request must show the form without a local click");
-    assert.match(html, /关联交付物/);
+    assert.match(html, /提交并检查/, "the request must show the form without a local click");
+    assert.match(html, /对应哪项成果/);
     assert.match(html, /<option value="DEL-1" selected=""/);
     // No effect runs on close in static render; what matters is that the open
     // state is render-derived from the request rather than copied by an effect.
-    assert.doesNotMatch(html, /提交证据<\/button>/);
+    assert.doesNotMatch(html, /提交材料<\/button>/);
   });
 
   it("stays closed when the request points at another criterion's card", () => {
     const html = renderEntry({ openRequest: undefined });
-    assert.match(html, /提交证据<\/button>/);
-    assert.doesNotMatch(html, /提交并送审/);
+    assert.match(html, /提交材料<\/button>/);
+    assert.doesNotMatch(html, /提交并检查/);
   });
 
   it("keeps the form locked behind contract acceptance even on request", () => {
     const html = renderEntry({ locked: true, openRequest: { deliverableId: "DEL-1" } });
-    assert.match(html, /接受合同后才能开始记录证据/);
-    assert.doesNotMatch(html, /提交并送审/);
+    assert.match(html, /确认这一步后才能提交材料/);
+    assert.doesNotMatch(html, /提交并检查/);
   });
 });
 
@@ -468,21 +468,21 @@ describe("DeliverableCard", () => {
     const html = renderCard();
     assert.match(html, /DEL-1/);
     assert.match(html, /未开始/);
-    assert.match(html, /还没有为这个交付物提交过任何材料/);
+    assert.match(html, /还没有为这项成果提交任何材料/);
     assert.doesNotMatch(html, /已完成/);
   });
 
   it("offers a submission entry point once the contract is accepted", () => {
     const html = renderCard();
-    assert.match(html, /为此交付物提交证据/);
+    assert.match(html, /选择要检查的完成标准/);
     assert.match(html, /<option value="AC-2"/);
-    assert.match(html, /去提交/);
+    assert.match(html, /去上传材料/);
   });
 
   it("blocks the entry point while the contract is not accepted", () => {
     const html = renderCard({ locked: true });
-    assert.match(html, /接受合同后，可以为这个交付物提交材料/);
-    assert.doesNotMatch(html, /去提交/, "no submission entry while locked");
+    assert.match(html, /确认这一步后，就可以提交成果/);
+    assert.doesNotMatch(html, /去上传材料/, "no submission entry while locked");
   });
 
   it("derives IN_PROGRESS from linked material and names the unpassed criterion", () => {
@@ -490,19 +490,19 @@ describe("DeliverableCard", () => {
       records: [record({ deliverableId: "DEL-1" })],
     });
     assert.match(html, /进行中/);
-    assert.match(html, /已提交 1 条材料/);
-    assert.match(html, /AC-2 尚未全部通过/);
+    assert.match(html, /已提交 1 份材料/);
+    assert.match(html, /AC-2 还没有全部通过/);
     assert.match(html, /href="#criterion-AC-2"/, "the related criterion is linked");
     // Regression: the chip used to read the contract's frozen `status` (always
     // UNKNOWN in a fresh contract) instead of the derived one, so it said
     // 待验证 next to a record that had already decided 未通过.
     // issue #21: the chip names the task now; the anchor still uses the id.
-    assert.match(html, /验收项 1 · 未通过/);
+    assert.match(html, /完成标准 1 · 未通过/);
   });
 
   it("names the deliverable by its position and keeps the id for tracing (issue #21)", () => {
     const html = renderCard();
-    assert.match(html, /交付物 1/);
+    assert.match(html, /成果 1/);
     assert.match(html, /DEL-1/, "the internal id must not disappear");
     assert.match(html, /The WACA-SE module/, "the full task sentence stays on the card");
   });
@@ -512,8 +512,8 @@ describe("DeliverableCard", () => {
       acceptanceCriteria: [criterion(), criterion({ id: "AC-3", required: false })],
     });
     const html = renderCard({ contract: two });
-    assert.match(html, /验收项 1 · 必需 · Stage 2 receiv…/);
-    assert.match(html, /验收项 2 · 可选 · Stage 2 receiv…/);
+    assert.match(html, /完成标准 1 · 必须 · Stage 2 receiv…/);
+    assert.match(html, /完成标准 2 · 加分项 · Stage 2 receiv…/);
     assert.match(html, /value="AC-3"/, "the dropdown still submits internal ids");
   });
 
@@ -524,15 +524,15 @@ describe("DeliverableCard", () => {
       records: [record({ deliverableId: "DEL-1", finding: "PASS" })],
     });
     assert.match(html, /已完成/);
-    assert.match(html, /关联的验收项（AC-2）已全部通过/);
+    assert.match(html, /相关完成标准（AC-2）已经全部通过/);
   });
 
   it("replaces the entry point with a pointer while its form is open", () => {
     const html = renderCard({ active: true });
-    assert.match(html, /提交表单已在/);
-    assert.match(html, /验收项 1<\/a> 的卡片中打开/);
+    assert.match(html, /上传入口已经在/);
+    assert.match(html, /完成标准 1<\/a> 的卡片中打开/);
     assert.match(html, /href="#criterion-AC-2"/, "the anchor still targets the internal id");
-    assert.doesNotMatch(html, /去提交/);
+    assert.doesNotMatch(html, /去上传材料/);
   });
 
   it("never renders the contract's frozen status as the live one", () => {
@@ -605,24 +605,24 @@ function renderProgress(progress: ProgressDerivation): string {
 describe("ProgressPanel", () => {
   it("shows both derived progress bars, never an editable percentage", () => {
     const html = renderProgress(progressFixture());
-    assert.match(html, /产出进度/);
-    assert.match(html, /1\/2 交付物/);
-    assert.match(html, /通关进度/);
-    assert.match(html, /1\/2 必需验收项/);
+    assert.match(html, /成果准备/);
+    assert.match(html, /1\/2 项成果/);
+    assert.match(html, /完成检查/);
+    assert.match(html, /1\/2 项必须完成/);
     assert.doesNotMatch(html, /<input/, "there is no input for a user to type a percentage");
   });
 
   it("names the requirement still missing by its own description, not its id", () => {
     const html = renderProgress(progressFixture());
-    assert.match(html, /Source inspection 还缺 1 条/);
-    assert.match(html, /已检查产物/);
+    assert.match(html, /Source inspection；还需要 1 份材料/);
+    assert.match(html, /已查看文件/);
     // The id must not disappear: it is how a report is traced back.
     assert.match(html, /AC-2 · REQ-2-SOURCE/);
   });
 
   it("labels the missing criterion instead of printing its internal id", () => {
     const html = renderProgress(progressFixture());
-    assert.match(html, /验收项 1/);
+    assert.match(html, /完成标准 1/);
   });
 
   it("keeps pointing at the internal id when no position in the contract is known", () => {
@@ -640,14 +640,14 @@ describe("ProgressPanel", () => {
 
   it("renders the submit-evidence action with the criterion it targets", () => {
     const html = renderProgress(progressFixture());
-    assert.match(html, /为验收项 1 提交材料/);
+    assert.match(html, /提交完成标准 1需要的材料/);
   });
 
   it("offers to accept the contract first when that has not happened", () => {
     const html = renderProgress(
       progressFixture({ nextAction: { kind: "ACCEPT_CONTRACT" }, missing: [] }),
     );
-    assert.match(html, /接受合同，开始记录证据/);
+    assert.match(html, /确认这一步，开始行动/);
   });
 
   it("offers incubation for an unresolved failure", () => {
@@ -658,21 +658,21 @@ describe("ProgressPanel", () => {
         unresolvedFailures: 1,
       }),
     );
-    assert.match(html, /有一条未解决的失败记录/);
-    assert.match(html, /孵化成下一个 Boss/);
+    assert.match(html, /记录了一个还没解决的问题/);
+    assert.match(html, /把这个问题拆成下一步/);
   });
 
   it("offers the next stage and a separate report once the Boss is clear", () => {
     const html = renderProgress(
       progressFixture({ nextAction: { kind: "ADVANCE_PROJECT" }, missing: [] }),
     );
-    assert.match(html, /生成下一阶段 Boss/);
-    assert.match(html, /导出本阶段验收报告/);
+    assert.match(html, /开始下一步/);
+    assert.match(html, /下载这一步的结果记录/);
   });
 
   it("lists blockers separately from missing evidence", () => {
     const html = renderProgress(progressFixture({ blockers: ["BL-1"] }));
-    assert.match(html, /当前阻塞：BL-1/);
+    assert.match(html, /现在卡在：BL-1/);
   });
 
   it("never offers completion while the next action is to resolve a blocker", () => {
@@ -691,7 +691,7 @@ describe("ProgressPanel", () => {
         },
       }),
     );
-    assert.match(html, /先解除阻塞项 BL-1/);
+    assert.match(html, /先解决这个问题/);
     assert.doesNotMatch(html, /完成 Boss，导出验收报告/);
   });
 });
@@ -700,7 +700,7 @@ describe("ResearchJourney", () => {
   it("explains the empty state", () => {
     const html = renderToStaticMarkup(<ResearchJourney events={[]} />);
     assert.match(html, /科研历程/);
-    assert.match(html, /还没有任何动作/);
+    assert.match(html, /还没有记录/);
   });
 
   it("renders each event kind in order", () => {
@@ -710,12 +710,12 @@ describe("ResearchJourney", () => {
       { kind: "CRITERION_PASSED" as const, at: "2026-09-20T11:00:00.000Z", text: "验收项 AC-1 通过。" },
     ];
     const html = renderToStaticMarkup(<ResearchJourney events={events} />);
-    assert.match(html, /接受合同/);
-    assert.match(html, /发现失败/);
-    assert.match(html, /验收通过/);
+    assert.match(html, /确认任务/);
+    assert.match(html, /记录问题/);
+    assert.match(html, /完成标准通过/);
     assert.match(html, /失败/);
-    const accept = html.indexOf("接受合同");
-    const fail = html.indexOf("发现失败");
+    const accept = html.indexOf("确认任务");
+    const fail = html.indexOf("记录问题");
     assert.ok(accept < fail, "events must render in chronological order");
   });
 
@@ -725,8 +725,8 @@ describe("ResearchJourney", () => {
       { kind: "CRITERION_PASSED" as const, at: "2026-09-20T11:00:00.000Z", text: "验收项 AC-1 通过。" },
     ];
     const html = renderToStaticMarkup(<ResearchJourney events={events} />);
-    assert.match(html, /发现失败/);
-    assert.match(html, /验收通过/);
+    assert.match(html, /记录问题/);
+    assert.match(html, /完成标准通过/);
   });
 });
 
@@ -752,24 +752,24 @@ function renderLibrary(failures: FailureAsset[], busy = false): string {
 describe("FailureLibrary", () => {
   it("explains the empty state instead of rendering nothing", () => {
     const html = renderLibrary([]);
-    assert.match(html, /失败资产库/);
-    assert.match(html, /还没有任何未通过的验收项/);
+    assert.match(html, /踩坑记录/);
+    assert.match(html, /目前还没有踩坑记录/);
   });
 
   it("counts total and unresolved failures", () => {
     const html = renderLibrary([failure({ id: "EV-A" }, false), failure({ id: "EV-B" }, true)]);
-    assert.match(html, /已累计 <strong>2<\/strong> 条失败证据/);
-    assert.match(html, /<strong>1<\/strong> 条尚未解决/);
+    assert.match(html, /已经记下 <strong>2<\/strong> 个问题/);
+    assert.match(html, /<strong>1<\/strong> 个还没解决/);
   });
 
   it("distinguishes resolved failures and keeps them as assets", () => {
     const resolvedHtml = renderLibrary([failure({}, true)]);
     assert.match(resolvedHtml, /已解决/);
-    assert.match(resolvedHtml, /仍作为经验保留/);
+    assert.match(resolvedHtml, /原来的记录仍会保留/);
 
     const openHtml = renderLibrary([failure({}, false)]);
     assert.match(openHtml, /待解决/);
-    assert.match(openHtml, /孵化下一个 Boss/);
+    assert.match(openHtml, /拆成下一步/);
   });
 
   it("shows which Boss the failure came from", () => {
@@ -779,7 +779,7 @@ describe("FailureLibrary", () => {
 
   it("disables the incubation action while a request is in flight", () => {
     const html = renderLibrary([failure()], true);
-    assert.match(html, /正在孵化…/);
+    assert.match(html, /正在拆分…/);
   });
 });
 
@@ -850,10 +850,10 @@ describe("Workbench", () => {
     assert.match(html, /复现 WACA 论文/);
     assert.match(html, /项目整体进度/);
     assert.match(html, /50%/);
-    assert.match(html, /1\/2 个规划步骤/);
+    assert.match(html, /1\/2 个步骤/);
     assert.match(
       html,
-      /分母来自项目创建时生成的完整路线图/,
+      /后面还没展开的步骤也算进去/,
       "the number must be explainable, not an opaque average",
     );
   });
@@ -869,13 +869,13 @@ describe("Workbench", () => {
   it("marks the open Boss and names each Boss's next action", () => {
     const html = renderWorkbench();
     assert.match(html, /当前/, "the open Boss must be visible on the workbench");
-    assert.match(html, /继续这个 Boss/);
+    assert.match(html, /继续这一步/);
     assert.match(html, /下一步：/);
-    assert.match(html, /接受合同，开始记录证据/, "boss-2 is untouched, so accept first");
+    assert.match(html, /确认这一步，然后开始做/, "boss-2 is untouched, so accept first");
   });
 
   it("offers the new-Boss flow", () => {
-    assert.match(renderWorkbench(), /新建 Boss/);
+    assert.match(renderWorkbench(), /添加下一步/);
   });
 
   it("shows future planned steps before their detailed Boss contracts exist", () => {
@@ -951,16 +951,15 @@ function renderArtifactPanel(): string {
 describe("ArtifactPanel", () => {
   it("offers the explicit permission flow and a cancel path", () => {
     const html = renderArtifactPanel();
-    assert.match(html, /连接本地项目目录/);
+    assert.match(html, /选择本地文件夹/);
     assert.match(html, /取消/);
   });
 
   it("states the privacy boundary up front", () => {
     const html = renderArtifactPanel();
-    assert.match(html, /只读、不修改本地文件/);
+    assert.match(html, /只读，不会修改本地文件/);
     assert.match(html, /勾选/);
-    assert.match(html, /已检查产物/, "the ceiling is ARTIFACT_INSPECTED");
-    assert.match(html, /平台自动验证/, "and AUTO_VERIFIED is explicitly ruled out");
+    assert.match(html, /页面只保留文件名和检查结果/, "the privacy boundary must be visible");
   });
 });
 
@@ -984,7 +983,7 @@ describe("EvidenceSubmitForm artifact entry", () => {
       }),
     });
     assert.doesNotMatch(html, />从本地项目读取文件…<\/button>/);
-    assert.match(html, /当前证据要求不接受本地文件静态检查/);
+    assert.match(html, /不能只靠查看文件来确认/);
   });
 });
 
@@ -1001,14 +1000,14 @@ describe("BatchEvidencePanel", () => {
         onAdopt={() => {}}
       />,
     );
-    assert.match(html, /提交一次，审核全部标准/);
-    assert.match(html, /核查 2 项验收标准/);
+    assert.match(html, /上传并检查全部标准/);
+    assert.match(html, /检查 2 条完成标准/);
     assert.equal((html.match(/type="file"/g) ?? []).length, 1);
   });
 
   it("turns artifact-backed criterion cards into diagnostics instead of repeated forms", () => {
     const html = renderEntry({ unifiedSubmission: true });
-    assert.doesNotMatch(html, />提交证据<\/button>/);
+    assert.doesNotMatch(html, />提交材料<\/button>/);
     assert.match(html, /AC-2/);
   });
 });

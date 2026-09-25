@@ -116,25 +116,25 @@ export function DeliverableCard({
       </p>
 
       {unifiedSubmissionAvailable ? (
-        <p className="muted">由上方“提交最终产物”统一关联和审核。</p>
+        <p className="muted">在上方上传一次，Boss 会统一检查。</p>
       ) : active ? (
         <p className="deliverable-open-hint">
-          提交表单已在{" "}
+          上传入口已经在{" "}
           <a href={`#criterion-${criterionId}`}>{criterionName(criterionId)}</a>{" "}
-          的卡片中打开，并预填了本交付物。
+          的卡片中打开，并选好了这项成果。
         </p>
       ) : locked ? (
-        <p className="muted">接受合同后，可以为这个交付物提交材料。</p>
+        <p className="muted">确认这一步后，就可以提交成果。</p>
       ) : contract.acceptanceCriteria.length === 0 ? (
-        <p className="muted">这份合同没有验收项，无法关联材料。</p>
+        <p className="muted">这一步还没有完成标准，暂时不能检查材料。</p>
       ) : (
         <div className="deliverable-submit">
           <label>
-            为此交付物提交证据
+            选择要检查的完成标准
             <select value={criterionId} onChange={(event) => setCriterionId(event.target.value)}>
               {contract.acceptanceCriteria.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {`${criterionName(item.id)} · ${item.required ? "必需" : "可选"} · ${shortenedDescription(item.description, 14)}`}
+                  {`${criterionName(item.id)} · ${item.required ? "必须" : "加分项"} · ${shortenedDescription(item.description, 14)}`}
                 </option>
               ))}
             </select>
@@ -145,7 +145,7 @@ export function DeliverableCard({
             disabled={!criterionId}
             onClick={() => onSubmitFor(criterionId, deliverable.id)}
           >
-            去提交
+            去上传材料
           </button>
         </div>
       )}

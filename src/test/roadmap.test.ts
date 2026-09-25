@@ -525,17 +525,17 @@ describe("roadmap updates", () => {
 describe("nextActionSummary", () => {
   it("asks for contract acceptance on a fresh Boss", () => {
     const ledger = ledgerWith([contract()], { project: project() });
-    assert.equal(nextActionSummary(ledger, "boss-1"), "接受合同，开始记录证据");
+    assert.equal(nextActionSummary(ledger, "boss-1"), "确认这一步，然后开始做");
   });
 
   it("points at the missing criterion while evidence is outstanding", () => {
     let ledger = ledgerWith([contract()], { project: project() });
     ledger = withAcceptedContract(ledger, "boss-1", "2026-09-23T10:00:00.000Z");
-    assert.match(nextActionSummary(ledger, "boss-1"), /AC-1/);
+    assert.match(nextActionSummary(ledger, "boss-1"), /完成标准 1/);
   });
 
   it("says so when the contract is missing entirely", () => {
-    assert.match(nextActionSummary(emptyLedger(), "ghost"), /合同缺失/);
+    assert.match(nextActionSummary(emptyLedger(), "ghost"), /详细计划没有找到/);
   });
 });
 

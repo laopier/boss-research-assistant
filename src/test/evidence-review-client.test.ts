@@ -124,7 +124,7 @@ describe("reviewErrorMessage", () => {
     const unknown = reviewErrorMessage("something odd");
 
     for (const message of [timeout, offline, unknown]) {
-      assert.match(message, /待审核/, "the user must be told the evidence is still unreviewed");
+      assert.match(message, /等待检查/, "the user must be told the evidence is still unreviewed");
       assert.doesNotMatch(message, /已接受|已通过|判定为通过|AUTO_VERIFIED/);
     }
     assert.match(offline, /无法连接/);
@@ -136,7 +136,7 @@ describe("reviewErrorMessage", () => {
     // it says nothing about the evidence itself; the guarantee is what makes
     // every failure unambiguous, including the ones the server words.
     const server = new ReviewRequestError("AI 审核服务当前不可用，请稍后重试。", 500, "INTERNAL_ERROR");
-    assert.match(reviewErrorMessage(server), /待审核/);
+    assert.match(reviewErrorMessage(server), /等待检查/);
     assert.equal(reviewErrorDetail(server), "AI 审核服务当前不可用，请稍后重试。");
     assert.equal(
       reviewErrorMessage(server),

@@ -20,7 +20,7 @@ import type { ReviewerKind } from "@/lib/evidence-review/client";
  */
 
 export const criterionStatusText: Record<CriterionStatus, string> = {
-  UNKNOWN: "待验证",
+  UNKNOWN: "还没检查",
   PASS: "通过",
   FAIL: "未通过",
 };
@@ -32,7 +32,7 @@ export const criterionStatusClass: Record<CriterionStatus, string> = {
 };
 
 export const bossStatusText: Record<BossStatus, string> = {
-  DRAFT: "草稿",
+  DRAFT: "待开始",
   ACTIVE: "进行中",
   PARTIAL: "部分完成",
   CLEAR: "已完成",
@@ -70,17 +70,17 @@ export const deliverableStatusClass: Record<Deliverable["status"], string> = {
  * they ran it" is the point of the four-way split.
  */
 export const sourceTypeText: Record<EvidenceSourceType, string> = {
-  USER_REPORTED: "用户陈述",
-  ARTIFACT_INSPECTED: "已检查产物",
-  LOG_INSPECTED: "已检查日志",
-  AUTO_VERIFIED: "平台自动验证",
+  USER_REPORTED: "你的说明",
+  ARTIFACT_INSPECTED: "已查看文件",
+  LOG_INSPECTED: "已查看运行结果",
+  AUTO_VERIFIED: "系统亲自检查",
 };
 
 export const sourceTypeHint: Record<EvidenceSourceType, string> = {
-  USER_REPORTED: "只证明用户做过该陈述，不能单独证明运行结果",
-  ARTIFACT_INSPECTED: "证明代码里写了什么，不能证明运行时行为正确",
-  LOG_INSPECTED: "证明日志报告了什么；平台并未执行该命令",
-  AUTO_VERIFIED: "仅当平台亲自执行了隔离验证时使用",
+  USER_REPORTED: "只能说明你这样描述过，还不能确认实际结果",
+  ARTIFACT_INSPECTED: "能确认文件里写了什么，还不能确认运行结果",
+  LOG_INSPECTED: "能确认运行记录显示了什么，但系统没有亲自运行",
+  AUTO_VERIFIED: "只有系统实际运行检查时才会出现",
 };
 
 export const assistanceModeText: Record<AssistanceMode, string> = {
@@ -97,9 +97,9 @@ export const findingText: Record<EvidenceFinding, string> = {
 };
 
 export const reviewStatusText: Record<EvidenceReviewStatus, string> = {
-  PENDING: "待审核",
-  ACCEPTED: "已接受",
-  REJECTED: "已拒绝",
+  PENDING: "等待检查",
+  ACCEPTED: "可以采用",
+  REJECTED: "不能采用",
 };
 
 export const findings: EvidenceFinding[] = ["PASS", "FAIL", "INCONCLUSIVE"];
@@ -109,8 +109,8 @@ export const findings: EvidenceFinding[] = ["PASS", "FAIL", "INCONCLUSIVE"];
  * `finding` answers "what does it show?" — see docs/contracts.zh-CN.md §8.
  */
 export const reviewDecisionText: Record<ReviewDecision, string> = {
-  ACCEPTED: "接受",
-  REJECTED: "拒绝",
+  ACCEPTED: "可以采用",
+  REJECTED: "不能采用",
   INCONCLUSIVE: "无法判断",
 };
 
@@ -121,8 +121,8 @@ export const reviewDecisionClass: Record<ReviewDecision, string> = {
 };
 
 export const reviewerKindText: Record<ReviewerKind, string> = {
-  MOCK: "规则审核（离线）",
-  AI: "AI 审核（DeepSeek）",
+  MOCK: "本地规则检查",
+  AI: "AI 检查（DeepSeek）",
 };
 
 /**
@@ -135,17 +135,17 @@ export const reviewerKindText: Record<ReviewerKind, string> = {
  * asserts the two tables are equal, so the copy cannot drift silently.
  */
 export const proofBoundaryText: Record<EvidenceSourceType, string> = {
-  USER_REPORTED: "用户陈述",
-  ARTIFACT_INSPECTED: "成果内容",
-  LOG_INSPECTED: "运行日志",
-  AUTO_VERIFIED: "平台执行",
+  USER_REPORTED: "你的说明",
+  ARTIFACT_INSPECTED: "文件内容",
+  LOG_INSPECTED: "运行结果",
+  AUTO_VERIFIED: "系统实测",
 };
 
 export const proofBoundaryHint: Record<EvidenceSourceType, string> = {
-  USER_REPORTED: "审核器只看到了一句陈述，因此只能证明「用户声称做过」。",
-  ARTIFACT_INSPECTED: "审核器看到了提交的成果内容，并不能证明它在运行时正确。",
-  LOG_INSPECTED: "审核器看到了提交的运行日志；平台本身没有执行该命令。",
-  AUTO_VERIFIED: "平台亲自执行了隔离验证。粘贴的文本永远达不到这一层。",
+  USER_REPORTED: "Boss 只看到了你的说明，还不能确认实际结果。",
+  ARTIFACT_INSPECTED: "Boss 看过文件内容，但还不能确认它运行正确。",
+  LOG_INSPECTED: "Boss 看过运行记录，但没有在这里亲自运行。",
+  AUTO_VERIFIED: "系统亲自运行并检查了结果。粘贴文字不能达到这一层。",
 };
 
 // ---------------------------------------------------------------------------
@@ -164,11 +164,11 @@ export const proofBoundaryHint: Record<EvidenceSourceType, string> = {
  * id stays visible next to it for tracing.
  */
 export function criterionLabel(index: number): string {
-  return `验收项 ${index}`;
+  return `完成标准 ${index}`;
 }
 
 export function deliverableLabel(index: number): string {
-  return `交付物 ${index}`;
+  return `成果 ${index}`;
 }
 
 /** True when `index` really came from a position in the contract. */

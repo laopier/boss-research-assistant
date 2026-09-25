@@ -3,14 +3,14 @@
 import { JourneyEvent, JourneyEventKind } from "@/lib/progress";
 
 const kindLabel: Record<JourneyEventKind, string> = {
-  CONTRACT_ACCEPTED: "接受合同",
-  EVIDENCE_RECORDED: "提交证据",
-  REVIEW_ADOPTED: "采纳审核",
-  REVIEW_OVERRIDDEN: "人工覆盖",
-  FAILURE_RECORDED: "发现失败",
-  CRITERION_PASSED: "验收通过",
-  INCUBATED: "孵化新 Boss",
-  BOSS_CLEAR: "Boss 完成",
+  CONTRACT_ACCEPTED: "确认任务",
+  EVIDENCE_RECORDED: "提交材料",
+  REVIEW_ADOPTED: "采用检查结果",
+  REVIEW_OVERRIDDEN: "手动修改结果",
+  FAILURE_RECORDED: "记录问题",
+  CRITERION_PASSED: "完成标准通过",
+  INCUBATED: "拆出下一步",
+  BOSS_CLEAR: "这一步完成",
 };
 
 const kindClass: Record<JourneyEventKind, string> = {
@@ -51,7 +51,7 @@ export function ResearchJourney({ events }: ResearchJourneyProps) {
     return (
       <section className="journey" aria-label="科研历程">
         <h3>科研历程</h3>
-        <p className="muted">还没有任何动作。接受合同并提交第一条证据后，这里会逐条记录你做过什么。</p>
+        <p className="muted">还没有记录。确认这一步并提交第一份材料后，你做过的事情会按时间显示在这里。</p>
       </section>
     );
   }

@@ -320,7 +320,7 @@ describe("when the reviewer is not reachable", () => {
       });
 
       assert.equal(turn.outcome, undefined, "a failed review yields no verdict");
-      assert.match(turn.error, /待审核/);
+      assert.match(turn.error, /等待检查/);
       assert.deepEqual(turn.ledger.reviews, {}, "no advice may be stored on failure");
       assert.equal(turn.ledger.evidence.at(-1)?.reviewStatus, "PENDING");
       assert.equal(statusOf(turn.ledger, "AC-4").status, "UNKNOWN");

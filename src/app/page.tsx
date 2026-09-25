@@ -189,7 +189,7 @@ export default function Home() {
     anchor.download = `${contract.id}-acceptance-report.json`;
     anchor.click();
     URL.revokeObjectURL(url);
-    setNotice("本阶段验收报告已导出；你仍可继续生成下一阶段 Boss。");
+    setNotice("这一步的结果记录已下载；你仍可以继续生成下一步。");
   }
 
   async function requestContract(
@@ -347,7 +347,7 @@ export default function Home() {
       return next;
     });
     setView("workbench");
-    setNotice("已载入演示项目：2 个里程碑、3 个 Boss。");
+    setNotice("已载入演示项目：2 个阶段、3 个具体任务。");
   }
 
   async function advanceProject() {
@@ -356,7 +356,7 @@ export default function Home() {
     const goalText = clampGoal(
       planned
         ? `继续推进科研项目“${ledger.project.goal}”。按照已确认路线图，下一步是“${planned.step.title}”：${planned.step.objective}。请将它收敛成一个不重复、可验证的具体 Boss。`
-        : `继续推进科研项目“${ledger.project.goal}”。当前阶段“${contract.objective}”已通过验收。已规划步骤均已展开，请基于新发现生成下一项不重复、可验证的具体 Boss。`,
+        : `继续推进科研项目“${ledger.project.goal}”。当前这一步“${contract.objective}”已经完成。计划中的步骤都已展开，请根据新发现生成一个不重复、可以检查结果的下一步。`,
     );
     const context: ProjectContextInput = {
       sourceName: "当前项目路线与已完成 Boss 摘要",
@@ -413,7 +413,7 @@ export default function Home() {
 
   function startOver() {
     const confirmed = window.confirm(
-      "确定重新开始吗？当前项目、Boss、证据和失败记录都会从此浏览器中清除，且无法撤销。",
+      "确定重新开始吗？当前项目、任务、检查材料和踩坑记录都会从这个浏览器中清除，且无法撤销。",
     );
     if (!confirmed) return;
     clearLedgerStore();
@@ -425,7 +425,7 @@ export default function Home() {
 
   function acceptContract() {
     if (!contract) return;
-    setNotice("合同已接受，验收语义生效。现在可以记录证据。");
+    setNotice("这一步已确认。完成后可以上传文件或运行结果。");
     updateLedger((current) => withAcceptedContract(current, contract.id, new Date().toISOString()));
   }
 
@@ -466,7 +466,7 @@ export default function Home() {
   /** Adopts a review the user accepted. This is the only path from advice to state. */
   function adoptReview(outcome: ReviewOutcome) {
     updateLedger((current) => withReviewOutcome(current, outcome));
-    setNotice("已采纳审核结论，相关验收项的状态已按证据重新推导。");
+    setNotice("已采用检查结果，相关完成标准已经更新。");
   }
 
   /**
@@ -477,7 +477,7 @@ export default function Home() {
    */
   function overrideEvidence(draft: OverrideDraft, outcome: ReviewOutcome | undefined) {
     updateLedger((current) => withOverride(current, draft, outcome));
-    setNotice("已按人工判定覆盖，审计记录已写入本地账本。");
+    setNotice("已按你的判断修改结果，并保留了调整记录。");
   }
 
   /**
@@ -510,9 +510,9 @@ export default function Home() {
         });
       });
       setView("boss");
-      setNotice("已从该失败记录孵化出一个新的 Boss，并加入当前里程碑。");
+      setNotice("这个问题已经拆成了一个更小的下一步，并加入当前阶段。");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "孵化失败，请稍后重试。");
+      setError(caught instanceof Error ? caught.message : "暂时无法拆出下一步，请稍后重试。");
     } finally {
       setIncubating(false);
     }
@@ -522,11 +522,11 @@ export default function Home() {
     <main>
       <header className="hero">
         <div className="brand"><span>B</span> Boss 科研助手</div>
-        <p className="eyebrow">失败经验累积与孵化 · MVP-0</p>
+        <p className="eyebrow">把科研大目标，拆成眼前能完成的一步</p>
         <h1>让失败的尝试，<br />不再白费。</h1>
         <p className="intro">
-          Boss 把模糊的科研目标收敛成有边界的任务，用<strong>证据</strong>而不是感觉来判定每一项是否通过。
-          未通过的验收项不会消失——它沉淀成失败资产，随时可以孵化成下一个更小的目标。
+          Boss 会先告诉你这一小步要做什么、最后交什么、怎样才算完成。
+          没跑通也没关系：问题会被记下来，变成下一步的线索。
         </p>
       </header>
 
@@ -592,14 +592,14 @@ export default function Home() {
                 );
               });
               setNotice(
-                `已暂停重复 Boss，并生成下一步 Boss；计划版本更新到 Revision ${(ledger.project?.revision ?? 0) + 1}。`,
+                `已暂停重复任务并生成下一步；计划已更新为第 ${(ledger.project?.revision ?? 0) + 1} 版。`,
               );
               return;
             }
 
             updateLedger((current) => applyProposalWith(current, proposal, input, at));
             setNotice(
-              `已接受协商修改，计划版本更新到 Revision ${(ledger.project?.revision ?? 0) + 1}，变更原因已保存。`,
+              `已确认修改，计划已更新为第 ${(ledger.project?.revision ?? 0) + 1} 版，修改原因也已保存。`,
             );
           }}
         />
@@ -610,7 +610,7 @@ export default function Home() {
           <section className="input-panel" aria-labelledby="goal-heading">
             <form onSubmit={submitGoal}>
               <label id="goal-heading" htmlFor="goal">
-                {ledger.project ? "新 Boss 的目标" : "你的科研目标"}
+                {ledger.project ? "下一步想做什么" : "你现在想完成什么？"}
               </label>
               <textarea
                 id="goal"
@@ -632,7 +632,7 @@ export default function Home() {
                     </button>
                   )}
                   <button disabled={loading || incubating || !goal.trim()} type="submit">
-                    {loading ? "正在生成…" : "生成 Boss Contract"}
+                    {loading ? "正在整理…" : "帮我拆出下一步"}
                   </button>
                 </span>
               </div>
@@ -642,7 +642,7 @@ export default function Home() {
                   className="button-secondary"
                   onClick={() => setShowContextPicker((shown) => !shown)}
                 >
-                  {showContextPicker ? "收起本地文件" : "添加本地文件夹上下文"}
+                  {showContextPicker ? "收起本地文件" : "参考本地文件夹"}
                 </button>
                 {contextFiles.length > 0 && (
                   <span className="muted">已选择 {contextFiles.length} 个文件，将只用于本次生成</span>
@@ -673,8 +673,8 @@ export default function Home() {
             {!ledger.project && (
               <div className="demo-entry">
                 <p className="muted">
-                  也可以直接载入固定的 WACA 演示项目：1 个研究目标、2 个里程碑、3 个 Boss。
-                  其中「构建并验证模型」已经跑过一次验收，一项因为阶段间复用了错误输入而被判定为
+                  也可以直接载入固定的 WACA 演示项目：1 个研究目标、2 个阶段、3 个具体任务。
+                  其中「构建并验证模型」已经检查过一次，一项因为阶段间复用了错误输入而被判定为
                   <strong>未通过</strong>，所以整个项目停在途中而非完成。
                 </p>
                 <button
@@ -691,10 +691,10 @@ export default function Home() {
 
           {!ledger.project && (
             <section className="empty-state">
-              <div className="step">01 <strong>描述意图</strong></div>
-              <div className="step">02 <strong>收敛目标</strong></div>
-              <div className="step">03 <strong>证据判定</strong></div>
-              <div className="step">04 <strong>失败沉淀</strong></div>
+              <div className="step">01 <strong>说清想法</strong></div>
+              <div className="step">02 <strong>拆出下一步</strong></div>
+              <div className="step">03 <strong>上传结果</strong></div>
+              <div className="step">04 <strong>继续推进</strong></div>
             </section>
           )}
         </>
@@ -811,9 +811,9 @@ function ContractView({
     <section className="contract" aria-live="polite">
       <div className="contract-heading">
         <div>
-          <p className="eyebrow">当前 Boss Contract</p>
+          <p className="eyebrow">当前这一步</p>
           <h2>{contract.objective}</h2>
-          <p className="raw-goal">原始目标：{contract.rawGoal}</p>
+          <p className="raw-goal">你最初说：{contract.rawGoal}</p>
           {contract.recordKind === "DEMO_FIXTURE" && (
             <p className="demo-caption">
               固定演示案例 · 来源 <code>examples/waca-se-boss.json</code>
@@ -821,7 +821,7 @@ function ContractView({
           )}
           {lineage && (
             <p className="lineage">
-              孵化自失败记录 <code>{lineage.fromEvidenceId}</code>（{lineage.criterionId}）：{lineage.summary}
+              来自上一步留下的问题 <code>{lineage.fromEvidenceId}</code>：{lineage.summary}
             </p>
           )}
         </div>
@@ -835,9 +835,9 @@ function ContractView({
       </div>
 
       <div className="meta-grid">
-        <article><span>合同版本</span><strong>Revision {contract.revision}</strong></article>
+        <article><span>计划版本</span><strong>第 {contract.revision} 版</strong></article>
         <article><span>预计时间</span><strong>{contract.estimatedMinutes} 分钟</strong></article>
-        <article><span>协作模式</span><strong>{assistanceModeText[contract.assistanceMode]}</strong></article>
+        <article><span>合作方式</span><strong>{assistanceModeText[contract.assistanceMode]}</strong></article>
         <article><span>状态</span><strong>{bossStatusText[boss.status]}</strong></article>
         <article>
           <span>截止时间</span>
@@ -847,15 +847,15 @@ function ContractView({
 
       <div className={accepted ? "gate gate-done" : "gate"}>
         <div>
-          <strong>{accepted ? "合同已接受" : "合同尚未接受"}</strong>
+          <strong>{accepted ? "这一步已确认" : "这一步还没确认"}</strong>
           <p className="muted">
             {accepted
-              ? "验收语义已生效。记录证据后，判定由证据推导，不由「程序能跑」推导。"
-              : "接受合同后，验收语义才会生效，才能开始记录证据。这一步不会修改合同内容。"}
+              ? "完成后上传文件或运行结果，Boss 会按下方标准帮你检查。"
+              : "先确认这一步的目标和完成标准。确认只表示开始，不会自动判定完成。"}
           </p>
         </div>
         {!accepted && (
-          <button type="button" onClick={onAccept}>接受合同</button>
+          <button type="button" onClick={onAccept}>确认这一步</button>
         )}
       </div>
 
@@ -887,7 +887,7 @@ function ContractView({
 
       <div className="content-grid">
         <article className="criteria-card">
-          <h3>验收标准与证据</h3>
+          <h3>怎样算完成</h3>
           {contract.acceptanceCriteria.map((criterion, criterionOrder) => (
             <EvidenceEntry
               key={`${contract.id}:${criterion.id}`}
@@ -915,10 +915,10 @@ function ContractView({
         </article>
 
         <article className="evidence-card">
-          <h3>Evidence Map</h3>
+          <h3>检查进度</h3>
           <p className="muted">
-            每条验收标准对应的证据要求与已收集证据。只有被<strong>接受</strong>的证据参与判定，
-            而「被接受」不等于「通过」。
+            这里汇总每条完成标准已经收到哪些材料，以及目前能否确认完成。
+            AI 收到材料，不代表自动判定通过。
           </p>
 
           {contract.acceptanceCriteria.map((criterion, criterionPosition) => {
@@ -940,12 +940,12 @@ function ContractView({
                 {items.length === 0 ? (
                   <p className="evidence-empty">
                     {derivation.status === "UNKNOWN"
-                      ? "尚无证据：该验收项还没有被验证过。"
-                      : "尚无证据条目：当前状态由其他环节推导。"}
+                      ? "还没有提交材料，这条标准还没检查。"
+                      : "这里没有单独的材料，当前状态来自其他检查。"}
                   </p>
                 ) : (
                   <p className="evidence-empty">
-                    已收集 {items.length} 条，其中 {acceptedItems.length} 条已接受。
+                    已收到 {items.length} 份材料，其中 {acceptedItems.length} 份可以用于判断。
                   </p>
                 )}
               </div>
@@ -955,10 +955,9 @@ function ContractView({
       </div>
 
       <section className="deliverables">
-        <h3>交付物</h3>
+        <h3>这一步要交什么</h3>
         <p className="muted">
-          每个交付物的状态由<strong>关联证据</strong>推导，不能手动更改：提交过材料即「进行中」，
-          关联的验收项全部通过才算「已完成」。关联关系在提交证据时声明，保存在本地账本里。
+          上传成果后，Boss 会用上面的完成标准统一检查；所有必须完成的标准通过后，成果才算完成。
         </p>
         <div className="deliverable-grid">
           {contract.deliverables.map((deliverable) => (
@@ -986,30 +985,30 @@ function ContractView({
 
       <div className="guard-grid">
         <article>
-          <h3>范围内</h3>
+          <h3>这一步要做</h3>
           <ul>{contract.scopeGuard.inScope.map((item) => <li key={item}>{item}</li>)}</ul>
         </article>
         <article>
-          <h3>范围外</h3>
+          <h3>这一步先不做</h3>
           <ul>{contract.scopeGuard.outOfScope.map((item) => <li key={item}>{item}</li>)}</ul>
         </article>
       </div>
 
       <div className="clue-grid">
-        <article><h3>已知</h3><ul>{contract.known.map((item) => <li key={item}>{item}</li>)}</ul></article>
-        <article><h3>当前未知</h3><ul>{contract.unknowns.map((item) => <li key={item}>{item}</li>)}</ul></article>
-        <article><h3>假设</h3><ul>{contract.assumptions.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><h3>目前已经知道</h3><ul>{contract.known.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><h3>还需要确认</h3><ul>{contract.unknowns.map((item) => <li key={item}>{item}</li>)}</ul></article>
+        <article><h3>暂时按这个前提推进</h3><ul>{contract.assumptions.map((item) => <li key={item}>{item}</li>)}</ul></article>
       </div>
 
       {contract.blockers.length > 0 && (
         <section className="blockers">
-          <h3>阻塞项</h3>
+          <h3>现在卡住的地方</h3>
           {contract.blockers.map((blocker) => (
             <div className="blocker" key={blocker.id}>
               <strong>{blocker.id}</strong>
               <p>{blocker.description}</p>
-              <p className="muted">影响验收项：{blocker.affectedCriteria.join(" / ")}</p>
-              <p className="muted">解除方式：{blocker.resolution}</p>
+              <p className="muted">会影响：{blocker.affectedCriteria.join(" / ")}</p>
+              <p className="muted">可以这样解决：{blocker.resolution}</p>
             </div>
           ))}
         </section>
@@ -1017,10 +1016,10 @@ function ContractView({
 
       {contract.changeHistory.length > 0 && (
         <section className="history">
-          <h3>修订记录</h3>
+          <h3>这一步的调整记录</h3>
           {contract.changeHistory.map((record) => (
             <div className="history-record" key={record.revision}>
-              <strong>Revision {record.revision}</strong>
+              <strong>第 {record.revision} 版</strong>
               <span className="muted">{record.changedAt} · {record.changedBy}</span>
               <p>{record.reason}</p>
             </div>

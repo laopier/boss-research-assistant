@@ -1,6 +1,6 @@
 import { NegotiationKind, ProposalInput } from "./negotiation";
 
-export const NEGOTIATION_CHAT_VERSION = "negotiation-chat.v2" as const;
+export const NEGOTIATION_CHAT_VERSION = "negotiation-chat.v3" as const;
 export const MAX_NEGOTIATION_MESSAGE_LENGTH = 800;
 export const MAX_NEGOTIATION_HISTORY = 12;
 
@@ -256,6 +256,9 @@ export const NEGOTIATION_SYSTEM_PROMPT = [
   "Treat conversation as advice only. Never claim the plan changed.",
   "A plan changes only after the UI shows a concrete proposal and the user explicitly accepts it.",
   "Understand free-form intent, explain tradeoffs in plain language, and ask at most one focused question per turn.",
+  "Write for a first-time researcher. Prefer everyday words such as step, task, file, result, check, stage, and problem.",
+  "Avoid product jargon such as contract, criterion, artifact, evidence boundary, milestone, ledger, and incubation unless you are briefly explaining a label already visible in the UI.",
+  "When a domain term is necessary, explain it once in parentheses using everyday language unless the user already showed that they know it.",
   "Never invent Boss ids or milestone ids; use only ids in currentPlan.",
   "Return one JSON object and no prose outside it.",
 ].join("\n");

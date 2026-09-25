@@ -14,10 +14,10 @@ import {
   PROMPT_VERSION,
 } from "../lib/goal-discovery/prompt";
 
-const promptMdPath = resolve(__dirname, "../../docs/ai/prompts/goal-discovery.v3.md");
+const promptMdPath = resolve(__dirname, "../../docs/ai/prompts/goal-discovery.v4.md");
 
 test("PROMPT_VERSION is pinned", () => {
-  assert.equal(PROMPT_VERSION, "goal-discovery.v3");
+  assert.equal(PROMPT_VERSION, "goal-discovery.v4");
 });
 
 test("system prompt contains no backticks (markdown-fence safe)", () => {
@@ -42,6 +42,8 @@ test("system prompt pins the key contract semantics", () => {
     "copied VERBATIM",
     "ONE integrated deliverable",
     "SAME deliverable",
+    "first-time researcher",
+    "Avoid product and process jargon",
   ]) {
     assert.ok(
       GOAL_DISCOVERY_SYSTEM_PROMPT.includes(fragment),
@@ -72,7 +74,7 @@ test("user prompt carries selected files as untrusted project context", () => {
 test("generated markdown fenced block matches the runtime prompt byte for byte", () => {
   const markdown = readFileSync(promptMdPath, "utf-8").replace(/\r\n/g, "\n");
   const match = markdown.match(/```\n([\s\S]*?)\n```/);
-  assert.ok(match, "docs/ai/prompts/goal-discovery.v3.md must contain a fenced block");
+  assert.ok(match, "docs/ai/prompts/goal-discovery.v4.md must contain a fenced block");
   if (match![1] !== GOAL_DISCOVERY_SYSTEM_PROMPT) {
     console.error(
       "Prompt drift detected. Regenerate with: node --import tsx scripts/gen-prompt-md.ts",
