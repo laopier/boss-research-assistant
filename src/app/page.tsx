@@ -29,6 +29,8 @@ import {
   withOverride,
   withRecordedEvidence,
   withReviewOutcome,
+  withTimeBudget,
+  withoutTimeBudget,
 } from "@/lib/failure-ledger";
 import {
   clearLedgerStore,
@@ -548,6 +550,14 @@ export default function Home() {
             setView("new");
           }}
           onStartOver={startOver}
+          onSaveTimeBudget={(budget) => {
+            updateLedger((current) => withTimeBudget(current, budget));
+            setNotice("已保存时间预算；计划版本和进度都没有变化。");
+          }}
+          onClearTimeBudget={() => {
+            updateLedger((current) => withoutTimeBudget(current));
+            setNotice("已清除时间预算；项目其他数据保持不变。");
+          }}
           onApplyProposal={async (proposal, input) => {
             const at = new Date().toISOString();
             if (input.kind === "REPLACE_BOSS") {

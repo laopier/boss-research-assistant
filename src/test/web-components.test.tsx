@@ -827,8 +827,9 @@ function workbenchLedger(): Ledger {
   };
 }
 
-function renderWorkbench(): string {
-  const ledger = workbenchLedger();
+function renderWorkbench(patch?: Partial<NonNullable<Ledger["project"]>>): string {
+  const base = workbenchLedger();
+  const ledger: Ledger = patch ? { ...base, project: { ...base.project!, ...patch } } : base;
   const roadmap = deriveRoadmap(ledger);
   assert.ok(roadmap && ledger.project);
   return renderToStaticMarkup(
@@ -840,8 +841,57 @@ function renderWorkbench(): string {
       onNewBoss={() => {}}
       onStartOver={() => {}}
       onApplyProposal={() => {}}
+      onSaveTimeBudget={() => {}}
+      onClearTimeBudget={() => {}}
     />,
   );
+}
+
+function renderWorkbenchLedger(ledger: Ledger): string {
+  const roadmap = deriveRoadmap(ledger);
+  assert.ok(roadmap && ledger.project);
+  return renderToStaticMarkup(
+    <Workbench
+      project={ledger.project}
+      roadmap={roadmap}
+      ledger={ledger}
+      onOpenBoss={() => {}}
+      onNewBoss={() => {}}
+      onStartOver={() => {}}
+      onApplyProposal={() => {}}
+      onSaveTimeBudget={() => {}}
+      onClearTimeBudget={() => {}}
+    />,
+  );
+}
+
+/** A project whose planned steps carry real estimates, plus an optional budget. */
+function budgetLedger(
+  minutes: number[],
+  budget?: { plannedDays: number; dailyMinutes: number },
+): Ledger {
+  const base = workbenchLedger();
+  return {
+    ...base,
+    project: {
+      ...base.project!,
+      milestones: [
+        {
+          id: "M-1",
+          title: "读懂论文",
+          bossIds: ["boss-1"],
+          steps: minutes.map((value, index) => ({
+            id: `S-${index + 1}`,
+            title: `步骤 ${index + 1}`,
+            objective: `目标 ${index + 1}`,
+            estimatedMinutes: value,
+            ...(index === 0 ? { contractId: "boss-1" } : {}),
+          })),
+        },
+      ],
+      ...(budget ? { timeBudget: budget } : {}),
+    },
+  };
 }
 
 describe("Workbench", () => {
@@ -878,6 +928,51 @@ describe("Workbench", () => {
     assert.match(renderWorkbench(), /添加下一步/);
   });
 
+  it("shows the whole route total and asks for the budget instead of assuming zero", () => {
+    const html = renderWorkbenchLedger(budgetLedger([60, 60, 120, 60, 90, 60]));
+    assert.match(html, /完整路线预计总时长/);
+    assert.match(html, /450 分钟/);
+    assert.match(
+      html,
+      /填写「计划投入几天」和「每天可用多少分钟」后/,
+      "an unfilled budget must not be treated as 0 minutes",
+    );
+    assert.doesNotMatch(html, /超出可用时间/, "no overshoot can be claimed without a budget");
+  });
+
+  it("warns by the exact overshoot when 450 minutes meets a 420 minute budget", () => {
+    const html = renderWorkbenchLedger(
+      budgetLedger([60, 60, 120, 60, 90, 60], { plannedDays: 7, dailyMinutes: 60 }),
+    );
+    assert.match(html, /预计超出可用时间 30 分钟/);
+    assert.match(html, /可用 420 分钟/);
+  });
+
+  it("stays quiet when the route fits the budget exactly", () => {
+    const html = renderWorkbenchLedger(
+      budgetLedger([60, 60, 120, 60, 60, 60], { plannedDays: 7, dailyMinutes: 60 }),
+    );
+    assert.doesNotMatch(html, /超出可用时间/, "equal is not a warning");
+    assert.match(html, /可用时间 420 分钟/);
+  });
+
+  it("asks for two work sessions for a 120 minute step in a 60 minute day", () => {
+    const html = renderWorkbenchLedger(
+      budgetLedger([60, 120], { plannedDays: 7, dailyMinutes: 60 }),
+    );
+    assert.match(html, /预计需要 2 个工作时段/);
+    assert.equal((html.match(/个工作时段/g) ?? []).length, 1, "only the oversized step is flagged");
+    assert.match(html, /不代表系统已经替你排好了具体日程/, "the estimate must say what it is not");
+  });
+
+  it("says it cannot total a route whose steps have no estimate", () => {
+    // The legacy shape: milestones without `steps`, where deriveRoadmap only has
+    // a 1 minute placeholder per Boss.
+    const html = renderWorkbench();
+    assert.match(html, /暂时无法统计完整路线的总时长/);
+    assert.doesNotMatch(html, /完整路线预计总时长/);
+  });
+
   it("shows future planned steps before their detailed Boss contracts exist", () => {
     const ledger = workbenchLedger();
     const plannedLedger = {
@@ -911,6 +1006,8 @@ describe("Workbench", () => {
         onNewBoss={() => {}}
         onStartOver={() => {}}
         onApplyProposal={() => {}}
+        onSaveTimeBudget={() => {}}
+        onClearTimeBudget={() => {}}
       />,
     );
     assert.match(html, /跑通最小可运行示例/);
@@ -932,6 +1029,8 @@ describe("Workbench", () => {
         onNewBoss={() => {}}
         onStartOver={() => {}}
         onApplyProposal={() => {}}
+        onSaveTimeBudget={() => {}}
+        onClearTimeBudget={() => {}}
       />,
     );
 

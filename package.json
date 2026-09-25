@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "tsc -p tsconfig.json && node --import tsx --test src/test/validation.test.ts src/test/generator.test.ts src/test/prompt.test.ts src/test/factory.test.ts src/test/route.test.ts src/test/project-plan.test.ts src/test/evidence-review.test.ts src/test/evidence-review-route.test.ts src/test/evidence-review-client.test.ts src/test/evidence-loop.test.ts src/test/failure-ledger.test.ts src/test/progress.test.ts src/test/roadmap.test.ts src/test/negotiation.test.ts src/test/negotiation-chat.test.ts src/test/artifact-scan.test.ts src/test/web-components.test.tsx",
+    "test": "tsc -p tsconfig.json && node --import tsx --test src/test/validation.test.ts src/test/generator.test.ts src/test/prompt.test.ts src/test/factory.test.ts src/test/route.test.ts src/test/project-plan.test.ts src/test/evidence-review.test.ts src/test/evidence-review-route.test.ts src/test/evidence-review-client.test.ts src/test/evidence-loop.test.ts src/test/failure-ledger.test.ts src/test/progress.test.ts src/test/roadmap.test.ts src/test/time-budget.test.ts src/test/negotiation.test.ts src/test/negotiation-chat.test.ts src/test/artifact-scan.test.ts src/test/web-components.test.tsx",
     "gen:prompt-md": "node --import tsx scripts/gen-prompt-md.ts"
   },
   "dependencies": {

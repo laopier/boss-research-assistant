@@ -255,6 +255,27 @@ h3 { margin: 0 0 16px; font-size: 15px; }
 .plan-assumptions summary { cursor: pointer; font-weight: 650; }
 .plan-assumptions ul { margin: 8px 0 0; padding-left: 20px; }
 
+/* Time budget (#23): an estimate you can compare your own time against.
+   Scoped to its own classes so the shared `.field-hint` spacing stays as is. */
+.time-budget { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.time-budget p { margin: 0 0 6px; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.time-budget-total { color: var(--ink); font-size: 13px; }
+.time-budget-total strong { color: var(--green); font-size: 15px; }
+.time-budget-total .time-budget-note { margin-left: 6px; }
+.time-budget-note { color: #8b918a; font-size: 11px; }
+.time-budget-muted { color: var(--muted); }
+.time-budget-warning { color: var(--fail-ink); font-weight: 650; }
+.time-budget-editor { margin-top: 8px; color: var(--muted); font-size: 12px; }
+.time-budget-editor summary { cursor: pointer; font-weight: 650; }
+.time-budget-form { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 10px 0 6px; }
+.time-budget-field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+.time-budget-field input { width: 110px; padding: 8px 10px; color: var(--ink); background: #f7f7f2; border: 1px solid var(--line); border-radius: 10px; font: inherit; outline: none; }
+.time-budget-field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(36, 92, 69, .1); }
+.time-budget-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.time-budget-actions .button-secondary { padding: 9px 16px; font-size: 12px; }
+.time-budget-message { color: var(--orange); font-size: 11px; font-weight: 650; }
+.step-sessions { margin: 0; color: var(--orange); font-size: 11px; font-weight: 650; line-height: 1.6; }
+
 /* Boss Negotiation (#18 §2): proposal -> preview -> confirmed revision. */
 .negotiation { margin-top: 20px; padding: 18px 20px; background: #f7f7f2; border: 1px solid var(--line); border-radius: 14px; }
 .negotiation-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -353,4 +374,7 @@ ul { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; line-h
   .criterion { grid-template-columns: 1fr; }
   .criterion > .status { grid-column: 1; justify-self: start; }
   .progress-note { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .time-budget-form { align-items: stretch; }
+  .time-budget-actions { width: 100%; }
+  .time-budget-actions .button-secondary { flex: 1 1 auto; }
 }

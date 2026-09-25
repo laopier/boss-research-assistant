@@ -7,6 +7,7 @@ import {
   ProjectPlanDraft,
 } from "./contracts";
 import type { ReviewDecision, ReviewFinding, SuggestedEvidence } from "./evidence-review/types";
+import { ProjectTimeBudget, sanitizeTimeBudget } from "./time-budget";
 
 /**
  * Failure ledger: the acceptance gate, evidence recording, status derivation,
@@ -245,6 +246,14 @@ export interface ResearchProject {
   planningAssumptions?: string[];
   /** The Boss the workbench currently has open. */
   currentBossId?: string;
+  /**
+   * The user's own time budget (Issue #23), optional and absent on every
+   * project created before it existed. Deliberately NOT validated inside
+   * `isResearchProject`: that function fails the whole ledger closed, and one
+   * bad number should not cost the user every research record in the browser.
+   * `loadLedger` sanitizes it separately and drops the field when it is invalid.
+   */
+  timeBudget?: ProjectTimeBudget;
   revision: number;
   updatedAt: string;
   /**
@@ -472,6 +481,22 @@ function isResearchProject(value: unknown): value is ResearchProject {
 }
 
 /**
+ * Removes any stored budget and puts it back only if it validates.
+ *
+ * The delete-then-maybe-add order matters: spreading `{ ...project, timeBudget:
+ * undefined }` leaves a key whose value is undefined, which is not the same as
+ * "the user never filled one in". Everything else on the project is untouched,
+ * and the strict checks above are NOT relaxed — only this one optional field is
+ * given a softer landing.
+ */
+function withSanitizedTimeBudget(project: ResearchProject): ResearchProject {
+  const withoutBudget: ResearchProject = { ...project };
+  delete withoutBudget.timeBudget;
+  const budget = sanitizeTimeBudget(project.timeBudget);
+  return budget === undefined ? withoutBudget : { ...withoutBudget, timeBudget: budget };
+}
+
+/**
  * Reads the ledger, degrading to an empty one on anything unexpected.
  *
  * Storage is treated as untrusted: a corrupt payload, a quota error, or a
@@ -518,7 +543,9 @@ export function loadLedger(storage: LedgerStorage | null): Ledger {
       contexts: parsed.contexts,
       incubations: parsed.incubations,
       contracts,
-      ...(parsed.project !== undefined ? { project: parsed.project } : {}),
+      ...(parsed.project !== undefined
+        ? { project: withSanitizedTimeBudget(parsed.project) }
+        : {}),
     };
   } catch {
     return emptyLedger();
@@ -699,6 +726,46 @@ export function withContext(ledger: Ledger, context: BossContext): Ledger {
  */
 export function withContract(ledger: Ledger, contract: BossContract): Ledger {
   return { ...ledger, contracts: { ...ledger.contracts, [contract.id]: contract } };
+}
+
+/**
+ * Stores the user's time budget (Issue #23) and nothing else.
+ *
+ * Two things are deliberately left alone:
+ *  - `revision` — the UI shows it as "第 N 版计划" and `history` records are
+ *    keyed by it to answer "why did the plan change". A budget is not a plan
+ *    change, so bumping it would make that history lie.
+ *  - `history` — same reason. Only an accepted negotiation writes it.
+ *
+ * An invalid budget is rejected outright: the caller must not persist a number
+ * the UI cannot defend.
+ */
+export function withTimeBudget(
+  ledger: Ledger,
+  budget: ProjectTimeBudget,
+  at: string = new Date().toISOString(),
+): Ledger {
+  const project = ledger.project;
+  if (!project) return ledger;
+  const clean = sanitizeTimeBudget(budget);
+  if (clean === undefined) return ledger;
+  return { ...ledger, project: { ...project, timeBudget: clean, updatedAt: at } };
+}
+
+/**
+ * Removes the time budget, keeping every other project field. The key is
+ * deleted rather than set to undefined, so a cleared budget is indistinguishable
+ * from one that was never filled in.
+ */
+export function withoutTimeBudget(
+  ledger: Ledger,
+  at: string = new Date().toISOString(),
+): Ledger {
+  const project = ledger.project;
+  if (!project || project.timeBudget === undefined) return ledger;
+  const next: ResearchProject = { ...project };
+  delete next.timeBudget;
+  return { ...ledger, project: { ...next, updatedAt: at } };
 }
 
 /**

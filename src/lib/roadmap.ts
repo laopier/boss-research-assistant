@@ -4,6 +4,7 @@ import {
 } from "./failure-ledger";
 import { Ledger } from "./failure-ledger";
 import { deriveProgress } from "./progress";
+import { RouteMinutes, sumRouteMinutes } from "./time-budget";
 
 /**
  * Project-level roadmap derivation (#18 §1).
@@ -45,6 +46,12 @@ export interface RoadmapDerivation {
   progressPercent: number;
   bossesDone: number;
   bossesTotal: number;
+  /**
+   * Planned effort for the WHOLE route, finished steps included (Issue #23).
+   * Recomputed on every derivation, so a negotiated route change is picked up
+   * without any extra bookkeeping. Never persisted.
+   */
+  plannedMinutes: RouteMinutes;
   milestones: MilestoneDerivation[];
   /** First milestone that is not DONE, or undefined when everything is. */
   activeMilestoneId: string | undefined;
@@ -111,6 +118,10 @@ export function deriveRoadmap(ledger: Ledger): RoadmapDerivation | null {
   const bossesTotal = milestones.reduce((sum, item) => sum + item.bossesTotal, 0);
   const bossesDone = milestones.reduce((sum, item) => sum + item.bossesDone, 0);
   const totalWeight = milestones.reduce((sum, item) => sum + item.weightMinutes, 0);
+  // Counted from the milestones themselves, not from the derived steps: a
+  // milestone without `steps` only has 1-minute placeholders here, and counting
+  // those would invent a total the user never agreed to.
+  const plannedMinutes: RouteMinutes = sumRouteMinutes(project.milestones);
   const progressPercent =
     totalWeight === 0
       ? 0
@@ -129,6 +140,7 @@ export function deriveRoadmap(ledger: Ledger): RoadmapDerivation | null {
     progressPercent,
     bossesDone,
     bossesTotal,
+    plannedMinutes,
     milestones,
     activeMilestoneId: milestones.find((item) => item.state === "ACTIVE")?.id,
     currentBossId: project.currentBossId,
