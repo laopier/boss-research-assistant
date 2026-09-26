@@ -95,6 +95,10 @@ BOSS_MODEL=deepseek-chat
 
 也可以使用 `DEEPSEEK_API_KEY` 代替 `BOSS_API_KEY`。Key 只在服务端读取，不会下发到浏览器。
 
+公开演示站推荐保持 `BOSS_GENERATOR=mock`，不在 Vercel 中保存团队自己的 Key。访客可在页面顶部的
+“AI 模式”中临时填写自己的 DeepSeek API Key：它只进入当前标签页的 `sessionStorage`，每次请求经
+HTTPS 发送给本站服务端并转发至 DeepSeek，不写入项目账本、Cookie 或 Git；关闭标签页后自动清除。
+
 ### 运行与检查
 
 ```bash
@@ -185,14 +189,17 @@ Browser / React UI
 
 线上版本部署在 Vercel。其他平台必须支持 Node.js 服务端运行时，因为三个 `/api/*` 路由不能在纯静态托管中运行。
 
-Vercel 至少需要配置：
+公开演示站建议配置：
 
 ```dotenv
-BOSS_GENERATOR=llm
-BOSS_API_KEY=...
+BOSS_GENERATOR=mock
 BOSS_API_BASE=https://api.deepseek.com
 BOSS_MODEL=deepseek-chat
 ```
+
+这样评委无需 Key 也能使用固定演示；如需检查真实 AI 路径，可在页面中临时填写其自己的 DeepSeek
+Key。不要在公开项目中配置团队成员的长期 Key。服务端托管 Key 的方式仍受支持，但只适合有鉴权、
+限流和预算控制的部署。
 
 完整部署与安全说明见 [docs/deployment.zh-CN.md](docs/deployment.zh-CN.md)。
 

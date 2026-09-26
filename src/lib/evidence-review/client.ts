@@ -15,6 +15,7 @@
  * cannot hand `undefined` to React.
  */
 import { AcceptanceCriterion } from "@/lib/contracts";
+import { apiRequestHeaders } from "@/lib/client-api-key";
 
 import {
   DECISIONS,
@@ -201,7 +202,7 @@ export async function requestEvidenceReview(
   try {
     response = await doFetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiRequestHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(request),
       signal: controller.signal,
     });

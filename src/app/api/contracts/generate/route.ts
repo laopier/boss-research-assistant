@@ -7,6 +7,7 @@ import {
   PROJECT_CONTEXT_MAX_FILES,
   PROJECT_CONTEXT_MAX_LENGTH,
 } from "@/lib/goal-discovery/generator";
+import { generatorEnvForRequest } from "@/lib/request-api-config";
 
 const INVALID_GOAL_MESSAGE = "请输入 1 到 500 个字符的科研目标，并使用当前接口版本。";
 const INVALID_CONTEXT_MESSAGE = "本地上下文格式不正确，或内容超过 24000 字符 / 20 个文件。";
@@ -76,15 +77,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const generator = getGenerator();
+    const requestEnv = generatorEnvForRequest(request);
+    const generator = getGenerator(requestEnv);
     const contract = await generator.generate(goal, { projectContext: context });
     const projectPlan = body.includeProjectPlan
-      ? await generateProjectPlan(goal, contract)
+      ? await generateProjectPlan(goal, contract, requestEnv)
       : undefined;
 
     return NextResponse.json({
       contract,
-      generation: (process.env.BOSS_GENERATOR ?? "mock").trim().toLowerCase() === "llm" ? "AI" : "MOCK",
+      generation: (requestEnv.BOSS_GENERATOR ?? "mock").trim().toLowerCase() === "llm" ? "AI" : "MOCK",
       ...(projectPlan ? { projectPlan } : {}),
     });
   } catch (error) {

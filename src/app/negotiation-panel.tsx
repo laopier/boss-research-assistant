@@ -14,6 +14,7 @@ import {
   previewImpact,
 } from "@/lib/negotiation";
 import { RoadmapDerivation } from "@/lib/roadmap";
+import { apiRequestHeaders } from "@/lib/client-api-key";
 
 export interface NegotiationPanelProps {
   ledger: Ledger;
@@ -91,7 +92,7 @@ export function NegotiationPanel({ ledger, roadmap, onApply, onClose }: Negotiat
     try {
       const response = await fetch("/api/negotiation/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: apiRequestHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           version: NEGOTIATION_CHAT_VERSION,
           message: content,

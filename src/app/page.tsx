@@ -69,6 +69,8 @@ import {
   PROJECT_CONTEXT_MAX_FILES,
   PROJECT_CONTEXT_MAX_LENGTH,
 } from "@/lib/goal-discovery/generator";
+import { apiRequestHeaders } from "@/lib/client-api-key";
+import { ApiKeyPanel } from "./api-key-panel";
 
 /**
  * The frozen MVP-0 demonstration case.
@@ -201,7 +203,7 @@ export default function Home() {
   ): Promise<GenerateBossContractResponse> {
     const response = await fetch("/api/contracts/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiRequestHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         schemaVersion: CONTRACT_SCHEMA_VERSION,
         goal: goalText,
@@ -531,6 +533,8 @@ export default function Home() {
           没跑通也没关系：问题会被记下来，变成下一步的线索。
         </p>
       </header>
+
+      <ApiKeyPanel />
 
       {notice && <p className="notice" role="status">{notice}</p>}
       {error && effectiveView !== "new" && <p className="error" role="alert">{error}</p>}

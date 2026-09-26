@@ -265,8 +265,8 @@ export function EvidenceSubmitForm({
       )}
 
       <p className="privacy-note">
-        提交内容会发送给本应用的检查服务；当服务端使用 AI 模式（
-        <code>BOSS_GENERATOR=llm</code>）时，内容会进一步发送给 DeepSeek。
+        提交内容会发送给本应用的检查服务；当你在页面中启用 DeepSeek，或服务端使用 AI 模式时，
+        内容会进一步发送给 DeepSeek。
         请勿粘贴密钥、个人信息或未脱敏数据。原始文本<strong>不会被保存</strong>，
         页面只保留检查结果和理由。
       </p>

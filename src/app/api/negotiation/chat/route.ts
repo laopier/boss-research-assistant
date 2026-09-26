@@ -14,6 +14,7 @@ import {
   parseNegotiationModelReply,
   parseNegotiationRequest,
 } from "@/lib/negotiation-chat";
+import { generatorEnvForRequest } from "@/lib/request-api-config";
 
 function invalid(message: string) {
   return NextResponse.json({ error: { code: "INVALID_REQUEST", message } }, { status: 400 });
@@ -53,7 +54,13 @@ export async function POST(request: Request) {
   const parsed = parseNegotiationRequest(body);
   if (!parsed) return invalid("协商消息或当前路线信息不完整。");
 
-  const mode = (process.env.BOSS_GENERATOR ?? "mock").trim().toLowerCase();
+  let requestEnv: GeneratorEnv;
+  try {
+    requestEnv = generatorEnvForRequest(request);
+  } catch {
+    return invalid("API Key 格式不正确。");
+  }
+  const mode = (requestEnv.BOSS_GENERATOR ?? "mock").trim().toLowerCase();
   if (mode === "mock") {
     return NextResponse.json(mockReply(parsed.message, parsed.context.currentBossId));
   }
@@ -64,7 +71,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const apiKey = apiKeyFromEnv(process.env as unknown as GeneratorEnv);
+  const apiKey = apiKeyFromEnv(requestEnv);
   if (!apiKey) {
     return NextResponse.json(
       { error: { code: "CONFIG_ERROR", message: "协商 AI 尚未配置。" } },
@@ -75,8 +82,8 @@ export async function POST(request: Request) {
   try {
     const transport = new OpenAICompatibleTransport({
       apiKey,
-      baseUrl: process.env.BOSS_API_BASE ?? DEFAULT_API_BASE,
-      model: (process.env.BOSS_MODEL ?? DEFAULT_MODEL).trim(),
+      baseUrl: requestEnv.BOSS_API_BASE ?? DEFAULT_API_BASE,
+      model: (requestEnv.BOSS_MODEL ?? DEFAULT_MODEL).trim(),
     });
     const prompt = buildNegotiationPrompt(parsed);
     let invalidOutput = "";

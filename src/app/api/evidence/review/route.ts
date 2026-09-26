@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getEvidenceReviewer } from "@/lib/evidence-review/factory";
 import { ReviewError } from "@/lib/evidence-review/types";
 import { validateReviewRequest } from "@/lib/evidence-review/validation";
+import { generatorEnvForRequest } from "@/lib/request-api-config";
 
 const INVALID_BODY_MESSAGE = "请求内容不是有效的 JSON。";
 
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const reviewer = getEvidenceReviewer();
+    const reviewer = getEvidenceReviewer(generatorEnvForRequest(request));
     const review = await reviewer.review(validation.request);
 
     return NextResponse.json({
